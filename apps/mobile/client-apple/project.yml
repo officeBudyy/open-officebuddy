@@ -52,7 +52,7 @@ targets:
     info:
       path: Astravia/Resources/Info.plist
       properties:
-        CFBundleDisplayName: Astravia
+        CFBundleDisplayName: officebuddy
         CFBundleDevelopmentRegion: en
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
@@ -71,11 +71,11 @@ targets:
           - CFBundleURLName: com.astravia.mobile.pair
             CFBundleURLSchemes:
               - astravia
-        NSCameraUsageDescription: Astravia uses the camera to scan the pairing code on your computer and to take photos you send.
-        NSPhotoLibraryUsageDescription: Astravia shows your latest photos in the attach sheet so you can send one with a tap.
-        NSMicrophoneUsageDescription: Astravia uses the microphone while you hold the message field to dictate.
-        NSSpeechRecognitionUsageDescription: Astravia turns what you say into text for your message.
-        NSLocalNetworkUsageDescription: Astravia needs local network access to connect directly to your computer on the same Wi-Fi.
+        NSCameraUsageDescription: officebuddy uses the camera to scan the pairing code on your computer and to take photos you send.
+        NSPhotoLibraryUsageDescription: officebuddy shows your latest photos in the attach sheet so you can send one with a tap.
+        NSMicrophoneUsageDescription: officebuddy uses the microphone while you hold the message field to dictate.
+        NSSpeechRecognitionUsageDescription: officebuddy turns what you say into text for your message.
+        NSLocalNetworkUsageDescription: officebuddy needs local network access to connect directly to your computer on the same Wi-Fi.
         NSBonjourServices:
           - _astravia._tcp
         NSAppTransportSecurity:
@@ -102,7 +102,7 @@ targets:
     info:
       path: AstraviaWidgets/Info.plist
       properties:
-        CFBundleDisplayName: Astravia
+        CFBundleDisplayName: officebuddy
         CFBundleDevelopmentRegion: en
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)

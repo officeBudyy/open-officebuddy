@@ -29,7 +29,7 @@ export interface PdfCliResponse {
 	};
 }
 
-const HELP_TEXT = `Astravia PDF command line interface
+const HELP_TEXT = `officebuddy PDF command line interface
 
 Usage:
   Astravia.exe --html-to-pdf <input.html> --output <output.pdf> [options]
@@ -38,7 +38,7 @@ Usage:
   Astravia.exe pdf --help
 
 Description:
-  Convert an HTML file to PDF using Astravia Desktop's bundled Electron Chromium
+  Convert an HTML file to PDF using officebuddy Desktop's bundled Electron Chromium
   renderer. This does not require Google Chrome or Microsoft Edge to be
   installed on the user machine.
 

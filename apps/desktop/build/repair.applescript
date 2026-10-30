@@ -19,7 +19,7 @@ end findAstraviaApp
 set astraviaPath to findAstraviaApp()
 
 if astraviaPath is missing value then
-	display dialog "未检测到 Astravia.app。请先将 DMG 中的 Astravia.app 拖入 Applications 文件夹，然后再次打开「修复已损坏」。" buttons {"好"} default button "好" with icon caution with title "修复已损坏"
+	display dialog "未检测到 officebuddy。请先将 DMG 中的 officebuddy 拖入 Applications 文件夹，然后再次打开「修复已损坏」。" buttons {"好"} default button "好" with icon caution with title "修复已损坏"
 	return
 end if
 
@@ -31,5 +31,5 @@ on error errMsg number errNum
 	return
 end try
 
-display dialog "修复完成，即将启动 Astravia。" buttons {"启动 Astravia"} default button "启动 Astravia" with icon note with title "修复已损坏"
+display dialog "修复完成，即将启动 officebuddy。" buttons {"启动 officebuddy"} default button "启动 officebuddy" with icon note with title "修复已损坏"
 do shell script "/usr/bin/open " & quoted form of astraviaPath

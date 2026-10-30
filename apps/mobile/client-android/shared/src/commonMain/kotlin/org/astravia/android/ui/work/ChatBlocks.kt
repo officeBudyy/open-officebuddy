@@ -79,6 +79,7 @@ import org.astravia.android.domain.work.SkillTokens
 import org.astravia.android.domain.work.TurnSegment
 import org.astravia.android.domain.work.WorkStep
 import org.astravia.android.resources.Res
+import org.astravia.android.resources.app_name
 import org.astravia.android.resources.chat_duration_ms
 import org.astravia.android.resources.chat_steps_done
 import org.astravia.android.resources.chat_thinking
@@ -170,7 +171,7 @@ fun AgentTurnView(turn: AgentTurn, note: String?) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             BotAvatar(size = 22.dp)
-            Text("Astravia", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(Res.string.app_name), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             turn.startedAt?.let {
                 Text(relativeTimeLabel(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.astraviaExtra.secondaryText)
             }

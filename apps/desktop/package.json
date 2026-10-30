@@ -1,7 +1,7 @@
 {
 	"name": "@astravia/desktop",
 	"version": "0.5.82",
-	"description": "Astravia Desktop App",
+	"description": "officebuddy Desktop App",
 	"author": "Astravia",
 	"type": "module",
 	"private": true,

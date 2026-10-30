@@ -1,7 +1,7 @@
 import { cpus, hostname, platform, release, totalmem } from "node:os";
 
 export function desktopDisplayName(): string {
-	return hostname().replace(/\.local$/i, "") || "Astravia Desktop";
+	return hostname().replace(/\.local$/i, "") || "officebuddy Desktop";
 }
 
 export function desktopDeviceId(): string {

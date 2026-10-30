@@ -16,12 +16,12 @@
 
 [Setup]
 AppId={{A2B92798-AB76-4F6B-A9B9-C252DBCB617C}
-AppName=Astravia
-AppVerName=Astravia {#AppVersion}
+AppName=officebuddy
+AppVerName=officebuddy {#AppVersion}
 AppVersion={#AppVersion}
-AppPublisher=Astravia
+AppPublisher=officebuddy
 DefaultDirName={localappdata}\Programs\Astravia
-DefaultGroupName=Astravia
+DefaultGroupName=officebuddy
 OutputDir={#OutputDir}
 OutputBaseFilename=Astravia-{#AppVersion}-win-{#Arch}
 SetupIconFile={#SourceDir}\versions\{#AppVersion}\resources\build\icon.ico
@@ -67,17 +67,17 @@ Source: "{#SourceDir}\versions\{#AppVersion}\*"; DestDir: "{code:GetUpdateVersio
 Source: "{#SourceDir}\versions\{#AppVersion}\resources\app.asar"; DestDir: "{code:GetUpdateVersionDirectory}\resources"; Flags: ignoreversion nocompression; Check: IsBackgroundUpdate
 
 [Icons]
-Name: "{group}\Astravia"; Filename: "{app}\Astravia.exe"; Check: IsNotBackgroundUpdate
-Name: "{autodesktop}\Astravia"; Filename: "{app}\Astravia.exe"; Tasks: desktopicon; Check: IsNotBackgroundUpdate
+Name: "{group}\officebuddy"; Filename: "{app}\Astravia.exe"; Check: IsNotBackgroundUpdate
+Name: "{autodesktop}\officebuddy"; Filename: "{app}\Astravia.exe"; Tasks: desktopicon; Check: IsNotBackgroundUpdate
 
 [Registry]
-Root: HKCU; Subkey: "Software\Classes\astravia"; ValueType: string; ValueName: ""; ValueData: "URL:Astravia Protocol"; Flags: uninsdeletekey; Check: IsNotBackgroundUpdate
+Root: HKCU; Subkey: "Software\Classes\astravia"; ValueType: string; ValueName: ""; ValueData: "URL:officebuddy Protocol"; Flags: uninsdeletekey; Check: IsNotBackgroundUpdate
 Root: HKCU; Subkey: "Software\Classes\astravia"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Check: IsNotBackgroundUpdate
 Root: HKCU; Subkey: "Software\Classes\astravia\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\Astravia.exe,0"; Check: IsNotBackgroundUpdate
 Root: HKCU; Subkey: "Software\Classes\astravia\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Astravia.exe"" ""%1"""; Check: IsNotBackgroundUpdate
 
 [Run]
-Filename: "{app}\Astravia.exe"; Description: "{cm:LaunchProgram,Astravia}"; Flags: nowait postinstall skipifsilent; Check: IsNotBackgroundUpdate
+Filename: "{app}\Astravia.exe"; Description: "{cm:LaunchProgram,officebuddy}"; Flags: nowait postinstall skipifsilent; Check: IsNotBackgroundUpdate
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{localappdata}\Astravia\versions"

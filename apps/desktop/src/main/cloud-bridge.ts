@@ -60,5 +60,5 @@ export function getCloudBridge(): CloudBridge | null {
 
 /** 云服务不可用时的统一网关失败回执（envelope 形状，调用方按 !ok 处理）。 */
 export function gatewayUnavailableResponse<T = unknown>(): AstraviaGatewayResponse<T> {
-	return { ok: false, status: 0, code: -1, message: "Astravia cloud services are not available in this build" };
+	return { ok: false, status: 0, code: -1, message: "officebuddy cloud services are not available in this build" };
 }

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/assets/banner.webp" alt="Astravia" width="160">
+  <img src="docs/assets/banner.webp" alt="officebuddy" width="160">
 </p>
 
-<h1 align="center">Astravia · 星轨</h1>
+<h1 align="center">officebuddy</h1>
 
 <p align="center">
   面向真实工作的开源桌面 AI Agent——本地优先、可扩展，由你掌控。
@@ -22,15 +22,15 @@
 
 ---
 
-Astravia 把模型、项目文件、本机工具和可复用能力放进同一个桌面工作区。它适用于编码、文档、数据、研究、创意生产和可重复工作流，同时让工作继续发生在你选择的环境中。
+officebuddy 把模型、项目文件、本机工具和可复用能力放进同一个桌面工作区。它适用于编码、文档、数据、研究、创意生产和可重复工作流，同时让工作继续发生在你选择的环境中。
 
-它不只是聊天界面：Astravia 能理解工作区、在可见的权限边界内调用工具、交付真实文件，并保留可供检查的执行过程。
+它不只是聊天界面：officebuddy 能理解工作区、在可见的权限边界内调用工具、交付真实文件，并保留可供检查的执行过程。
 
 <p align="center">
-  <img src="docs/assets/screenshot-main.png" alt="Astravia 桌面工作区">
+  <img src="docs/assets/screenshot-main.png" alt="officebuddy 桌面工作区">
 </p>
 
-## 为什么选择 Astravia
+## 为什么选择 officebuddy
 
 - **本地优先的工作区** —— 项目、会话、文件与执行过程留在你选择的环境中。
 - **自带模型** —— 通过 BYOK 连接受支持的 Provider、OpenAI 兼容端点或本地推理服务。
@@ -95,7 +95,7 @@ bun run dev
 
 ## 插件开发
 
-Astravia 自身的设计画布、Git、图表、文件预览都是插件，同一套扩展点对第三方开放。插件用 Vite + Module Federation 构建成独立 bundle，宿主运行时按需加载、沙箱执行、权限校验。
+officebuddy 自身的设计画布、Git、图表、文件预览都是插件，同一套扩展点对第三方开放。插件用 Vite + Module Federation 构建成独立 bundle，宿主运行时按需加载、沙箱执行、权限校验。
 
 ### 能扩展什么
 
@@ -166,7 +166,7 @@ bun run build           # 产物：dist/mf-manifest.json + dist/remoteEntry.js +
 zip -r my-plugin.zip .  # 打包整个插件目录（含 plugin.json）
 ```
 
-安装：在 Astravia 内「设置 → 插件 → 安装本地插件」选择 zip 即可。也可以把插件放到 GitHub Release，用仓库 URL 在应用内一键安装。
+安装：在 officebuddy 内「设置 → 插件 → 安装本地插件」选择 zip 即可。也可以把插件放到 GitHub Release，用仓库 URL 在应用内一键安装。
 
 **内置插件**：astravia-ui-design、content-creation、plugin-workbench、git、image-gen、chart-renderer、office-viewer、media-viewer、svg-viewer、astravia-actions。
 
@@ -234,6 +234,6 @@ Pull Request 发往 **`dev`** 分支。贡献地图、测试要求与评审门�
 
 ## 致谢与许可
 
-Astravia 建立在广泛的开源生态之上，包括 pi、Codex CLI、MCP、Electron、React、Bun、models.dev，以及 [`NOTICE`](NOTICE) 中列出的项目。完整第三方清单与原始版权声明以该文件为准。
+officebuddy 建立在广泛的开源生态之上，包括 pi、Codex CLI、MCP、Electron、React、Bun、models.dev，以及 [`NOTICE`](NOTICE) 中列出的项目。完整第三方清单与原始版权声明以该文件为准。
 
 本项目采用 [Apache-2.0](LICENSE) 许可。

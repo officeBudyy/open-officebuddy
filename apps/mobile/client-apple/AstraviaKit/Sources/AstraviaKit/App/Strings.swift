@@ -4,7 +4,7 @@ import Foundation
 /// (English and Simplified Chinese) and follows the system language; every
 /// accessor here is only a key into that catalog.
 public enum L10n {
-	public static let appName = "Astravia"
+	public static let appName = "officebuddy"
 
 	/// Where lookups resolve, and the locale that picks plural forms. Tests pin
 	/// one language with `pin(language:)`.
@@ -378,6 +378,11 @@ public enum L10n {
 
 private func tr(_ key: String.LocalizationValue) -> String {
 	String(localized: key, bundle: L10n.bundle, locale: L10n.locale)
+		.replacingOccurrences(
+			of: #"(?<![A-Za-z0-9_])Astravia(?![A-Za-z0-9_])"#,
+			with: L10n.appName,
+			options: .regularExpression
+		)
 }
 
 public enum TimeFormat {

@@ -2,11 +2,12 @@
 // 编译到 Contents/MacOS/、写 Info.plist、拷贝主 app icns、ad-hoc 签名）。
 //
 // 独立 .app bundle（独立 CFBundleIdentifier）使其在 macOS TCC（辅助功能/屏幕
-// 录制）里是与主 Astravia app 分离的授权主体，系统设置权限列表显示为
-// "Astravia Computer Use"。
+// 录制）里是与主 Astravia app 分离的授权主体。bundle / executable 名为兼容
+// 现有权限继续保留，系统设置里的展示名为 "officebuddy Computer Use"。
 //
 // darwin-only：非 macOS host 直接跳过（appshot 功能本身仅 macOS 提供）。
-// 幂等：产物已存在且可执行文件 mtime 晚于源码时跳过编译，加速 dev 启动与迭代构建。
+// 幂等：产物的 Info.plist 与预期一致，且可执行文件 mtime 晚于源码时跳过编译，
+// 加速 dev 启动与迭代构建。
 //
 // 用法：node build-appshot-helper.js [--out <dir>]
 //   --out: 产物输出目录（打包时由 prepare-pack.js 传 staging 目录）。
@@ -14,7 +15,7 @@
 //          与 src/main/appshot/helper-resolver.ts 保持一致）。
 
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const projectRoot = join(import.meta.dirname, "..");
@@ -22,6 +23,7 @@ const sourcePath = join(projectRoot, "native", "appshot", "main.swift");
 const iconSourcePath = join(projectRoot, "build", "icon.icns");
 
 const APP_NAME = "Astravia Computer Use";
+const DISPLAY_NAME = "officebuddy Computer Use";
 const BUNDLE_ID = "com.astravia.desktop.computer-use";
 
 function resolveOutDir() {
@@ -42,7 +44,7 @@ function infoPlistContents() {
 	<key>CFBundleName</key>
 	<string>${APP_NAME}</string>
 	<key>CFBundleDisplayName</key>
-	<string>${APP_NAME}</string>
+	<string>${DISPLAY_NAME}</string>
 	<key>CFBundleExecutable</key>
 	<string>${APP_NAME}</string>
 	<key>CFBundlePackageType</key>
@@ -56,7 +58,7 @@ function infoPlistContents() {
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0</string>
 	<key>NSScreenCaptureUsageDescription</key>
-	<string>Astravia Computer Use needs to record your screen to capture the active window for the assistant.</string>
+	<string>officebuddy Computer Use needs to record your screen to capture the active window for the assistant.</string>
 </dict>
 </plist>
 `;
@@ -77,9 +79,13 @@ function main() {
 	const macosDir = join(contentsDir, "MacOS");
 	const resourcesDir = join(contentsDir, "Resources");
 	const executablePath = join(macosDir, APP_NAME);
+	const infoPlistPath = join(contentsDir, "Info.plist");
+	const expectedInfoPlist = infoPlistContents();
 
 	if (
 		existsSync(executablePath) &&
+		existsSync(infoPlistPath) &&
+		readFileSync(infoPlistPath, "utf8") === expectedInfoPlist &&
 		statSync(executablePath).mtimeMs > statSync(sourcePath).mtimeMs
 	) {
 		console.log(`[build-appshot-helper] up to date, skipping: ${appBundlePath}`);
@@ -100,7 +106,7 @@ function main() {
 		{ stdio: "inherit" },
 	);
 
-	writeFileSync(join(contentsDir, "Info.plist"), infoPlistContents());
+	writeFileSync(infoPlistPath, expectedInfoPlist);
 
 	if (existsSync(iconSourcePath)) {
 		cpSync(iconSourcePath, join(resourcesDir, "icon.icns"));

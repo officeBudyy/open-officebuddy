@@ -113,7 +113,7 @@ if [[ -n "$TEAM_ID" && -n "$PROFILE_UUID" ]]; then
 				<key>kind</key>
 				<string>software</string>
 				<key>title</key>
-				<string>Astravia</string>
+				<string>officebuddy</string>
 			</dict>
 		</dict>
 	</array>

@@ -520,7 +520,7 @@ if (!gotSingleLock) {
 		if (!app.isPackaged) {
 			const appVersion = getAppVersion();
 			app.setAboutPanelOptions({
-				applicationName: "Astravia",
+				applicationName: "officebuddy",
 				applicationVersion: appVersion,
 				version: "",
 			});

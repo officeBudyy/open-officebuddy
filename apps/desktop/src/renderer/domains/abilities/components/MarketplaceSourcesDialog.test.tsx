@@ -57,7 +57,7 @@ describe("MarketplaceSourcesDialog", () => {
 	it("官方内置来源不可停用也不可删除，自定义来源仍可管理", async () => {
 		const user = userEvent.setup();
 		renderDialog([
-			source({ id: "astravia-official", name: "Astravia Official", builtin: true }),
+			source({ id: "astravia-official", name: "officebuddy Official", builtin: true }),
 			source({ name: "my-abilities" }),
 		]);
 

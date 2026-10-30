@@ -5,10 +5,11 @@
 import i18next from "i18next";
 import { initReactI18next, useTranslation } from "react-i18next";
 import { type AppLanguage, resolveAppLanguageFromLocale } from "@/shared/i18n/resources";
+import { applyVisibleBrand } from "@/shared/visible-brand";
 
 const QUICK_PANEL_NS = "quickpanel";
 
-const resources = {
+const resources = applyVisibleBrand({
 	zh: {
 		[QUICK_PANEL_NS]: {
 			placeholder: "向 Astravia 提问…",
@@ -51,7 +52,7 @@ const resources = {
 			},
 		},
 	},
-} as const;
+} as const);
 
 function detectLanguage(): AppLanguage {
 	// 真相源：main 已按 config 或系统 locale 解析（preload sendSync）；缺失时回退 navigator。

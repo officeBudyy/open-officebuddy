@@ -18,7 +18,7 @@ interface ActionCliResponse {
 	};
 }
 
-const HELP_TEXT = `Astravia action command line interface
+const HELP_TEXT = `officebuddy action command line interface
 
 Usage:
   Astravia.exe action search [query] [--domain <domain>]
@@ -28,10 +28,10 @@ Usage:
   Astravia.exe action --help
 
 Description:
-  Operate the running Astravia Desktop app through its local action RPC.
+  Operate the running officebuddy Desktop app through its local action RPC.
   The GUI must already be running. Do not guess action ids or parameters
   from memory; discover them at runtime.
-  Built-in actions operate Astravia Desktop itself; plugin-provided actions
+  Built-in actions operate officebuddy Desktop itself; plugin-provided actions
   may own other resources, as declared in their usage. Developing a website,
   creating a React project, installing framework plugins, or implementing
   application cron jobs belongs to that project's tools, not App Actions.

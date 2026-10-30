@@ -45,7 +45,7 @@ export class ActionApprovalBroker implements ActionApprovalRequester {
 	request(request: ActionApprovalRequest, signal?: AbortSignal): Promise<ActionApprovalDecision> {
 		if (this.webContents.isDestroyed()) {
 			log.warn("request: webContents destroyed", { actionId: request.actionId });
-			return Promise.reject(new ActionError("ACTION_APPROVAL_UNAVAILABLE", "Astravia Desktop 授权界面不可用。"));
+			return Promise.reject(new ActionError("ACTION_APPROVAL_UNAVAILABLE", "officebuddy Desktop 授权界面不可用。"));
 		}
 
 		const approvalId = randomUUID();
@@ -72,7 +72,7 @@ export class ActionApprovalBroker implements ActionApprovalRequester {
 			};
 			const onAbort = (): void => {
 				log.warn("request: aborted by signal", { approvalId, actionId: request.actionId });
-				cancel(new ActionError("ACTION_CANCELLED", "Astravia action 请求已取消。", { actionId: request.actionId }));
+				cancel(new ActionError("ACTION_CANCELLED", "officebuddy action 请求已取消。", { actionId: request.actionId }));
 			};
 			const timeout = setTimeout(() => {
 				log.warn("request: approval timeout", {
@@ -86,7 +86,7 @@ export class ActionApprovalBroker implements ActionApprovalRequester {
 				cancel(
 					new ActionError(
 						"ACTION_APPROVAL_TIMEOUT",
-						"等待用户授权 Astravia action 超时。可能用户并不在线，你需要询问用户发生了什么情况",
+						"等待用户授权 officebuddy action 超时。可能用户并不在线，你需要询问用户发生了什么情况",
 						{
 							actionId: request.actionId,
 						},
@@ -141,7 +141,7 @@ export class ActionApprovalBroker implements ActionApprovalRequester {
 			log.warn("cancelAll: cancelling pending approvals", { count });
 		}
 		for (const pending of this.pending.values()) {
-			pending.cancel(new ActionError("ACTION_CANCELLED", "Astravia Desktop 授权请求已取消。"));
+			pending.cancel(new ActionError("ACTION_CANCELLED", "officebuddy Desktop 授权请求已取消。"));
 		}
 		this.pending.clear();
 	}

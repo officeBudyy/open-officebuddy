@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const socialImageSize = { width: 1200, height: 630 };
-export const socialImageAlt = "Astravia Documentation";
+export const socialImageAlt = "officebuddy Documentation";
 export const socialImageContentType = "image/png";
 
 export function createSocialImage(): ImageResponse {
@@ -45,7 +45,7 @@ export function createSocialImage(): ImageResponse {
 						color: "#dd6b55",
 					}}
 				>
-					ASTRAVIA
+					officebuddy
 				</div>
 				<div
 					style={{

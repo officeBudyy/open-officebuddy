@@ -2,6 +2,7 @@
 // 由各自 Vite bundle 把 JSON 内联——零运行时 fs、零 async、不闪。新增语言/ns =
 // 在此加一条 import + 在 resources 里加一项。
 
+import { applyVisibleBrand } from "../visible-brand.js";
 import enAbilities from "./locales/en/abilities.json";
 import enAgentTeams from "./locales/en/agent-teams.json";
 import enAutomation from "./locales/en/automation.json";
@@ -27,7 +28,7 @@ import zhProject from "./locales/zh/project.json";
 import zhSettings from "./locales/zh/settings.json";
 import zhSkills from "./locales/zh/skills.json";
 
-export const resources = {
+const upstreamResources = {
 	zh: {
 		common: zhCommon,
 		main: zhMain,
@@ -57,5 +58,7 @@ export const resources = {
 		"agent-teams": enAgentTeams,
 	},
 } as const;
+
+export const resources = applyVisibleBrand(upstreamResources);
 
 export * from "./config.js";

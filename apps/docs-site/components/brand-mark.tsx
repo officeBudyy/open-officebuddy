@@ -19,7 +19,7 @@ export function BrandMark({ language = "zh" }: { language?: DocsLanguage }) {
 				<span className="absolute -right-[0.12rem] -bottom-[0.12rem] size-[0.48rem] rounded-full border-2 border-fd-background bg-astravia-coral" />
 			</span>
 			<span className="grid leading-[1.05]">
-				<strong className="font-display text-[1.02rem] font-semibold">Astravia</strong>
+				<strong className="font-display text-[1.02rem] font-semibold">officebuddy</strong>
 				<small className="mt-[0.18rem] hidden font-mono text-[0.58rem] font-medium tracking-[0.12em] text-fd-muted-foreground uppercase md:block">
 					{text.documentation}
 				</small>

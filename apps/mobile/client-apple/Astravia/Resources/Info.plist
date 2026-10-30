@@ -9,7 +9,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Astravia</string>
+	<string>officebuddy</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -49,15 +49,15 @@
 		<string>_astravia._tcp</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Astravia uses the camera to scan the pairing code on your computer and to take photos you send.</string>
+	<string>officebuddy uses the camera to scan the pairing code on your computer and to take photos you send.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Astravia needs local network access to connect directly to your computer on the same Wi-Fi.</string>
+	<string>officebuddy needs local network access to connect directly to your computer on the same Wi-Fi.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Astravia uses the microphone while you hold the message field to dictate.</string>
+	<string>officebuddy uses the microphone while you hold the message field to dictate.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Astravia shows your latest photos in the attach sheet so you can send one with a tap.</string>
+	<string>officebuddy shows your latest photos in the attach sheet so you can send one with a tap.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Astravia turns what you say into text for your message.</string>
+	<string>officebuddy turns what you say into text for your message.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

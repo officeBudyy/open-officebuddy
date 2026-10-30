@@ -243,7 +243,7 @@ struct TurnHeader: View {
 	var body: some View {
 		HStack(spacing: 8) {
 			BotAvatar(size: 22)
-			Text("Astravia").font(.subheadline.weight(.semibold))
+			Text(L10n.appName).font(.subheadline.weight(.semibold))
 			if let startedAt {
 				Text(TimeFormat.relative(startedAt)).font(.caption).foregroundStyle(.secondary)
 			}

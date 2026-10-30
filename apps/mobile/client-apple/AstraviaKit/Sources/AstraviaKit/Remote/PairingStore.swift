@@ -80,7 +80,7 @@ public final class PairingStore {
 			guard let key = entry["desktopIdentityKey"]?.stringValue, let pairingId = entry["pairingId"]?.stringValue else { return nil }
 			return StoredDesktop(
 				desktopIdentityKey: key,
-				desktopName: entry["desktopName"]?.stringValue ?? "Astravia Desktop",
+				desktopName: entry["desktopName"]?.stringValue ?? "officebuddy Desktop",
 				pairingId: pairingId,
 				lanEndpoints: (entry["lanEndpoints"]?.arrayValue ?? []).compactMap(\.stringValue),
 				relayBaseUrl: entry["relayBaseUrl"]?.stringValue,

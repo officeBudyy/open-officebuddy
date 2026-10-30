@@ -115,7 +115,7 @@ describe("MarketplaceSourceStore", () => {
 				expect(new MarketplaceSourceStore({ filePath: await temporaryFile() }).list()).toMatchObject([
 					{
 						id: "astravia-official",
-						name: "Astravia Official",
+						name: "officebuddy Official",
 						repository: OFFICIAL_MARKETPLACE_REPOSITORY,
 						ref: OFFICIAL_MARKETPLACE_REF,
 						archiveUrl: `${OFFICIAL_MARKETPLACE_REPOSITORY}/archive/refs/heads/${OFFICIAL_MARKETPLACE_REF}.zip`,
@@ -167,6 +167,7 @@ describe("MarketplaceSourceStore", () => {
 		expect(store.list()).toMatchObject([
 			{
 				id: "astravia-official",
+				name: "officebuddy Official",
 				repository: OFFICIAL_MARKETPLACE_REPOSITORY,
 				ref: OFFICIAL_MARKETPLACE_REF,
 				archiveUrl: `${OFFICIAL_MARKETPLACE_REPOSITORY}/archive/refs/heads/${OFFICIAL_MARKETPLACE_REF}.zip`,
@@ -174,7 +175,9 @@ describe("MarketplaceSourceStore", () => {
 			},
 		]);
 		expect(JSON.parse(await readFile(filePath, "utf-8"))).toMatchObject({
-			sources: [{ id: "astravia-official", ref: OFFICIAL_MARKETPLACE_REF, autoUpdate: false }],
+			sources: [
+				{ id: "astravia-official", name: "officebuddy Official", ref: OFFICIAL_MARKETPLACE_REF, autoUpdate: false },
+			],
 		});
 	});
 

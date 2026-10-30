@@ -282,7 +282,7 @@ if (preparedSpeechModel) {
 const appPkg = {
 	name: "astravia",
 	version: appVersion,
-	description: "Astravia Desktop App",
+	description: "officebuddy Desktop App",
 	author: LINUX_PACKAGE_METADATA.author,
 	homepage: LINUX_PACKAGE_METADATA.homepage,
 	license: LINUX_PACKAGE_METADATA.license,
@@ -734,7 +734,7 @@ const builderConfig = {
 	...(releaseInfo ? { releaseInfo } : {}),
 	files: ["**/*", ...extraResources.map(({ from }) => `!${from}/**/*`)],
 	protocols: {
-		name: "Astravia",
+		name: "officebuddy",
 		schemes: ["astravia"],
 	},
 	fileAssociations: [ASTRAVIA_PLUGIN_FILE_ASSOCIATION],
@@ -771,11 +771,13 @@ const builderConfig = {
 		//   - NSLocalNetworkUsageDescription：macOS 14+ 触发本地网络权限弹窗
 		//   - NSBonjourServices：协助 TCC 识别 app 需要本地网络访问
 		extendInfo: {
+			CFBundleDisplayName: "officebuddy",
+			CFBundleName: "officebuddy",
 			NSAppTransportSecurity: {
 				NSAllowsLocalNetworking: true,
 			},
 			NSLocalNetworkUsageDescription:
-				"Astravia 需要访问本地网络以连接你在局域网内运行的 AI 模型服务（如 Ollama、LM Studio、vLLM 等）。",
+				"officebuddy 需要访问本地网络以连接你在局域网内运行的 AI 模型服务（如 Ollama、LM Studio、vLLM 等）。",
 			NSBonjourServices: ["_http._tcp", "_https._tcp"],
 		},
 	},
@@ -811,11 +813,17 @@ const builderConfig = {
 	linux: {
 		target: LINUX_RELEASE_TARGETS,
 		category: "Utility",
-		description: "Astravia AI agent desktop application",
+		description: "officebuddy AI agent desktop application",
 		icon: "build/icon.png",
 		maintainer: LINUX_PACKAGE_METADATA.maintainer,
 		synopsis: "AI agent desktop application",
 		vendor: LINUX_PACKAGE_METADATA.vendor,
+		desktop: {
+			entry: {
+				Name: "officebuddy",
+				Comment: "officebuddy AI agent desktop application",
+			},
+		},
 	},
 	// Sidecar binaries are picked up from the staged ./im-gateway dir
 	// (populated above by the cross-build step).

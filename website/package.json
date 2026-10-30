@@ -3,7 +3,7 @@
 	"private": true,
 	"version": "0.5.82",
 	"type": "module",
-	"description": "星轨 Astravia 官网 — 本地优先的开源 AI 桌面助手",
+	"description": "officebuddy 官网 — 本地优先的开源 AI 桌面助手",
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",

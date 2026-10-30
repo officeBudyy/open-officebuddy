@@ -157,7 +157,7 @@ export function createAstraviaImageProvider(
 					status: "failed",
 					error: {
 						code: "operation-unsupported",
-						message: `Astravia image provider does not support ${input.operation}`,
+						message: `officebuddy image provider does not support ${input.operation}`,
 						retryable: false,
 					},
 				});

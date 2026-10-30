@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/assets/banner.webp" alt="Astravia" width="160">
+  <img src="docs/assets/banner.webp" alt="officebuddy" width="160">
 </p>
 
-<h1 align="center">Astravia</h1>
+<h1 align="center">officebuddy</h1>
 
 <p align="center">
   An open-source desktop AI agent for real work — local-first, extensible, and under your control.
@@ -22,15 +22,15 @@
 
 ---
 
-Astravia brings models, project files, local tools, and reusable capabilities into one desktop workspace. Use it for coding, documents, data, research, creative work, and repeatable workflows without giving up control of the environment where the work happens.
+officebuddy brings models, project files, local tools, and reusable capabilities into one desktop workspace. Use it for coding, documents, data, research, creative work, and repeatable workflows without giving up control of the environment where the work happens.
 
-It is more than a chat interface: Astravia can inspect a workspace, use tools with visible permission boundaries, produce real files, and keep the execution trail available for review.
+It is more than a chat interface: officebuddy can inspect a workspace, use tools with visible permission boundaries, produce real files, and keep the execution trail available for review.
 
 <p align="center">
-  <img src="docs/assets/screenshot-main.png" alt="Astravia desktop workspace">
+  <img src="docs/assets/screenshot-main.png" alt="officebuddy desktop workspace">
 </p>
 
-## Why Astravia
+## Why officebuddy
 
 - **Local-first workspace** — Projects, sessions, files, and execution live in the environment you choose.
 - **Bring your own models** — Connect supported providers, OpenAI-compatible endpoints, or local inference through BYOK.
@@ -95,7 +95,7 @@ Global hotkey for quick panel; macOS Appshot gesture screenshots + on-screen tex
 
 ## Plugin development
 
-Astravia's own design canvas, Git, charts, and file preview are plugins — the same extension points are open to third parties. Plugins are built with Vite + Module Federation into independent bundles, loaded by the host on demand, sandboxed, and permission-checked.
+officebuddy's own design canvas, Git, charts, and file preview are plugins — the same extension points are open to third parties. Plugins are built with Vite + Module Federation into independent bundles, loaded by the host on demand, sandboxed, and permission-checked.
 
 ### Build a plugin from any directory
 
@@ -134,7 +134,7 @@ bun run build           # output: dist/mf-manifest.json + dist/remoteEntry.js + 
 zip -r my-plugin.zip .  # package the whole plugin directory (including plugin.json)
 ```
 
-Install: in Astravia, open "Settings → Plugins → Install local plugin" and pick the zip. You can also publish to a GitHub Release and install with the repository URL in one click.
+Install: in officebuddy, open "Settings → Plugins → Install local plugin" and pick the zip. You can also publish to a GitHub Release and install with the repository URL in one click.
 
 **Built-in plugins**: astravia-ui-design, content-creation, plugin-workbench, git, image-gen, chart-renderer, office-viewer, media-viewer, svg-viewer, astravia-actions.
 
@@ -200,6 +200,6 @@ Questions and early ideas belong in GitHub Discussions. Report vulnerabilities p
 
 ## Credits and license
 
-Astravia builds on work from the wider open-source ecosystem, including pi, Codex CLI, MCP, Electron, React, Bun, models.dev, and the projects listed in [`NOTICE`](NOTICE). The complete third-party inventory and original notices live there.
+officebuddy builds on work from the wider open-source ecosystem, including pi, Codex CLI, MCP, Electron, React, Bun, models.dev, and the projects listed in [`NOTICE`](NOTICE). The complete third-party inventory and original notices live there.
 
 Licensed under [Apache-2.0](LICENSE).

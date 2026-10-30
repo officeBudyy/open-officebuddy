@@ -248,7 +248,7 @@ function AgentMessageHeader() {
 					<BotAvatar active={model.isCurrentlyStreaming} />
 				)}
 			</MessageLayout.HeaderLeading>
-			<Message.Author>{participant?.name ?? "Astravia"}</Message.Author>
+			<Message.Author>{participant?.name ?? "officebuddy"}</Message.Author>
 			{message.timestamp ? <Message.Meta>{formatTime(message.timestamp)}</Message.Meta> : null}
 			{model.durationAvailable ? (
 				<>

@@ -85,12 +85,12 @@ function buildShareNav(iconDataUrl: string, nickname?: string): string {
 	const desc = nickname
 		? i18n.t("chat:export.shareNavDescriptionWithNickname", { nickname: escapeHtml(nickname) })
 		: i18n.t("chat:export.shareNavDescription");
-	const icon = iconDataUrl ? `<img class="astravia-share-nav__icon" src="${iconDataUrl}" alt="Astravia" />` : "";
+	const icon = iconDataUrl ? `<img class="astravia-share-nav__icon" src="${iconDataUrl}" alt="officebuddy" />` : "";
 	return `<nav class="astravia-share-nav" data-share-nav>
 		<div class="astravia-share-nav__inner">
 			${icon}
 			<div class="astravia-share-nav__meta">
-				<span class="astravia-share-nav__brand">Astravia</span>
+				<span class="astravia-share-nav__brand">officebuddy</span>
 				<span class="astravia-share-nav__desc">${desc}</span>
 			</div>
 		</div>

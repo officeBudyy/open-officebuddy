@@ -1,4 +1,4 @@
-# 参与 Open Astravia
+# 参与 officebuddy
 
 <p align="center"><a href="CONTRIBUTING.md">English</a> · <b>简体中文</b></p>
 

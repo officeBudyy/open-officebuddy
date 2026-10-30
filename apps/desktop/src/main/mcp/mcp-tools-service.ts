@@ -96,7 +96,7 @@ export function getDesktopMcpToolsService(): McpToolsService {
 								redirectUri: store.load(serverName)?.redirectUri ?? "http://127.0.0.1/callback",
 								onRedirect: () => undefined,
 								store,
-								clientName: "Astravia",
+								clientName: "officebuddy",
 								clientId: httpConfig.oauthClientId,
 							})
 						: undefined,

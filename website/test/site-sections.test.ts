@@ -55,7 +55,7 @@ describe("首页区块结构", () => {
 	it("FAQ 是七个问题，且不残留上游品牌名", () => {
 		const html = sectionHtml("faq");
 		expect([...html.matchAll(/<details class="faq__item">/g)]).toHaveLength(7);
-		expect(html).toContain("<summary>什么是星轨 Astravia？</summary>");
+		expect(html).toContain("<summary>什么是 officebuddy？</summary>");
 		expect(html).not.toMatch(/Vetta|Vivi/);
 	});
 
