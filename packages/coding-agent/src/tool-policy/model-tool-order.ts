@@ -19,6 +19,7 @@ export const CODING_AGENT_MODEL_TOOL_ORDER = Object.freeze({
 	htmlToPdf: 1_100,
 	extractTextFromPdf: 1_200,
 	extractTextFromImage: 1_300,
+	prepareOcrReview: 1_350,
 	renderPdfPage: 1_400,
 	currentTime: 1_500,
 	progress: 1_600,

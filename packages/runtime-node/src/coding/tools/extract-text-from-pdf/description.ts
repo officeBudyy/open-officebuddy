@@ -6,6 +6,7 @@ This tool calls the Astravia Desktop executable in command-line OCR mode. Astrav
 
 Input
   - input: path to the PDF file
+  - mode (optional): "extract" (default) or "transcription". Transcription mode saves rendered page PNGs for one-pass visual review and applies a page-aware 16-48 model-call run budget.
   - output (optional): path to write the full structured JSON result. Default: <input>.ocr.json next to the source.
   - pages (optional): "all" | "N" | "N-M". Default "all". For PDFs with many pages, prefer a range so you don't burn time on parts you don't need.
   - dpi (optional): render DPI for OCR fallback. Default 150. Lower values are faster and use less memory; higher values help small print. If OCR hits OOM, retry with a smaller DPI. When omitted, this tool may automatically lower DPI for oversized PDF pages so rendered images stay within a safer pixel size.
@@ -16,15 +17,17 @@ Output (text returned to the agent)
   Concatenated page text with \`=== Page N ===\` separators, truncated to max_chars. Followed by a metadata footer:
   - total_pages, processed_pages, text_layer_pages, ocr_pages, duration_ms
   - output: absolute path to the full JSON document
+  - version-2 source fingerprint, request signature, and capture capabilities are persisted so stale OCR artifacts cannot be reused silently
 
 Limitations
   - Does not preserve table structure (rows/columns are flattened into lines).
   - Does not recognize handwriting, official seals/stamps, signatures, logos, or formula notation. OCR returns text only — it CANNOT tell you whether a stamp/signature is present, what color it is, or where it sits on the page.
-  - Confidence numbers in the JSON are 0..100 but reflect a coarse mapping of CTC logits — use them for relative comparison between pages, not as a hard quality threshold.
+  - Page confidence and each line's confidenceScore are 0..100 coarse mappings of CTC logits. OCR pages also include line text, quadrilateral boxes, and raw confidence so review tools can crop anomalies without another OCR pass.
 
 When to use
   - You need textual content from any PDF, whether it has a clean text layer or requires OCR. With prefer_text_layer=true, clean pages are extracted directly and only other pages use OCR.
   - You need a structured per-page JSON to feed downstream code (use the output file).
+  - For faithful OCR-to-DOCX work, set mode="transcription", then call prepare_ocr_review once instead of repeatedly rendering individual pages. A matching cached result is reused only when its source fingerprint, request signature, and page captures are complete.
 
 When NOT to use
   - You need a VISUAL judgment on the page — presence/absence of seals (盖章/印章/公章), signatures, handwriting, logos, layout, watermarks, figures, color. Use \`render_pdf_page\` to produce a PNG, then \`read\` that PNG. Do NOT call this tool hoping the text output will reveal a stamp — it will not.

@@ -125,6 +125,18 @@ export interface RuntimeToolDefinition<TInput extends object = Readonly<Record<s
 	readonly label: string;
 	readonly description: string;
 	readonly inputSchema: Readonly<Record<string, unknown>>;
+	/** Safe, read-only tools may opt into concurrent execution within one model tool-call batch. */
+	readonly executionMode?: "parallel" | "exclusive";
+	/** Optional run-level controls activated after this tool's input is validated. */
+	readonly runPolicy?: {
+		readonly stopOnError?: boolean;
+		resolveStopOnError?(input: Readonly<TInput>): boolean;
+		resolveMaxModelCalls?(input: Readonly<TInput>): number | undefined;
+		resolveModelCallBudget?(
+			input: Readonly<TInput>,
+			result: RuntimeToolResult,
+		): { readonly maxModelCalls?: number; readonly reviewAtModelCalls?: number } | undefined;
+	};
 	/** Optional host validator/decoder for schema dialects or normalized input. */
 	readonly validateInput?: (input: Record<string, unknown>) => TInput;
 	/** Optional provenance used by context composition reports. */
@@ -169,6 +181,8 @@ export interface ToolPolicyRequest {
 	readonly turnId: string;
 	readonly toolName: string;
 	readonly input: unknown;
+	readonly turnInput?: SessionInput;
+	readonly messages?: readonly Message[];
 }
 
 export interface ToolPolicy {

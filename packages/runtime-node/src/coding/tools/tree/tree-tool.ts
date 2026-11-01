@@ -93,6 +93,7 @@ export function createTreeTool(cwd: string, options: TreeToolOptions = {}): Runt
 	const fdPath = options.fdPath ?? "fd";
 	return {
 		name: "dir_tree",
+		executionMode: "parallel",
 		label: "dir_tree",
 		description: TREE_TOOL_DESCRIPTION,
 		inputSchema: TreeToolInputSchema,

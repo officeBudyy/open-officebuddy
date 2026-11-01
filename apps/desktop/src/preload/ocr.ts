@@ -12,8 +12,17 @@ export interface OcrPageResult {
 	width: number;
 	height: number;
 	source: "text-layer" | "ocr";
+	renderedImageDataUrl?: string;
 	ocrDurationMs?: number;
 	confidence?: number;
+	lines?: OcrLineResult[];
+}
+
+export interface OcrLineResult {
+	text: string;
+	box: [[number, number], [number, number], [number, number], [number, number]];
+	confidence: number;
+	confidenceScore: number;
 }
 
 export interface OcrPdfStartPayload {
@@ -25,6 +34,7 @@ export interface OcrPdfStartPayload {
 	langs: string[];
 	preferTextLayer: boolean;
 	textLayerMinChars: number;
+	capturePages: boolean;
 }
 
 export interface OcrImageStartPayload {

@@ -78,6 +78,7 @@ import { CodingAgentCompositionResourceRegistry } from "./session-lifecycle/reso
 import { createCodingAgentRuntimeSessionControls } from "./session-lifecycle/session-controls.js";
 import { createCodingAgentRuntimeToolSurface } from "./tool-surface/runtime-tool-surface.js";
 import { CodingAgentImageSettingsSnapshotRouter } from "./turn/image-settings-snapshot-router.js";
+import { createCodingAgentModelCallBudget } from "./turn/model-call-budget.js";
 
 /**
  * Coding Agent Runtime 的共享组合入口。
@@ -251,6 +252,7 @@ async function assembleCodingAgentRuntimeComposition(
 			streamFn: withConfiguredTransport(options.streamFn, options.runtimeHostModelSettings),
 			tracer: options.tracer,
 			tracing: options.tracing,
+			modelCallBudget: createCodingAgentModelCallBudget(options.sessionExtensionFunctions),
 		},
 		decorateAssembly: options.runtimeHostRetrySettings
 			? ({ request, session, assembly }) =>

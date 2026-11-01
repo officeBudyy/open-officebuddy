@@ -19,6 +19,7 @@ export const CODING_AGENT_BUILT_IN_TOOL_NAMES = [
 	"html_to_pdf",
 	"extract_text_from_pdf",
 	"extract_text_from_img",
+	"prepare_ocr_review",
 	"render_pdf_page",
 	"current_time",
 	"progress",

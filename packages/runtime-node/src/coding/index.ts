@@ -230,6 +230,14 @@ export {
 	type LsToolOptions,
 } from "./tools/ls/index.js";
 export {
+	createPrepareOcrReviewTool,
+	createPrepareOcrReviewToolRegistration,
+	PREPARE_OCR_REVIEW_TOOL_DESCRIPTION,
+	type PrepareOcrReviewToolInput,
+	PrepareOcrReviewToolInputSchema,
+	type PrepareOcrReviewToolOptions,
+} from "./tools/prepare-ocr-review/index.js";
+export {
 	convertToPng,
 	createReadTool,
 	createReadToolRegistration,

@@ -1,4 +1,5 @@
 import type { CodingToolRegistration } from "@astravia/runtime-tools";
+import { readPdfOcrPageCount, resolvePdfTranscriptionModelCallBudget } from "../execution/turn/ocr-workflow-policy.js";
 import { ALL_SCENARIOS, type ConversationScenario, type ToolCategory } from "../profiles/index.js";
 import type { CodingAgentRuntimeToolRegistration } from "../runtime-contracts/index.js";
 import {
@@ -54,6 +55,7 @@ const PLATFORM_TOOL_DECLARATIONS: Readonly<Record<string, PlatformToolDeclaratio
 	render_pdf_page: ALL_SCENARIO_DOCUMENT,
 	extract_text_from_pdf: ALL_SCENARIO_DOCUMENT,
 	extract_text_from_img: ALL_SCENARIO_DOCUMENT,
+	prepare_ocr_review: ALL_SCENARIO_DOCUMENT,
 });
 
 export function declareCodingAgentPlatformTool(
@@ -68,12 +70,54 @@ export function declareCodingAgentPlatformTool(
 	}
 	return {
 		...registration,
-		tool: declaration.description
-			? withDeclaredDescription(registration.tool, declaration.description)
-			: registration.tool,
+		tool: withDeclaredPdfOcrRunPolicy(
+			declaration.description
+				? withDeclaredDescription(registration.tool, declaration.description)
+				: registration.tool,
+		),
 		scopeUse: declaration.scopeUse,
 		category: declaration.category,
 	};
+}
+
+function withDeclaredPdfOcrRunPolicy(tool: CodingToolRegistration["tool"]): CodingToolRegistration["tool"] {
+	if (tool.name !== "extract_text_from_pdf") return tool;
+	const decorate = (candidate: CodingToolRegistration["tool"]): CodingToolRegistration["tool"] => {
+		const runPolicy = candidate.runPolicy;
+		return {
+			...candidate,
+			runPolicy: {
+				...runPolicy,
+				resolveStopOnError: (input) =>
+					runPolicy?.resolveStopOnError?.(input) === true || input.mode === "transcription",
+				resolveModelCallBudget: (input, result) => {
+					const existing = runPolicy?.resolveModelCallBudget?.(input, result);
+					if (input.mode !== "transcription") return existing;
+					const pageCount = readPdfOcrPageCount(result.details);
+					if (pageCount === undefined) return existing;
+					const resolved = resolvePdfTranscriptionModelCallBudget(pageCount);
+					return {
+						maxModelCalls: Math.min(existing?.maxModelCalls ?? resolved.maxModelCalls, resolved.maxModelCalls),
+						reviewAtModelCalls: Math.min(
+							existing?.reviewAtModelCalls ?? resolved.reviewAtModelCalls,
+							resolved.reviewAtModelCalls,
+						),
+					};
+				},
+			},
+		};
+	};
+	const decorated = decorate(tool);
+	const bindForTurn = tool.bindForTurn;
+	return bindForTurn
+		? {
+				...decorated,
+				bindForTurn: (context) => {
+					const binding = bindForTurn(context);
+					return { ...binding, tool: decorate(binding.tool) };
+				},
+			}
+		: decorated;
 }
 
 function withDeclaredDescription(

@@ -1,4 +1,5 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
+import { dirname, isAbsolute, resolve } from "node:path";
 import type { RuntimeToolDefinition } from "@astravia/runtime-core/kernel";
 import { type Static, Type } from "@sinclair/typebox";
 import {
@@ -9,8 +10,12 @@ import {
 	type DesktopCommandResult,
 } from "../../shared/desktop-command.js";
 import {
+	createOcrSourceFingerprint,
+	matchesOcrRequest,
+	matchesOcrSourceFingerprint,
 	type OcrJsonDocument,
 	type OcrPageResult,
+	type OcrRequestSignature,
 	parseOcrDesktopResponse,
 	parseOcrJsonDocument,
 } from "../../shared/ocr-document.js";
@@ -22,6 +27,12 @@ export const ExtractTextFromPdfToolInputSchema = Type.Object({
 		Type.String({ description: "Brief user-facing reason for this tool call (max 100 chars).", maxLength: 100 }),
 	),
 	input: Type.String({ description: "Path to the source PDF file." }),
+	mode: Type.Optional(
+		Type.Union([Type.Literal("extract"), Type.Literal("transcription")], {
+			description:
+				'Use "transcription" when rebuilding a document without guessing uncertain characters. Default "extract".',
+		}),
+	),
 	output: Type.Optional(
 		Type.String({
 			description: "Path to write the full structured JSON. Default: <input>.ocr.json next to the source.",
@@ -54,6 +65,17 @@ export interface ExtractTextFromPdfToolOptions {
 	readonly process: CommandProcessPort;
 	readonly executionGate: AsyncExecutionGate;
 	readonly modelOrder?: number;
+}
+
+export interface ExtractTextFromPdfToolDetails {
+	readonly workflow: {
+		readonly kind: "pdf_extract" | "pdf_transcription";
+		readonly pageCount: number;
+		readonly cache: "hit" | "miss";
+		readonly documentVersion: number;
+		readonly pageCaptures: boolean;
+		readonly outputPath: string;
+	};
 }
 
 const DEFAULT_MAX_CHARS = 8000;
@@ -152,6 +174,25 @@ function buildAgentText(document: OcrJsonDocument, maxChars: number, outputPath:
 	return `${body}\n---\ntotal_pages=${metaNumber(document, "totalPages", "?")} processed=${metaNumber(document, "processedPages", "?")} text_layer=${metaNumber(document, "textLayerPages", 0)} ocr=${metaNumber(document, "ocrPages", 0)} duration_ms=${metaNumber(document, "durationMs", "?")} engine=${metaString(document, "engine")}\noutput: ${outputPath}`;
 }
 
+function transcriptionGuidance(document: OcrJsonDocument): string {
+	const lineCount = document.pages.reduce((total, page) => total + (page.lines?.length ?? 0), 0);
+	const lowConfidenceLines = document.pages.reduce(
+		(total, page) => total + (page.lines?.filter((line) => line.confidenceScore < 75).length ?? 0),
+		0,
+	);
+	return [
+		"",
+		"TRANSCRIPTION MODE",
+		`line_boxes=${lineCount} low_confidence_lines=${lowConfidenceLines}`,
+		"Use this OCR result as the single transcription baseline. Do not re-OCR the same pages unless the source or DPI changes.",
+		'Call prepare_ocr_review once with reviewMode="transcription" to inspect every page overview plus risky lines; do not render/read pages separately.',
+		"Preserve observed headings, paragraphs, and tables. Never infer uncertain characters from semantics; write [待核对].",
+		"Checksums, totals, and formulas are anomaly signals only, never evidence for replacing a character.",
+		"Stop when the requested artifacts exist, page/section counts match the source, and the coverage review has no unresolved visual mismatch.",
+		"Keep QA notes in the separate check report; do not add explanation pages to the reconstructed document unless requested.",
+	].join("\n");
+}
+
 export function createExtractTextFromPdfTool(
 	cwd: string,
 	options: ExtractTextFromPdfToolOptions,
@@ -167,48 +208,128 @@ export function createExtractTextFromPdfTool(
 			reportPhase?.("locate");
 			const inputPath = resolveExistingPath(input.input, cwd);
 			const outputPath = resolveToCwd(input.output ?? `${inputPath}.ocr.json`, cwd);
-			const desktop = await options.desktop.locate();
 			const renderDpi = await resolveRenderDpi(inputPath, input.pages, input.dpi, options.process, signal);
-			const args = ["--ocr-pdf", inputPath, "--output", outputPath];
-			if (input.pages) args.push("--pages", input.pages);
-			args.push("--dpi", String(renderDpi));
-			if (input.preferTextLayer === false) args.push("--no-text-layer");
-			reportPhase?.("ocr");
-			let result: DesktopCommandResult;
-			try {
-				result = await options.executionGate.run(async () => {
-					if (signal.aborted) throw new Error("Operation aborted");
-					return options.desktop.run(desktop.path, args, {
-						signal,
-						timeoutMs: OCR_TIMEOUT_MS,
-						maxBufferBytes: 32 * 1024 * 1024,
+			const source = await createOcrSourceFingerprint(inputPath);
+			const requestSignature: OcrRequestSignature = {
+				pages: input.pages ?? "all",
+				dpi: renderDpi,
+				preferTextLayer: input.preferTextLayer !== false,
+				textLayerMinChars: 20,
+				capturePages: input.mode === "transcription",
+			};
+			let cache: "hit" | "miss" = "miss";
+			let staleNote = "";
+			let document = await readReusableCache(outputPath, source, requestSignature, signal);
+			if (document) {
+				cache = "hit";
+				reportPhase?.("cache-hit");
+			} else {
+				const desktop = await options.desktop.locate();
+				const args = ["--ocr-pdf", inputPath, "--output", outputPath];
+				if (input.mode === "transcription") args.push("--capture-pages");
+				if (input.pages) args.push("--pages", input.pages);
+				args.push("--dpi", String(renderDpi));
+				if (input.preferTextLayer === false) args.push("--no-text-layer");
+				reportPhase?.("ocr");
+				let result: DesktopCommandResult;
+				try {
+					result = await options.executionGate.run(async () => {
+						if (signal.aborted) throw new Error("Operation aborted");
+						return options.desktop.run(desktop.path, args, {
+							signal,
+							timeoutMs: OCR_TIMEOUT_MS,
+							maxBufferBytes: 32 * 1024 * 1024,
+						});
 					});
-				});
-			} catch (error) {
-				if (error instanceof DesktopCommandAbortedError) throw new Error("Operation aborted");
-				throw error;
+				} catch (error) {
+					if (error instanceof DesktopCommandAbortedError) throw new Error("Operation aborted");
+					throw error;
+				}
+				if (signal.aborted) throw new Error("Operation aborted");
+				const response = parseOcrDesktopResponse(result.stdout);
+				if (!response.ok) {
+					const message = response.error?.message ?? (result.stderr.trim() || "Unknown OCR error");
+					throw new Error(`Astravia Desktop OCR failed: ${message}`);
+				}
+				if (!response.output) throw new Error("Astravia Desktop did not return an output path");
+				reportPhase?.("read");
+				document = parseOcrJsonDocument(await readFile(response.output, "utf8"));
+				staleNote = desktop.staleConfiguredPath
+					? `\nNote: configured astraviaAppPath was stale and a fallback path was used: ${desktop.staleConfiguredPath}`
+					: "";
 			}
-			if (signal.aborted) throw new Error("Operation aborted");
-			const response = parseOcrDesktopResponse(result.stdout);
-			if (!response.ok) {
-				const message = response.error?.message ?? (result.stderr.trim() || "Unknown OCR error");
-				throw new Error(`Astravia Desktop OCR failed: ${message}`);
+			if (!document) throw new Error("Astravia Desktop did not produce an OCR document");
+			if (input.mode === "transcription") {
+				await assertTranscriptionDocument(document, outputPath, source, requestSignature);
 			}
-			if (!response.output) throw new Error("Astravia Desktop did not return an output path");
-			reportPhase?.("read");
-			const document = parseOcrJsonDocument(await readFile(response.output, "utf8"));
-			const staleNote = desktop.staleConfiguredPath
-				? `\nNote: configured astraviaAppPath was stale and a fallback path was used: ${desktop.staleConfiguredPath}`
-				: "";
 			return {
 				content: [
 					{
 						type: "text",
-						text: `${buildAgentText(document, input.maxChars ?? DEFAULT_MAX_CHARS, response.output)}${staleNote}`,
+						text: `${buildAgentText(document, input.maxChars ?? DEFAULT_MAX_CHARS, outputPath)}${
+							input.mode === "transcription" ? transcriptionGuidance(document) : ""
+						}${staleNote}`,
 					},
 				],
-				details: undefined,
+				details: {
+					workflow: {
+						kind: input.mode === "transcription" ? "pdf_transcription" : "pdf_extract",
+						pageCount: document.pages.length,
+						cache,
+						documentVersion: document.version,
+						pageCaptures: document.capabilities?.pageCaptures === true,
+						outputPath,
+					},
+				},
 			};
 		},
 	};
+}
+
+async function readReusableCache(
+	outputPath: string,
+	source: Awaited<ReturnType<typeof createOcrSourceFingerprint>>,
+	request: OcrRequestSignature,
+	signal: AbortSignal,
+): Promise<OcrJsonDocument | undefined> {
+	try {
+		signal.throwIfAborted();
+		const document = parseOcrJsonDocument(await readFile(outputPath, "utf8"));
+		if (!matchesOcrSourceFingerprint(document, source) || !matchesOcrRequest(document, request)) return undefined;
+		if (request.capturePages && !(await hasCompletePageCaptures(document, outputPath))) return undefined;
+		return document;
+	} catch {
+		signal.throwIfAborted();
+		return undefined;
+	}
+}
+
+async function assertTranscriptionDocument(
+	document: OcrJsonDocument,
+	outputPath: string,
+	source: Awaited<ReturnType<typeof createOcrSourceFingerprint>>,
+	request: OcrRequestSignature,
+): Promise<void> {
+	if (!matchesOcrSourceFingerprint(document, source) || !matchesOcrRequest(document, request)) {
+		throw new Error(
+			"OCR transcription output is missing a matching version-2 source fingerprint/request signature. Rebuild officebuddy Desktop and rerun; stale OCR JSON cannot be used.",
+		);
+	}
+	if (document.capabilities?.pageCaptures !== true || !(await hasCompletePageCaptures(document, outputPath))) {
+		throw new Error("OCR transcription output is missing captured page images required for coverage review.");
+	}
+}
+
+async function hasCompletePageCaptures(document: OcrJsonDocument, outputPath: string): Promise<boolean> {
+	if (document.pages.length === 0) return false;
+	for (const page of document.pages) {
+		if (!page.imagePath) return false;
+		const pagePath = isAbsolute(page.imagePath) ? page.imagePath : resolve(dirname(outputPath), page.imagePath);
+		try {
+			await stat(pagePath);
+		} catch {
+			return false;
+		}
+	}
+	return true;
 }

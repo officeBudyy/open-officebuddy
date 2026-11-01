@@ -129,6 +129,7 @@ export function createReadTool(cwd: string, options: ReadToolOptions = {}): Runt
 
 	return {
 		name: "read",
+		executionMode: "parallel",
 		label: "read",
 		description: READ_TOOL_DESCRIPTION,
 		inputSchema: ReadToolInputSchema,

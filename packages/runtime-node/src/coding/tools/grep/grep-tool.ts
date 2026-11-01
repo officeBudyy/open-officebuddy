@@ -124,6 +124,7 @@ export function createGrepTool(cwd: string, options: GrepToolOptions = {}): Runt
 
 	return {
 		name: "grep",
+		executionMode: "parallel",
 		label: "grep",
 		description: GREP_TOOL_DESCRIPTION,
 		inputSchema: GrepToolInputSchema,

@@ -139,6 +139,42 @@ describe("StatelessAgentCoreTurnEngine", () => {
 		expect(canonicalEvents(modern)).toEqual(canonicalEvents(legacy));
 	});
 
+	it("builds a model-call frame for a tool-free budget stop response", async () => {
+		const contexts: Array<{ tools: number; messages: readonly Message[] }> = [];
+		const responses = [
+			assistant([{ type: "toolCall", id: "call-1", name: "echo", arguments: {} }], "toolUse"),
+			assistant([{ type: "text", text: "paused cleanly" }]),
+		];
+		let responseIndex = 0;
+		const engine = new StatelessAgentCoreTurnEngine({
+			model: model(),
+			modelCallBudget: {
+				thresholds: [1],
+				review: async () => ({ action: "stop_after_response" }),
+			},
+			streamFn: (_model, context) => {
+				contexts.push({ tools: context.tools?.length ?? 0, messages: context.messages });
+				const response = responses[responseIndex++];
+				if (!response) throw new Error("Missing response");
+				return recordedStream(response);
+			},
+		});
+		const tool: RuntimeToolDefinition = {
+			name: "echo",
+			label: "Echo",
+			description: "Echo",
+			inputSchema: { type: "object" },
+			async execute() {
+				return { content: [{ type: "text", text: "ok" }] };
+			},
+		};
+
+		const events = await run(engine, snapshot([tool]));
+
+		expect(contexts.map(({ tools }) => tools)).toEqual([1, 0]);
+		expect(events.at(-1)).toMatchObject({ type: "completed", stopReason: "stop" });
+	});
+
 	it("completes more than 100 model calls with the default limits", async () => {
 		const toolRounds = 101;
 		let toolExecutions = 0;

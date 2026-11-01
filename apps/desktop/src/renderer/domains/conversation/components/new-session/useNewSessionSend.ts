@@ -1,6 +1,8 @@
+import { i18n } from "@shared/i18n";
 import { perfSendBegin, perfSendMark } from "@shared/lib/perf-send";
 import type { OpenSessionOptions, SendMessageOptions, SessionExecutionMode } from "@shared/store/atoms";
 import { pendingSessionSendAtom } from "@shared/store/atoms";
+import { showToast } from "@shared/store/toast-atoms";
 import { getDefaultStore } from "jotai";
 import { useCallback, useRef } from "react";
 import { dispatchConversationFeed } from "../../services/conversation-feed-store";
@@ -29,6 +31,20 @@ interface NewSessionSendOptions {
 	 * 技能 / MCP / 插件白名单，渲染层不经手任何能力字段。
 	 */
 	readonly agentProfileId?: string;
+}
+
+const MISSING_MODEL_CREDENTIALS = /no credentials configured|no api key found|requires at least one available model/i;
+
+function showSessionCreateFailure(error: unknown): void {
+	const rawMessage = error instanceof Error ? error.message : String(error);
+	showToast({
+		variant: "error",
+		title: i18n.t("chat:newSession.errors.createFailedTitle"),
+		message: MISSING_MODEL_CREDENTIALS.test(rawMessage)
+			? i18n.t("chat:newSession.errors.modelCredentialsRequired")
+			: rawMessage,
+		durationMs: 0,
+	});
 }
 
 export function useNewSessionSend(options: NewSessionSendOptions): {
@@ -62,9 +78,10 @@ export function useNewSessionSend(options: NewSessionSendOptions): {
 					...(agentProfileId ? { agentProfileId } : {}),
 					navigateBeforeCreate: true,
 					preserveMessagesBeforeCreate: true,
-					onCreateError: () => {
+					onCreateError: (error) => {
 						getDefaultStore().set(pendingSessionSendAtom, null);
 						restoreStagedNewSessionSend(stagedInput);
+						showSessionCreateFailure(error);
 					},
 					onPromptReady: async () => {
 						await sendMessage(undefined, { interactionId, stagedInput }).catch((error: unknown) => {

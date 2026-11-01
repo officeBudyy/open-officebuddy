@@ -13,8 +13,19 @@ interface OcrPageResult {
 	width: number;
 	height: number;
 	source: "text-layer" | "ocr";
+	renderedImageDataUrl?: string;
 	ocrDurationMs?: number;
 	confidence?: number;
+	lines?: OcrLineResult[];
+}
+
+interface OcrLineResult {
+	text: string;
+	box: [[number, number], [number, number], [number, number], [number, number]];
+	/** Raw mean CTC logit emitted by ocr-web. */
+	confidence: number;
+	/** Coarse 0..100 score used for review prioritization. */
+	confidenceScore: number;
 }
 
 interface OcrPdfStartPayload {
@@ -26,6 +37,7 @@ interface OcrPdfStartPayload {
 	langs: string[];
 	preferTextLayer: boolean;
 	textLayerMinChars: number;
+	capturePages: boolean;
 }
 
 interface OcrImageStartPayload {
@@ -161,6 +173,16 @@ async function renderPageToCanvas(
 	return { canvas, width: canvas.width, height: canvas.height };
 }
 
+async function capturePagePng(pdf: pdfjsLib.PDFDocumentProxy, pageNum: number, dpi: number): Promise<string> {
+	const { canvas } = await renderPageToCanvas(pdf, pageNum, dpi);
+	try {
+		return canvas.toDataURL("image/png");
+	} finally {
+		canvas.width = 0;
+		canvas.height = 0;
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Engine + PdfOcr lifecycle
 // ---------------------------------------------------------------------------
@@ -199,7 +221,7 @@ function meanCtcConfidenceToScore(meanLogit: number): number {
 
 async function recognizeCanvas(
 	canvas: HTMLCanvasElement,
-): Promise<{ text: string; lines: number; ocrDurationMs: number; confidence: number }> {
+): Promise<{ text: string; lines: OcrLineResult[]; ocrDurationMs: number; confidence: number }> {
 	const engine = await getEngine();
 	const t0 = performance.now();
 	const r = await engine.recognize(canvas);
@@ -207,7 +229,12 @@ async function recognizeCanvas(
 	const meanConf = r.lines.length > 0 ? r.lines.reduce((acc, l) => acc + l.confidence, 0) / r.lines.length : 0;
 	return {
 		text: r.fullText.trim(),
-		lines: r.lines.length,
+		lines: r.lines.map((line) => ({
+			text: line.text,
+			box: line.box,
+			confidence: line.confidence,
+			confidenceScore: meanCtcConfidenceToScore(line.confidence),
+		})),
 		ocrDurationMs,
 		confidence: meanCtcConfidenceToScore(meanConf),
 	};
@@ -234,7 +261,7 @@ async function runImagePipeline(payload: OcrImageStartPayload): Promise<void> {
 
 			bridge.reportProgress(sessionId, { page: index + 1, total: images.length, phase: "ocr" });
 			const { text, lines, ocrDurationMs, confidence } = await recognizeCanvas(canvas);
-			log(`image ${index + 1}: lines=${lines} chars=${text.length} ms=${ocrDurationMs}`);
+			log(`image ${index + 1}: lines=${lines.length} chars=${text.length} ms=${ocrDurationMs}`);
 			pages.push({
 				page: index + 1,
 				text,
@@ -243,6 +270,7 @@ async function runImagePipeline(payload: OcrImageStartPayload): Promise<void> {
 				source: "ocr",
 				ocrDurationMs,
 				confidence,
+				lines,
 			});
 			canvas.width = 0;
 			canvas.height = 0;
@@ -267,7 +295,7 @@ async function runImagePipeline(payload: OcrImageStartPayload): Promise<void> {
 }
 
 async function runPdfPipeline(payload: OcrPdfStartPayload): Promise<void> {
-	const { sessionId, pdfBytes, pages, dpi, preferTextLayer, textLayerMinChars } = payload;
+	const { sessionId, pdfBytes, pages, dpi, preferTextLayer, textLayerMinChars, capturePages } = payload;
 	const bridge = window.__astraviaOcr;
 	try {
 		log(`loading PDF (${pdfBytes.byteLength} bytes)`);
@@ -296,12 +324,14 @@ async function runPdfPipeline(payload: OcrPdfStartPayload): Promise<void> {
 				try {
 					const textLayer = await extractTextLayer(probeDoc, pageNum, dpi);
 					if (textLayer.text.replace(/\s+/g, "").length >= textLayerMinChars) {
+						const renderedImageDataUrl = capturePages ? await capturePagePng(probeDoc, pageNum, dpi) : undefined;
 						results.push({
 							page: pageNum,
 							text: textLayer.text,
 							width: textLayer.width,
 							height: textLayer.height,
 							source: "text-layer",
+							...(renderedImageDataUrl ? { renderedImageDataUrl } : {}),
 						});
 						log(`page ${pageNum}: text-layer hit (${textLayer.text.length} chars)`);
 						continue;
@@ -326,8 +356,18 @@ async function runPdfPipeline(payload: OcrPdfStartPayload): Promise<void> {
 				const { page, canvas, width, height } = ocrTodo[i];
 				bridge.reportProgress(sessionId, { page, total: ocrTodo.length, phase: "ocr" });
 				const { text, lines, ocrDurationMs, confidence } = await recognizeCanvas(canvas);
-				log(`page ${page}: lines=${lines} chars=${text.length} ms=${ocrDurationMs}`);
-				results.push({ page, text, width, height, source: "ocr", ocrDurationMs, confidence });
+				log(`page ${page}: lines=${lines.length} chars=${text.length} ms=${ocrDurationMs}`);
+				results.push({
+					page,
+					text,
+					width,
+					height,
+					source: "ocr",
+					...(capturePages ? { renderedImageDataUrl: canvas.toDataURL("image/png") } : {}),
+					ocrDurationMs,
+					confidence,
+					lines,
+				});
 				canvas.width = 0;
 				canvas.height = 0;
 			}

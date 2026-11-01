@@ -6,6 +6,8 @@ All notable changes to `@astravia/runtime-core` are documented in this file.
 
 ### Fixed
 
+- 交互式模型调用预算选择停止时，即使该次总结调用刻意跳过工具解析，也会按需构建 Model Call Frame，不再报 `Missing model-call frame`。
+- Runtime Tool 的输入相关终端错误、结果相关软/硬模型调用预算会无损传入 Agent 执行层；产品预算可在 Turn 入口解析上限并在自然完成前校验必需工作流。Tool Policy 同时可读取本 Turn 输入与当前模型消息视图，执行产品级工具顺序约束。
 - 会话初始化、切模、设置档位与 Turn 绑定保留推理模型请求的原始 effort，修复 GPT-5.6 / GPT-6 及模型别名的 `xhigh` 在发送前被静默降为 `high`；非推理模型仍关闭推理。
 
 - 手动与自动上下文压缩提交后会立即刷新 Context Usage，并通过一次 `compaction.end` 事件通知宿主；队列压缩不再重复发送成功事件。
@@ -23,6 +25,7 @@ All notable changes to `@astravia/runtime-core` are documented in this file.
   避免异步创建越过关闭边界；并发和失败后的关闭仍可重试。
 - 内部 continuation 消息继续保留在模型上下文与会话树中，但不再被面向用户的历史投影误标为真人输入。
 - 内部 continuation 消息在输入队列中标记为 `internal`：仍借队列做排序与 one-at-a-time 节流，但 `queue.changed` 镜像与 `getQueueState` 的用户可见投影都会剔除它，宿主不会再把它当成"已消费的用户输入"补出用户气泡；完整队列快照（持久化 sidecar 用）保持不变。
+- Session 输入队列的上下文条目现在可返回稳定 ID，并支持按 ID 撤销；产品层可在异步结果已经被当前 Turn 主动读取时取消重复的内部完成通知，同时继续保持队列顺序和用户可见投影不变。
 
 ### Changed
 

@@ -26,6 +26,7 @@ const SAMPLES: ReadonlyArray<{ text: string; kind: ChatErrorKind }> = [
 	{ text: "401 Unauthorized", kind: "auth" },
 	{ text: '{"error":{"type":"authentication_error","message":"invalid x-api-key"}}', kind: "auth" },
 	{ text: "No API key found for provider anthropic", kind: "auth" },
+	{ text: "No credentials configured for any available model", kind: "auth" },
 	// rate_limit
 	{ text: '429 {"error":{"type":"rate_limit_exceeded"}}', kind: "rate_limit" },
 	{ text: '{"type":"overloaded_error","message":"Overloaded"}', kind: "rate_limit" },

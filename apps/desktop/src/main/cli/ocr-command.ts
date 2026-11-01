@@ -1,7 +1,9 @@
+import { createHash } from "node:crypto";
 import { constants, writeSync } from "node:fs";
-import { access, mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { runImageOcr, runPdfOcr } from "../ocr/pdf-ocr.js";
+import { persistCapturedPageImages } from "./ocr-page-images.js";
 
 // ---------------------------------------------------------------------------
 // Headless OCR CLI (agent-friendly)
@@ -15,7 +17,7 @@ import { runImageOcr, runPdfOcr } from "../ocr/pdf-ocr.js";
 //            and parse line-by-line. Default verbosity emits only progress +
 //            error events; --verbose adds renderer console mirroring.
 // Output JSON document (written to <output>):
-//   { "version": 1, "meta": {...}, "pages": [...] }
+//   { "version": 2, "source": {...}, "request": {...}, "capabilities": {...}, "meta": {...}, "pages": [...] }
 
 export type OcrCliCommand =
 	| { type: "help" }
@@ -32,6 +34,7 @@ export type OcrCliCommand =
 			quiet: boolean;
 			preferTextLayer: boolean;
 			textLayerMinChars: number;
+			capturePages: boolean;
 	  }
 	| {
 			type: "ocr-img";
@@ -49,8 +52,18 @@ export interface OcrPageResult {
 	width: number;
 	height: number;
 	source: "text-layer" | "ocr";
+	renderedImageDataUrl?: string;
+	imagePath?: string;
 	ocrDurationMs?: number;
 	confidence?: number;
+	lines?: OcrLineResult[];
+}
+
+export interface OcrLineResult {
+	text: string;
+	box: [[number, number], [number, number], [number, number], [number, number]];
+	confidence: number;
+	confidenceScore: number;
 }
 
 export interface OcrCliResponse {
@@ -78,11 +91,11 @@ Usage:
 
 Description:
   Run local OCR on a multi-page PDF using officebuddy Desktop's bundled Electron
-  renderer plus an in-process Tesseract.js pipeline. No network calls.
+  renderer plus an in-process PP-OCRv5 pipeline. No network calls.
 
   By default, pages with an embedded text layer are extracted directly
   (effectively perfect accuracy + ~10x faster). Pages without a usable text
-  layer fall through to Tesseract OCR (chi_sim + eng).
+  layer fall through to PP-OCRv5 (Chinese + English).
 
 Options:
   --output <path>             Required output JSON path.
@@ -92,6 +105,8 @@ Options:
   --no-text-layer             Skip text-layer probe; force full OCR.
   --text-layer-min-chars <n>  If a page's text layer has fewer chars than
                               this, fall back to OCR (default: 20).
+  --capture-pages             Save each rendered PDF page as PNG beside the
+                              output JSON and add imagePath to each page.
   --progress                  Emit NDJSON progress events on stderr.
   --verbose                     Mirror renderer console.log to stderr (verbose).
   --quiet                     Suppress all stderr except structured errors.
@@ -110,21 +125,28 @@ Output protocol:
 
 Output JSON file <output> structure:
   {
-    "version": 1,
+    "version": 2,
+    "source": { "algorithm": "sha256", "sha256": "...", "size": 123, "mtimeMs": 0 },
+    "request": { "pages": "all", "dpi": 200, "preferTextLayer": true,
+      "textLayerMinChars": 20, "capturePages": true },
+    "capabilities": { "pageCaptures": true, "lineBoxes": true },
     "meta": {
       "input": "/abs/path.pdf",
       "totalPages": 42,
       "processedPages": 42,
       "textLayerPages": 30,
       "ocrPages": 12,
-      "engine": "tesseract.js@7+tessdata_fast",
+      "engine": "ocr-web@0.2.1+ppocrv5",
       "durationMs": 142000,
+      "renderDpi": 200,
       "startedAt": "2026-05-08T01:23:45.000Z"
     },
     "pages": [
       { "page": 1, "source": "text-layer", "text": "...", "width": 1240, "height": 1754 },
       { "page": 2, "source": "ocr", "text": "...", "width": 1240, "height": 1754,
-        "ocrDurationMs": 1532, "confidence": 87.4 }
+        "ocrDurationMs": 1532, "confidence": 87.4,
+        "lines": [{ "text": "...", "box": [[0,0],[10,0],[10,5],[0,5]],
+          "confidence": 0.8, "confidenceScore": 70 }] }
     ]
   }
 
@@ -198,6 +220,7 @@ function parseOcrPdfOptions(args: string[]): Omit<Extract<OcrCliCommand, { type:
 	let quiet = false;
 	let preferTextLayer = true;
 	let textLayerMinChars = 20;
+	let capturePages = false;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -228,6 +251,10 @@ function parseOcrPdfOptions(args: string[]): Omit<Extract<OcrCliCommand, { type:
 		}
 		if (arg === "--text-layer-min-chars") {
 			textLayerMinChars = parseIntOption("--text-layer-min-chars", args[++i], 0);
+			continue;
+		}
+		if (arg === "--capture-pages") {
+			capturePages = true;
 			continue;
 		}
 		if (arg === "--progress") {
@@ -261,7 +288,19 @@ function parseOcrPdfOptions(args: string[]): Omit<Extract<OcrCliCommand, { type:
 		throw new OcrCliError("ARGUMENT_ERROR", 2, "--quiet and --verbose are mutually exclusive");
 	}
 
-	return { input, output, pages, dpi, langs, progress, verbose, quiet, preferTextLayer, textLayerMinChars };
+	return {
+		input,
+		output,
+		pages,
+		dpi,
+		langs,
+		progress,
+		verbose,
+		quiet,
+		preferTextLayer,
+		textLayerMinChars,
+		capturePages,
+	};
 }
 
 function parseOcrImgOptions(args: string[]): Omit<Extract<OcrCliCommand, { type: "ocr-img" }>, "type"> {
@@ -396,6 +435,7 @@ export async function runOcrCliCommand(command: OcrCliCommand): Promise<number> 
 		const input = resolve(command.input);
 		const output = resolve(command.output);
 		await ensureReadableFile(input);
+		const source = await createSourceFingerprint(input);
 		await mkdir(dirname(output), { recursive: true });
 
 		const onProgress = command.progress
@@ -422,6 +462,7 @@ export async function runOcrCliCommand(command: OcrCliCommand): Promise<number> 
 						langs: command.langs,
 						preferTextLayer: command.preferTextLayer,
 						textLayerMinChars: command.textLayerMinChars,
+						capturePages: command.capturePages,
 						debug: command.verbose,
 						onProgress: onProgress as never,
 						onLog,
@@ -430,8 +471,35 @@ export async function runOcrCliCommand(command: OcrCliCommand): Promise<number> 
 		const durationMs = Date.now() - startedAt;
 		const textLayerPages = result.pages.filter((p) => p.source === "text-layer").length;
 		const ocrPages = result.pages.length - textLayerPages;
+		const pages =
+			command.type === "ocr-pdf" && command.capturePages
+				? await persistCapturedPageImages(output, result.pages)
+				: result.pages;
+		const sourceAfter = await stat(input);
+		if (sourceAfter.size !== source.size || sourceAfter.mtimeMs !== source.mtimeMs) {
+			throw new OcrCliError("SOURCE_CHANGED", 3, "OCR source changed while it was being processed; retry the task");
+		}
 		const document = {
-			version: 1 as const,
+			version: 2 as const,
+			source,
+			...(command.type === "ocr-pdf"
+				? {
+						request: {
+							pages: command.pages,
+							dpi: command.dpi,
+							preferTextLayer: command.preferTextLayer,
+							textLayerMinChars: command.textLayerMinChars,
+							capturePages: command.capturePages,
+						},
+					}
+				: {}),
+			capabilities: {
+				pageCaptures:
+					command.type === "ocr-pdf" &&
+					command.capturePages &&
+					pages.every((page) => "imagePath" in page && Boolean(page.imagePath)),
+				lineBoxes: pages.filter((page) => page.source === "ocr").every((page) => Array.isArray(page.lines)),
+			},
 			meta: {
 				input,
 				totalPages: result.totalPages,
@@ -441,8 +509,9 @@ export async function runOcrCliCommand(command: OcrCliCommand): Promise<number> 
 				engine: result.engine,
 				durationMs,
 				startedAt: startedAtIso,
+				renderDpi: command.type === "ocr-pdf" ? command.dpi : undefined,
 			},
-			pages: result.pages,
+			pages,
 		};
 		await writeFile(output, JSON.stringify(document, null, 2), "utf8");
 
@@ -465,4 +534,19 @@ export async function runOcrCliCommand(command: OcrCliCommand): Promise<number> 
 		writeStdoutJson({ ok: false, error: { code, message } });
 		return exitCode;
 	}
+}
+
+async function createSourceFingerprint(filePath: string): Promise<{
+	readonly algorithm: "sha256";
+	readonly sha256: string;
+	readonly size: number;
+	readonly mtimeMs: number;
+}> {
+	const [bytes, metadata] = await Promise.all([readFile(filePath), stat(filePath)]);
+	return {
+		algorithm: "sha256",
+		sha256: createHash("sha256").update(bytes).digest("hex"),
+		size: metadata.size,
+		mtimeMs: metadata.mtimeMs,
+	};
 }

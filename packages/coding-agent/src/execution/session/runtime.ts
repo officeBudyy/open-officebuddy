@@ -57,6 +57,8 @@ export class CodingAgentSessionExecutionRuntime {
 	private readonly catalog: GenerationalCodingToolCatalog;
 	private disposeTaskEvents: (() => void) | undefined;
 	private disposeTaskNotifications: (() => void) | undefined;
+	private session: AgentSession | undefined;
+	private readonly pendingTaskNotificationQueueIds = new Map<string, string>();
 	private readonly fullAccessRegistrations: readonly CodingAgentRuntimeToolRegistration[];
 	private readonly sourceBindings = new Map<string, CapabilityBinding | undefined>();
 	private mode: SessionExecutionMode;
@@ -69,7 +71,10 @@ export class CodingAgentSessionExecutionRuntime {
 			...declareCodingAgentPlatformTools(
 				options.environment.registrations.filter(({ tool }) => !BACKGROUND_TASK_TOOL_NAMES.has(tool.name)),
 			),
-			createTaskOutputToolRegistration({ backgroundService: this.backgroundService }),
+			createTaskOutputToolRegistration({
+				backgroundService: this.backgroundService,
+				onCompletedRead: (task) => this.acknowledgeTaskNotification(task.id),
+			}),
 			createTaskStopToolRegistration({ backgroundService: this.backgroundService }),
 		].map((registration) => inheritModelOrder(registration, options.resolveToolEntry?.(registration.tool.name)));
 		for (const toolName of SESSION_EXECUTION_TOOL_NAMES) {
@@ -107,6 +112,7 @@ export class CodingAgentSessionExecutionRuntime {
 	}
 
 	createExecutionController(session: AgentSession): RuntimeSessionExecutionController {
+		this.session = session;
 		return {
 			isBusy: () =>
 				session.state === "running" || session.state === "cancelling" || session.state === "recovery_required",
@@ -140,21 +146,30 @@ export class CodingAgentSessionExecutionRuntime {
 				});
 		});
 		this.disposeTaskNotifications = this.backgroundService.subscribeNotifications((task) => {
-			void this.options.resourceContext
-				.deliverAsyncContext([
-					{
-						type: "task-notification",
-						content: [{ type: "text", text: buildCodingAgentBackgroundCommandNotification(task) }],
-						modelVisible: true,
-						// 任务完成通知是内部控制信号：模型需要被唤醒，但它不该作为对话消息插入用户
-						// 的聊天流，用户通过后台任务面板与角标获知结果（issue #3）。
-						display: false,
-					},
-				])
-				.catch((error: unknown) => {
-					console.warn("[coding-agent-runtime] failed to deliver background task notification", error);
-				});
+			const record = {
+				type: "task-notification",
+				content: [{ type: "text" as const, text: buildCodingAgentBackgroundCommandNotification(task) }],
+				modelVisible: true,
+				// 任务完成通知是内部控制信号：模型需要被唤醒，但它不该作为对话消息插入用户
+				// 的聊天流，用户通过后台任务面板与角标获知结果（issue #3）。
+				display: false,
+			};
+			if (this.session?.state === "running") {
+				const queued = this.session.queueContext("followUp", [record], { internal: true });
+				if (queued.id) this.pendingTaskNotificationQueueIds.set(task.id, queued.id);
+				return;
+			}
+			void this.options.resourceContext.deliverAsyncContext([record]).catch((error: unknown) => {
+				console.warn("[coding-agent-runtime] failed to deliver background task notification", error);
+			});
 		});
+	}
+
+	private acknowledgeTaskNotification(taskId: string): void {
+		const queueId = this.pendingTaskNotificationQueueIds.get(taskId);
+		if (!queueId) return;
+		this.pendingTaskNotificationQueueIds.delete(taskId);
+		this.session?.removeQueued(queueId);
 	}
 
 	private unbindBackgroundTaskObservers(): void {
@@ -196,6 +211,8 @@ export class CodingAgentSessionExecutionRuntime {
 
 	async dispose(): Promise<void> {
 		this.unbindBackgroundTaskObservers();
+		this.pendingTaskNotificationQueueIds.clear();
+		this.session = undefined;
 		try {
 			await this.backgroundService.shutdown();
 		} finally {

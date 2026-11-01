@@ -181,6 +181,149 @@ describe("runAgentTurn", () => {
 		});
 	});
 
+	it("stops immediately when a tool marks errors as terminal", async () => {
+		const schema = Type.Object({ value: Type.String() });
+		const tool: RuntimeToolDefinition<typeof schema> = {
+			name: "terminal",
+			description: "Terminal failure",
+			inputSchema: schema,
+			runPolicy: { stopOnError: true },
+			async execute() {
+				return {
+					content: [{ type: "text", text: "batch OCR failed" }],
+					details: { code: "OCR_BATCH_FAILED", retryable: false },
+					isError: true,
+				};
+			},
+		};
+		const run = runAgentTurn({
+			...request([]),
+			resolveTools: async () => [tool],
+			resolveModelCall: scriptedResolver([
+				successResponse(assistant([toolCall("terminal-1", "terminal", { value: "x" })], "toolUse")),
+			]),
+		});
+
+		await expect(run.result).resolves.toMatchObject({
+			status: "failed",
+			modelCalls: 1,
+			toolCalls: 1,
+			failure: { code: "OCR_BATCH_FAILED", message: "batch OCR failed", retryable: false },
+		});
+	});
+
+	it("lowers the active model-call ceiling from validated tool input", async () => {
+		const schema = Type.Object({ mode: Type.Literal("bounded") });
+		const tool: RuntimeToolDefinition<typeof schema> = {
+			name: "bounded",
+			description: "Bound the run",
+			inputSchema: schema,
+			runPolicy: { resolveMaxModelCalls: () => 2 },
+			async execute() {
+				return { content: [{ type: "text", text: "continue" }], details: {} };
+			},
+		};
+		const run = runAgentTurn({
+			...request([]),
+			resolveTools: async () => [tool],
+			resolveModelCall: scriptedResolver([
+				successResponse(assistant([toolCall("bounded-1", "bounded", { mode: "bounded" })], "toolUse")),
+				successResponse(assistant([toolCall("bounded-2", "bounded", { mode: "bounded" })], "toolUse")),
+			]),
+		});
+
+		await expect(run.result).resolves.toMatchObject({ status: "max_model_calls", modelCalls: 2, toolCalls: 2 });
+	});
+
+	it("resolves a hard model-call ceiling before the first provider request", async () => {
+		let calls = 0;
+		const run = runAgentTurn({
+			...request([]),
+			modelCallBudget: {
+				thresholds: [],
+				resolveMaxModelCalls: async () => 2,
+				review: async () => ({ action: "continue", instruction: "continue" }),
+			},
+			resolveTools: async () => [noopTool()],
+			resolveModelCall: async () => {
+				calls += 1;
+				return resolveResponse(
+					successResponse(assistant([toolCall(`entry-${calls}`, "noop", {})], "toolUse")),
+					calls,
+				);
+			},
+		});
+
+		await expect(run.result).resolves.toMatchObject({ status: "max_model_calls", modelCalls: 2 });
+		expect(calls).toBe(2);
+	});
+
+	it("adds a result-aware soft review before a dynamic hard ceiling", async () => {
+		const schema = Type.Object({ mode: Type.Literal("transcription") });
+		const reviews: number[] = [];
+		const tool: RuntimeToolDefinition<typeof schema, { readonly pages: number }> = {
+			name: "ocr",
+			description: "OCR",
+			inputSchema: schema,
+			runPolicy: {
+				resolveModelCallBudget: (_input, result) =>
+					result.details.pages === 12 ? { maxModelCalls: 4, reviewAtModelCalls: 3 } : undefined,
+			},
+			async execute() {
+				return { content: [{ type: "text", text: "OCR complete" }], details: { pages: 12 } };
+			},
+		};
+		let calls = 0;
+		const run = runAgentTurn({
+			...request([]),
+			modelCallBudget: {
+				thresholds: [],
+				async review({ threshold }) {
+					reviews.push(threshold);
+					return { action: "stop_after_response", instruction: "Summarize and stop." };
+				},
+			},
+			resolveTools: async () => [tool],
+			resolveModelCall: async () => {
+				calls += 1;
+				return resolveResponse(
+					successResponse(
+						calls <= 3
+							? assistant([toolCall(`ocr-${calls}`, "ocr", { mode: "transcription" })], "toolUse")
+							: assistant([{ type: "text", text: "summary" }]),
+					),
+					calls,
+				);
+			},
+		});
+
+		await expect(run.result).resolves.toMatchObject({ status: "completed", modelCalls: 4 });
+		expect(reviews).toEqual([3]);
+	});
+
+	it("retries a premature final answer until the required workflow is complete", async () => {
+		let reviews = 0;
+		const run = runAgentTurn({
+			...request([
+				successResponse(assistant([{ type: "text", text: "premature" }])),
+				successResponse(assistant([{ type: "text", text: "complete" }])),
+			]),
+			modelCallBudget: {
+				thresholds: [],
+				review: async () => ({ action: "continue", instruction: "continue" }),
+				async reviewCompletion() {
+					reviews += 1;
+					return reviews === 1
+						? { action: "retry", instruction: "Use the required OCR workflow first." }
+						: { action: "accept" };
+				},
+			},
+		});
+
+		await expect(run.result).resolves.toMatchObject({ status: "completed", modelCalls: 2 });
+		expect(reviews).toBe(2);
+	});
+
 	it("lets a host validate and decode a non-TypeBox schema dialect", async () => {
 		const schema = Type.Object({ value: Type.Number() });
 		const executions: number[] = [];
@@ -335,6 +478,86 @@ describe("runAgentTurn", () => {
 
 		await expect(run.result).resolves.toMatchObject({ status: "max_model_calls", modelCalls: 2, toolCalls: 2 });
 		expect(executions).toBe(2);
+	});
+
+	it("asks at a soft model-call threshold and uses one tool-free response to stop cleanly", async () => {
+		const reviews: number[] = [];
+		const contexts: Array<{ messages: readonly Message[]; tools: readonly string[] }> = [];
+		const run = runAgentTurn({
+			...request([]),
+			resolveTools: async () => [typedTool(() => undefined)],
+			resolveModelCall: scriptedResolver(
+				[
+					successResponse(assistant([toolCall("work", "typed", { value: "x" })], "toolUse")),
+					successResponse(assistant([{ type: "text", text: "paused summary" }])),
+				],
+				(context) =>
+					contexts.push({
+						messages: [...context.messages],
+						tools: context.tools.map((tool) => tool.name),
+					}),
+			),
+			modelCallBudget: {
+				thresholds: [1],
+				async review({ modelCalls }) {
+					reviews.push(modelCalls);
+					return { action: "stop_after_response", instruction: "Summarize and stop without tools." };
+				},
+			},
+		});
+
+		await expect(run.result).resolves.toMatchObject({ status: "completed", modelCalls: 2, toolCalls: 1 });
+		expect(reviews).toEqual([1]);
+		expect(contexts[1]?.tools).toEqual([]);
+		expect(contexts[1]?.messages.at(-1)).toMatchObject({
+			role: "user",
+			content: "Summarize and stop without tools.",
+		});
+	});
+
+	it("runs adjacent opted-in read tools concurrently and preserves result order", async () => {
+		let release: (() => void) | undefined;
+		const gate = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		const started: string[] = [];
+		let bothStarted: (() => void) | undefined;
+		const both = new Promise<void>((resolve) => {
+			bothStarted = resolve;
+		});
+		const parallelTool = (name: string): RuntimeToolDefinition => ({
+			name,
+			description: name,
+			inputSchema: Type.Object({}),
+			executionMode: "parallel",
+			async execute() {
+				started.push(name);
+				if (started.length === 2) bothStarted?.();
+				await gate;
+				return { content: [{ type: "text", text: name }], details: {} };
+			},
+		});
+		const contexts: Message[][] = [];
+		const run = runAgentTurn({
+			...request([]),
+			resolveTools: async () => [parallelTool("first"), parallelTool("second")],
+			resolveModelCall: scriptedResolver(
+				[
+					successResponse(assistant([toolCall("one", "first", {}), toolCall("two", "second", {})], "toolUse")),
+					successResponse(assistant([{ type: "text", text: "done" }])),
+				],
+				(context) => contexts.push([...context.messages]),
+			),
+		});
+
+		await both;
+		expect(started).toEqual(["first", "second"]);
+		release?.();
+		await expect(run.result).resolves.toMatchObject({ status: "completed", toolCalls: 2 });
+		expect(contexts[1]?.slice(-2)).toMatchObject([
+			{ role: "toolResult", toolCallId: "one" },
+			{ role: "toolResult", toolCallId: "two" },
+		]);
 	});
 
 	it("rejects a tool batch before executing beyond the tool-call budget", async () => {

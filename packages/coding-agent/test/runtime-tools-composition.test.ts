@@ -18,6 +18,48 @@ function modelCallContext(signal = new AbortController().signal) {
 }
 
 describe("Coding Tools Runtime Composition Root", () => {
+	it("enforces the PDF transcription workflow through the compiled product tool policy", async () => {
+		const composition = createCodingToolsRuntimeComposition({
+			cwd: "C:/workspace",
+			environment: {
+				registrations: [
+					registration(tool("bash")),
+					registration(tool("extract_text_from_pdf")),
+					registration(tool("prepare_ocr_review")),
+				],
+				dispose() {},
+			},
+		});
+		const turnInput = {
+			message: {
+				role: "user" as const,
+				content: "对 scanned-report.pdf 做离线 OCR，生成 result.docx，无法确认写 [待核对]。",
+				timestamp: 1,
+			},
+		};
+
+		await expect(
+			composition.capabilities.toolPolicy.authorize(
+				{ sessionId: "session", turnId: "turn", toolName: "bash", input: {}, turnInput, messages: [] },
+				new AbortController().signal,
+			),
+		).rejects.toThrow("must start with extract_text_from_pdf");
+		await expect(
+			composition.capabilities.toolPolicy.authorize(
+				{
+					sessionId: "session",
+					turnId: "turn",
+					toolName: "extract_text_from_pdf",
+					input: { mode: "transcription" },
+					turnInput,
+					messages: [],
+				},
+				new AbortController().signal,
+			),
+		).resolves.toBe(true);
+		composition.dispose();
+	});
+
 	it("preserves complete tool results when the Host does not select an artifact policy", async () => {
 		const completeResult = { content: [{ type: "text" as const, text: "x".repeat(60 * 1024) }] };
 		const composition = createCodingToolsRuntimeComposition({

@@ -58,6 +58,7 @@ export function createLsTool(cwd: string, options: LsToolOptions = {}): RuntimeT
 
 	return {
 		name: "ls",
+		executionMode: "parallel",
 		label: "ls",
 		description: LS_TOOL_DESCRIPTION,
 		inputSchema: LsToolInputSchema,

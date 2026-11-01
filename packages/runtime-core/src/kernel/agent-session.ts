@@ -260,16 +260,19 @@ export class AgentSession {
 	queueContext(
 		behavior: SessionStreamingBehavior,
 		context: readonly SessionContextRecord[],
+		options?: { readonly internal?: boolean },
 	): QueuedSessionInputResult {
 		if (this.currentState === "closed" || this.currentState === "closing") {
 			throw sessionClosedError();
 		}
 		if (this.currentState === "recovery_required") throw turnPersistenceError();
 		const queuedBehavior = this.queueBehaviorAfterOperations(behavior);
+		const { id, pendingCount } = this.inputQueue.enqueueContextWithId(queuedBehavior, context, options);
 		return {
 			status: "queued",
 			behavior: queuedBehavior,
-			pendingCount: this.inputQueue.enqueueContext(queuedBehavior, context),
+			pendingCount,
+			id,
 		};
 	}
 

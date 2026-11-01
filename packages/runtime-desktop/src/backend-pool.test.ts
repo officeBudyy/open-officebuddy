@@ -95,6 +95,24 @@ describe("DesktopRuntimeBackendPool", () => {
 		}
 	});
 
+	it("reports missing model credentials before creating a session", async () => {
+		const cwd = await temporaryDirectory("desktop-runtime-no-credentials-");
+		const pool = new DesktopRuntimeBackendPool({
+			compositionDefaults: {
+				modelRegistry: modelRegistry([]),
+				initialThinkingLevel: "off",
+				resolveSystemPromptOptions: resolveTestSystemPromptOptions,
+			},
+		});
+		const runtime = new RuntimeHost({ sessionBackend: pool, getDefaultExecutionMode: () => "full-access" });
+		pools.push(pool);
+		runtimes.push(runtime);
+
+		await expect(runtime.createSession({ cwd, scenario: "batch" })).rejects.toThrow(
+			"No credentials configured for any available model",
+		);
+	});
+
 	it("reuses one scoped composition and isolates different workspaces", async () => {
 		const firstCwd = await temporaryDirectory("desktop-runtime-pool-first-");
 		const secondCwd = await temporaryDirectory("desktop-runtime-pool-second-");
@@ -811,11 +829,12 @@ describe("DesktopRuntimeBackendPool", () => {
 	}
 });
 
-function modelRegistry(): CodingAgentRuntimeModelSource {
+function modelRegistry(models: readonly Model<Api>[] = [MODEL]): CodingAgentRuntimeModelSource {
 	return {
 		refresh() {},
-		getAvailable: () => [MODEL],
-		find: (provider, modelId) => (provider === MODEL.provider && modelId === MODEL.id ? MODEL : undefined),
+		getAvailable: () => [...models],
+		find: (provider, modelId) =>
+			models.find((candidate) => candidate.provider === provider && candidate.id === modelId),
 		getApiKey: async () => "test-key",
 		setServerToken() {},
 		loadRemoteModels: async () => undefined,

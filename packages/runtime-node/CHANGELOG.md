@@ -18,6 +18,7 @@ All notable changes to `@astravia/runtime-node` are documented in this file.
 
 ### Changed
 
+- PDF 转录结果升级为带 SHA-256 源文件指纹、请求签名和能力声明的 v2 缓存；只有源文件、页范围、DPI 与完整页图均匹配时才复用。`prepare_ocr_review` 会优先沿用最近一次提取工具返回的实际 JSON 路径，转录模式覆盖每一页概览及低置信/数字公式等高风险行，并按页数限制复核切片数量（12 页最多 64 个切片、4 张联络表）；旧 JSON、指纹不符或缺页图会明确终止，不再回退 `pdftoppm` 逐页处理。模型调用预算由 Coding Agent 按页数动态决定。
 - 图片工具描述明确：具备视觉能力时优先通过 `read` 直接检查图片；`extract_text_from_img` 用于机器化 OCR 文本、元数据或结构化结果。
 
 - Node MCP supervisor 默认协议版本升级为 MCP 2025-11-25；协议包同时保留已支持版本列表供兼容策略使用。

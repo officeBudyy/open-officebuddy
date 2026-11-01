@@ -37,6 +37,7 @@ describe("Coding Agent specialized tool surface", () => {
 				platformRegistration("html_to_pdf"),
 				platformRegistration("extract_text_from_pdf"),
 				platformRegistration("extract_text_from_img"),
+				platformRegistration("prepare_ocr_review"),
 				platformRegistration("render_pdf_page"),
 			],
 			knowledgePageWriter: knowledgeOperations,
@@ -46,6 +47,7 @@ describe("Coding Agent specialized tool surface", () => {
 			toolContract("html_to_pdf", ALL_SCENARIOS, "doc"),
 			toolContract("extract_text_from_pdf", ALL_SCENARIOS, "doc"),
 			toolContract("extract_text_from_img", ALL_SCENARIOS, "doc"),
+			toolContract("prepare_ocr_review", ALL_SCENARIOS, "doc"),
 			toolContract("render_pdf_page", ALL_SCENARIOS, "doc"),
 			toolContract("progress", PROGRESS_TOOL_SCOPES, PROGRESS_TOOL_CATEGORY),
 			toolContract(
@@ -61,8 +63,19 @@ describe("Coding Agent specialized tool surface", () => {
 			expect(tool.inputSchema).toMatchObject({ type: "object" });
 		}
 		expect(registrations.map(({ tool }) => tool.modelOrder)).toEqual([
-			1_000, 1_100, 1_200, 1_300, 1_400, 1_600, 1_700,
+			1_000, 1_100, 1_200, 1_300, 1_350, 1_400, 1_600, 1_700,
 		]);
+		const extractPdf = registrations.find(({ tool }) => tool.name === "extract_text_from_pdf")?.tool;
+		expect(extractPdf?.runPolicy?.resolveStopOnError?.({ mode: "transcription" })).toBe(true);
+		expect(
+			extractPdf?.runPolicy?.resolveModelCallBudget?.(
+				{ mode: "transcription" },
+				{
+					content: [{ type: "text", text: "ok" }],
+					details: { workflow: { kind: "pdf_transcription", pageCount: 50 } },
+				},
+			),
+		).toEqual({ maxModelCalls: 20, reviewAtModelCalls: 16 });
 	});
 
 	it("freezes skill visibility and content per Turn", async () => {

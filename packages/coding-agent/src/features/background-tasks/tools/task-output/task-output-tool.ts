@@ -1,5 +1,9 @@
 import type { RuntimeToolDefinition } from "@astravia/runtime-core/kernel";
-import type { BackgroundCommandService, BackgroundCommandStatus } from "@astravia/runtime-tools";
+import type {
+	BackgroundCommandService,
+	BackgroundCommandSnapshot,
+	BackgroundCommandStatus,
+} from "@astravia/runtime-tools";
 import { type Static, Type } from "@sinclair/typebox";
 import { truncateBackgroundTaskOutputTail } from "../../output-truncation.js";
 import { TASK_OUTPUT_TOOL_DESCRIPTION } from "./description.js";
@@ -30,6 +34,7 @@ export interface TaskOutputToolDetails {
 
 export interface TaskOutputToolOptions {
 	readonly backgroundService: BackgroundCommandService;
+	readonly onCompletedRead?: (task: BackgroundCommandSnapshot) => void;
 }
 
 export function createTaskOutputTool(options: TaskOutputToolOptions): RuntimeToolDefinition<TaskOutputToolInput> {
@@ -49,6 +54,7 @@ export function createTaskOutputTool(options: TaskOutputToolOptions): RuntimeToo
 				fromStart,
 				advanceCursor: true,
 			});
+			if (task.status !== "running") options.onCompletedRead?.(task);
 			const statusLine =
 				task.status === "running"
 					? `Task ${task.id} is running (started ${new Date(task.startedAt).toISOString()})`

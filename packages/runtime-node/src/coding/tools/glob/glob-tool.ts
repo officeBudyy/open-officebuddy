@@ -234,6 +234,7 @@ export function createGlobTool(cwd: string, options: GlobToolOptions = {}): Runt
 
 	return {
 		name: "glob",
+		executionMode: "parallel",
 		label: "glob",
 		description: GLOB_TOOL_DESCRIPTION,
 		inputSchema: GlobToolInputSchema,

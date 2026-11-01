@@ -4,6 +4,7 @@ import { createDocToPdfToolRegistration } from "../tools/doc-to-pdf/index.js";
 import { createExtractTextFromImageToolRegistration } from "../tools/extract-text-from-image/index.js";
 import { createExtractTextFromPdfToolRegistration } from "../tools/extract-text-from-pdf/index.js";
 import { createHtmlToPdfToolRegistration } from "../tools/html-to-pdf/index.js";
+import { createPrepareOcrReviewToolRegistration } from "../tools/prepare-ocr-review/index.js";
 import {
 	createRenderPdfPageToolRegistration,
 	RenderPdfPageProcessAbortedError,
@@ -39,6 +40,7 @@ export function createNodeSpecializedToolRegistrations(
 			desktop,
 			executionGate: options.executionGate,
 		}),
+		createPrepareOcrReviewToolRegistration(cwd, { process: commandProcess }),
 		createRenderPdfPageToolRegistration(cwd, {
 			process: {
 				async run(args, signal) {

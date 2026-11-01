@@ -59,6 +59,7 @@ const SPECIALIZED_TOOL_MODEL_ORDER: Readonly<Record<string, number>> = {
 	html_to_pdf: CODING_AGENT_MODEL_TOOL_ORDER.htmlToPdf,
 	extract_text_from_pdf: CODING_AGENT_MODEL_TOOL_ORDER.extractTextFromPdf,
 	extract_text_from_img: CODING_AGENT_MODEL_TOOL_ORDER.extractTextFromImage,
+	prepare_ocr_review: CODING_AGENT_MODEL_TOOL_ORDER.prepareOcrReview,
 	render_pdf_page: CODING_AGENT_MODEL_TOOL_ORDER.renderPdfPage,
 };
 

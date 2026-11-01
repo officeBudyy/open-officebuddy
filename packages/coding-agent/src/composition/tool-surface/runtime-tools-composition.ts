@@ -18,6 +18,7 @@ import {
 	InMemoryCodingToolRegistry,
 	PRESERVE_CODING_TOOL_RESULT_POLICY,
 } from "@astravia/runtime-tools";
+import { assertPdfOcrWorkflowToolAllowed } from "../../execution/turn/ocr-workflow-policy.js";
 import {
 	createTaskOutputToolRegistration,
 	createTaskStopToolRegistration,
@@ -131,8 +132,14 @@ export function createCodingToolsRuntimeComposition(
 	const capabilities: RuntimeCapabilityDefinition = createDefaultRuntimeCapabilityDefinition({
 		features: [feature],
 		toolPolicy: {
-			async authorize(_request, signal) {
+			async authorize(request, signal) {
 				signal.throwIfAborted();
+				assertPdfOcrWorkflowToolAllowed({
+					turnInput: request.turnInput,
+					messages: request.messages,
+					toolName: request.toolName,
+					toolInput: request.input,
+				});
 				return true;
 			},
 		},

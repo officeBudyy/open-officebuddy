@@ -5,7 +5,9 @@ import {
 	getAIErrorDetails,
 	isAIError,
 	type Message,
+	type ToolResultMessage,
 } from "@astravia/ai";
+import { AgentToolExecutionError } from "../tool-execution-error.js";
 import { validateAgentRunLimits } from "./limits.js";
 import { executeRuntimeToolCalls } from "./tool-executor.js";
 import type {
@@ -26,6 +28,7 @@ interface RunState {
 	recoveryAttempts: number;
 	/** 自最近一次模型调用产出可用结果以来的连续恢复次数；恢复策略据此区分“重试仍失败”与“推进后再次失败”。 */
 	consecutiveRecoveryAttempts: number;
+	maxModelCalls?: number;
 	lastAssistantMessage?: AgentRunResult["lastAssistantMessage"];
 }
 
@@ -59,11 +62,24 @@ async function executeRun(
 		toolCalls: 0,
 		recoveryAttempts: 0,
 		consecutiveRecoveryAttempts: 0,
+		maxModelCalls: request.limits.maxModelCalls,
 	};
 	const emit = createEmitter(stream, request.observer);
+	const reviewThresholds = new Set(request.modelCallBudget?.thresholds ?? []);
+	const reviewedBudgetThresholds = new Set<number>();
 	emit({ type: "run_start" });
 
 	try {
+		const resolvedInitialMax = await request.modelCallBudget?.resolveMaxModelCalls?.({
+			messages: [...state.messages],
+			signal,
+		});
+		if (resolvedInitialMax !== undefined) {
+			if (!Number.isInteger(resolvedInitialMax) || resolvedInitialMax <= 0) {
+				throw new Error(`Model call budget resolved an invalid maxModelCalls value: ${resolvedInitialMax}`);
+			}
+			state.maxModelCalls = Math.min(state.maxModelCalls ?? resolvedInitialMax, resolvedInitialMax);
+		}
 		let pendingInput = await takeInput(request, "steering", state, signal);
 		while (true) {
 			signal.throwIfAborted();
@@ -71,16 +87,29 @@ async function executeRun(
 				appendInput(state, pendingInput, emit);
 				pendingInput = undefined;
 			}
-			if (request.limits.maxModelCalls !== undefined && state.modelCalls >= request.limits.maxModelCalls) {
+			if (state.maxModelCalls !== undefined && state.modelCalls >= state.maxModelCalls) {
 				finish("max_model_calls", state, emit);
 				return;
 			}
-
-			const modelCallIndex = state.modelCalls;
-			const tools = await interruptible(
-				request.resolveTools({ modelCallIndex, messages: [...state.messages], signal }),
+			const budgetReview = await reviewModelCallBudget(
+				request,
+				state,
+				reviewThresholds,
+				reviewedBudgetThresholds,
 				signal,
 			);
+			const stopAfterBudgetResponse = budgetReview?.action === "stop_after_response";
+			if (budgetReview) {
+				state.messages.push({ role: "user", content: budgetReview.instruction, timestamp: Date.now() });
+			}
+
+			const modelCallIndex = state.modelCalls;
+			const tools = stopAfterBudgetResponse
+				? []
+				: await interruptible(
+						request.resolveTools({ modelCallIndex, messages: [...state.messages], signal }),
+						signal,
+					);
 			const prepared = await checkpoint(request, "model_call", state, modelCallIndex, signal);
 			if (prepared?.contextMessages) state.messages = [...prepared.contextMessages];
 			const modelMessages = prepared?.messages ?? state.messages;
@@ -158,7 +187,27 @@ async function executeRun(
 			if (signal.aborted) throw abortError(signal.reason);
 
 			const toolCalls = state.lastAssistantMessage?.content.filter((block) => block.type === "toolCall") ?? [];
+			if (stopAfterBudgetResponse) {
+				finish("completed", state, emit);
+				return;
+			}
 			if (toolCalls.length === 0) {
+				const completionReview = await request.modelCallBudget?.reviewCompletion?.({
+					modelCalls: state.modelCalls,
+					toolCalls: state.toolCalls,
+					messages: [...state.messages],
+					signal,
+				});
+				if (completionReview?.action === "retry") {
+					state.messages.push({
+						role: "user",
+						content:
+							completionReview.instruction ??
+							"The required workflow is incomplete. Continue with the required tools before finishing.",
+						timestamp: Date.now(),
+					});
+					continue;
+				}
 				const completed = await checkpoint(
 					request,
 					"assistant_result",
@@ -211,6 +260,14 @@ async function executeRun(
 				signal,
 			);
 			state.messages.push(...batch.results);
+			if (batch.maxModelCalls !== undefined) {
+				state.maxModelCalls = Math.min(state.maxModelCalls ?? batch.maxModelCalls, batch.maxModelCalls);
+			}
+			if (batch.reviewAtModelCalls !== undefined) reviewThresholds.add(batch.reviewAtModelCalls);
+			if (batch.terminalFailure) {
+				finish("failed", state, emit, errorFromToolResult(batch.terminalFailure));
+				return;
+			}
 			if (batch.steeringMessages && batch.steeringMessages.length > 0) {
 				pendingInput = { kind: "steering", messages: batch.steeringMessages };
 			}
@@ -218,6 +275,50 @@ async function executeRun(
 	} catch (error) {
 		finish(signal.aborted ? "aborted" : "failed", state, emit, error);
 	}
+}
+
+function errorFromToolResult(result: ToolResultMessage): Error {
+	const message =
+		result.content.find(
+			(content): content is Extract<(typeof result.content)[number], { type: "text" }> => content.type === "text",
+		)?.text ?? `Tool ${result.toolName} failed`;
+	const details = result.details;
+	if (typeof details === "object" && details !== null && "code" in details && typeof details.code === "string") {
+		return new AgentToolExecutionError(message, {
+			code: details.code,
+			retryable: "retryable" in details && details.retryable === true,
+			...("metadata" in details && typeof details.metadata === "object" && details.metadata !== null
+				? { metadata: details.metadata as Readonly<Record<string, unknown>> }
+				: {}),
+		});
+	}
+	return Object.assign(new Error(message), { code: "AGENT_TERMINAL_TOOL_FAILURE" });
+}
+
+async function reviewModelCallBudget(
+	request: AgentTurnRequest,
+	state: RunState,
+	thresholds: ReadonlySet<number>,
+	reviewedThresholds: Set<number>,
+	signal: AbortSignal,
+): Promise<Awaited<ReturnType<NonNullable<AgentTurnRequest["modelCallBudget"]>["review"]>> | undefined> {
+	const budget = request.modelCallBudget;
+	if (!budget) return undefined;
+	const threshold = [...thresholds]
+		.filter((candidate) => candidate <= state.modelCalls && !reviewedThresholds.has(candidate))
+		.sort((left, right) => left - right)[0];
+	if (threshold === undefined) return undefined;
+	reviewedThresholds.add(threshold);
+	return interruptible(
+		budget.review({
+			threshold,
+			modelCalls: state.modelCalls,
+			toolCalls: state.toolCalls,
+			messages: [...state.messages],
+			signal,
+		}),
+		signal,
+	);
 }
 
 async function takeInput(
@@ -417,6 +518,13 @@ function abortError(reason: unknown): Error {
 }
 
 function failureOf(error: unknown): AgentRunResult["failure"] {
+	if (error instanceof AgentToolExecutionError) {
+		return {
+			code: error.details.code,
+			message: error.message,
+			retryable: error.details.retryable,
+		};
+	}
 	if (isAIError(error)) {
 		return {
 			code: error.code,

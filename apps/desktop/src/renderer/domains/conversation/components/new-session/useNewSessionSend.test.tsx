@@ -11,6 +11,8 @@ const perf = vi.hoisted(() => ({
 	mark: vi.fn(),
 }));
 
+const toast = vi.hoisted(() => ({ show: vi.fn() }));
+
 const stagedSend = vi.hoisted(() => ({
 	restore: vi.fn(),
 	stage: vi.fn<(overrideText?: string, interactionId?: string) => StagedSendInput | null>(() => ({
@@ -30,6 +32,9 @@ vi.mock("@shared/lib/perf-send", () => ({
 	perfSendBegin: perf.begin,
 	perfSendMark: perf.mark,
 }));
+
+vi.mock("@shared/i18n", () => ({ i18n: { t: (key: string) => key } }));
+vi.mock("@shared/store/toast-atoms", () => ({ showToast: toast.show }));
 
 vi.mock("../../services/staged-new-session-send", () => ({
 	restoreStagedNewSessionSend: stagedSend.restore,
@@ -167,8 +172,41 @@ describe("useNewSessionSend", () => {
 
 		expect(sendMessage).not.toHaveBeenCalled();
 		expect(stagedSend.restore).toHaveBeenCalledTimes(1);
+		expect(toast.show).toHaveBeenCalledWith(
+			expect.objectContaining({ variant: "error", message: "create failed", durationMs: 0 }),
+		);
 		await expect(result.current.send()).rejects.toThrow("create failed");
 		expect(openSession).toHaveBeenCalledTimes(2);
+	});
+
+	it("keeps a visible API Token prompt when credential-less session creation returns to the new-session page", async () => {
+		const openSession = vi.fn(
+			async (_cwd: string, _path?: string, _mode?: SessionExecutionMode, options?: OpenSessionOptions) => {
+				options?.onCreateError?.(
+					new Error("No credentials configured for any available model. Configure an API token before creating a session."),
+				);
+			},
+		);
+		const { result } = renderHook(() =>
+			useNewSessionSend({
+				cwd: "C:/workspace",
+				executionMode: "sandbox",
+				openSession,
+				sendMessage: async () => undefined,
+			}),
+		);
+
+		await act(async () => {
+			await result.current.send();
+		});
+
+		expect(stagedSend.restore).toHaveBeenCalledOnce();
+		expect(toast.show).toHaveBeenCalledWith({
+			variant: "error",
+			title: "chat:newSession.errors.createFailedTitle",
+			message: "chat:newSession.errors.modelCredentialsRequired",
+			durationMs: 0,
+		});
 	});
 	it("先跑完准备步骤再开会话：待创建项目落盘后用真实 cwd 发送", async () => {
 		const prepareCwd = vi.fn(async () => "/w/created");

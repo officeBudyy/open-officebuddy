@@ -101,6 +101,26 @@ export interface RuntimeToolDefinition<TSchemaDef extends TSchema = TSchema, TDe
 	readonly name: string;
 	readonly description: string;
 	readonly inputSchema: TSchemaDef;
+	/**
+	 * Parallel tools may run beside adjacent parallel calls from the same model
+	 * response. The default is exclusive so existing and mutating tools retain
+	 * their ordering guarantees.
+	 */
+	readonly executionMode?: "parallel" | "exclusive";
+	/** Optional run-level controls activated after this tool's input is validated. */
+	readonly runPolicy?: {
+		/** End the run as failed when this tool returns an error result. */
+		readonly stopOnError?: boolean;
+		/** Resolve input-specific terminal-error behavior after validation. */
+		resolveStopOnError?(input: Static<TSchemaDef>): boolean;
+		/** Lower the total model-call ceiling for runs using this input. */
+		resolveMaxModelCalls?(input: Static<TSchemaDef>): number | undefined;
+		/** Resolve result-aware soft and hard model-call limits. */
+		resolveModelCallBudget?(
+			input: Static<TSchemaDef>,
+			result: RuntimeToolResult<TDetails>,
+		): AgentResolvedModelCallBudget | undefined;
+	};
 	/** Optional host validator for standard JSON Schema or other schema dialects. */
 	readonly validateInput?: (input: ToolCall["arguments"]) => Static<TSchemaDef>;
 	execute(
@@ -160,12 +180,58 @@ export type AgentCheckpointHandler = (
 	signal: AbortSignal,
 ) => Promise<AgentCheckpointResult | undefined>;
 
+export interface AgentModelCallBudgetReviewRequest {
+	readonly threshold: number;
+	readonly modelCalls: number;
+	readonly toolCalls: number;
+	readonly messages: readonly Message[];
+	readonly signal: AbortSignal;
+}
+
+export interface AgentModelCallBudgetReviewResult {
+	readonly action: "continue" | "stop_after_response";
+	/** Internal instruction appended to the remaining in-run model context. */
+	readonly instruction: string;
+}
+
+export interface AgentResolvedModelCallBudget {
+	readonly maxModelCalls?: number;
+	readonly reviewAtModelCalls?: number;
+}
+
+export interface AgentModelCallBudgetResolutionRequest {
+	readonly messages: readonly Message[];
+	readonly signal: AbortSignal;
+}
+
+export interface AgentModelCallBudgetCompletionReviewRequest {
+	readonly modelCalls: number;
+	readonly toolCalls: number;
+	readonly messages: readonly Message[];
+	readonly signal: AbortSignal;
+}
+
+export interface AgentModelCallBudgetCompletionReviewResult {
+	readonly action: "accept" | "retry";
+	readonly instruction?: string;
+}
+
+export interface AgentModelCallBudget {
+	readonly thresholds: readonly number[];
+	resolveMaxModelCalls?(request: AgentModelCallBudgetResolutionRequest): Promise<number | undefined>;
+	review(request: AgentModelCallBudgetReviewRequest): Promise<AgentModelCallBudgetReviewResult>;
+	reviewCompletion?(
+		request: AgentModelCallBudgetCompletionReviewRequest,
+	): Promise<AgentModelCallBudgetCompletionReviewResult>;
+}
+
 export interface AgentTurnRequest {
 	readonly messages: readonly Message[];
 	readonly resolveModelCall: (context: AgentModelCallContext) => Promise<ResolvedModelCall>;
 	readonly resolveTools: (context: ToolResolutionContext) => Promise<readonly RuntimeToolDefinition[]>;
 	readonly toolPolicy: AgentToolPolicy;
 	readonly checkpoint?: AgentCheckpointHandler;
+	readonly modelCallBudget?: AgentModelCallBudget;
 	readonly takeSteeringMessages?: AgentInputCollector;
 	readonly takeContinuationMessages?: AgentInputCollector;
 	readonly limits: AgentRunLimits;

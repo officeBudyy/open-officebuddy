@@ -162,8 +162,9 @@ export class StatelessAgentCoreTurnEngine implements TurnEnginePort {
 				return [...frame.tools.values()].map((tool) => toAgentTool(tool, request, identities));
 			},
 			resolveModelCall: async ({ modelCallIndex, messages: callMessages, tools, signal }) => {
-				const frame = frames.get(modelCallIndex);
-				if (!frame) throw turnProtocolError(`Missing model-call frame at index ${modelCallIndex}`);
+				// A budget stop response intentionally resolves with no tools, so
+				// resolveTools is skipped. Build its model-call frame lazily here.
+				const frame = frames.get(modelCallIndex) ?? (await resolveFrame(modelCallIndex, callMessages, signal));
 				currentFrame = frame;
 				const runtimeMessages = toRuntimeMessages(callMessages, identities);
 				const finalizedMessages = request.snapshot.modelCallMessageFinalizer
@@ -259,19 +260,68 @@ export class StatelessAgentCoreTurnEngine implements TurnEnginePort {
 				};
 			},
 			toolPolicy: {
-				authorize: async ({ call, signal }) => {
+				authorize: async ({ call, messages: authorizationMessages, signal }) => {
 					const authorized = await request.snapshot.toolPolicy.authorize(
 						{
 							sessionId: request.sessionId,
 							turnId: request.turnId,
 							toolName: call.name,
 							input: call.arguments,
+							turnInput: request.input,
+							messages: toRuntimeMessages(authorizationMessages, identities),
 						},
 						signal,
 					);
 					if (!authorized) throw new Error(`Tool execution denied by policy: ${call.name}`);
 				},
 			},
+			modelCallBudget: this.options.modelCallBudget
+				? {
+						thresholds: this.options.modelCallBudget.thresholds,
+						resolveMaxModelCalls: this.options.modelCallBudget.resolveMaxModelCalls
+							? ({ messages: budgetMessages, signal }) =>
+									this.options.modelCallBudget!.resolveMaxModelCalls!({
+										sessionId: request.sessionId,
+										turnId: request.turnId,
+										input: request.input,
+										messages: budgetMessages,
+										signal,
+									})
+							: undefined,
+						review: async ({ threshold, modelCalls, toolCalls, messages: budgetMessages, signal }) => {
+							const result = await this.options.modelCallBudget!.review({
+								sessionId: request.sessionId,
+								turnId: request.turnId,
+								threshold,
+								modelCalls,
+								toolCalls,
+								input: request.input,
+								messages: budgetMessages,
+								signal,
+							});
+							return {
+								action: result.action,
+								instruction:
+									result.instruction ??
+									(result.action === "continue"
+										? `The user approved continuing after ${modelCalls} model calls. Reassess the remaining work, batch independent operations, avoid repeating completed validation, and finish as soon as the acceptance criteria are met.`
+										: "The user chose to pause this extended run. Do not call tools. Give a concise summary of completed work, remaining work, and any output paths, then stop."),
+							};
+						},
+						reviewCompletion: this.options.modelCallBudget.reviewCompletion
+							? ({ modelCalls, toolCalls, messages: budgetMessages, signal }) =>
+									this.options.modelCallBudget!.reviewCompletion!({
+										sessionId: request.sessionId,
+										turnId: request.turnId,
+										input: request.input,
+										messages: budgetMessages,
+										modelCalls,
+										toolCalls,
+										signal,
+									})
+							: undefined,
+					}
+				: undefined,
 			checkpoint:
 				request.checkpoint || request.snapshot.modelCallContextTransformer
 					? async (checkpointRequest, signal) => {
@@ -706,6 +756,26 @@ function toAgentTool(
 		name: tool.name,
 		description: tool.description,
 		inputSchema: modelTool.parameters,
+		executionMode: tool.executionMode,
+		runPolicy: tool.runPolicy
+			? {
+					stopOnError: tool.runPolicy.stopOnError,
+					resolveStopOnError: tool.runPolicy.resolveStopOnError
+						? (input) => tool.runPolicy?.resolveStopOnError?.(input) === true
+						: undefined,
+					resolveMaxModelCalls: tool.runPolicy.resolveMaxModelCalls
+						? (input) => tool.runPolicy?.resolveMaxModelCalls?.(input)
+						: undefined,
+					resolveModelCallBudget: tool.runPolicy.resolveModelCallBudget
+						? (input, result) =>
+								tool.runPolicy?.resolveModelCallBudget?.(input, {
+									content: result.content,
+									details: result.details,
+									...(result.isError === undefined ? {} : { isError: result.isError }),
+								})
+						: undefined,
+				}
+			: undefined,
 		validateInput: validateInput
 			? (input) => validateInput(input)
 			: (input) =>

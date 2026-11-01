@@ -4,6 +4,7 @@ import { AgentToolExecutionError } from "../tool-execution-error.js";
 import type {
 	AgentExecutionEvent,
 	AgentInputCollector,
+	AgentResolvedModelCallBudget,
 	AgentToolPhase,
 	AgentToolPolicy,
 	RuntimeToolDefinition,
@@ -21,18 +22,56 @@ interface ExecuteToolCallsRequest {
 	readonly takeSteeringMessages?: AgentInputCollector;
 }
 
+const MAX_PARALLEL_TOOL_CALLS = 4;
+
 export interface ToolExecutionBatchResult {
 	readonly results: readonly ToolResultMessage[];
 	readonly steeringMessages?: readonly Message[];
+	readonly terminalFailure?: ToolResultMessage;
+	readonly maxModelCalls?: number;
+	readonly reviewAtModelCalls?: number;
+}
+
+interface ToolExecutionOutcome {
+	readonly result: ToolResultMessage;
+	readonly terminalFailure?: ToolResultMessage;
+	readonly maxModelCalls?: number;
+	readonly reviewAtModelCalls?: number;
 }
 
 export async function executeRuntimeToolCalls(request: ExecuteToolCallsRequest): Promise<ToolExecutionBatchResult> {
 	const results: ToolResultMessage[] = [];
-	for (let index = 0; index < request.calls.length; index += 1) {
-		const call = request.calls[index];
+	let maxModelCalls: number | undefined;
+	let reviewAtModelCalls: number | undefined;
+	for (let index = 0; index < request.calls.length; ) {
 		request.signal.throwIfAborted();
-		const result = await executeOne(call, request);
-		results.push(result);
+		const batch = collectExecutionBatch(request.calls, request.tools, index);
+		const batchOutcomes =
+			batch.length === 1
+				? [await executeOne(batch[0], request)]
+				: await Promise.all(batch.map((call) => executeOne(call, request)));
+		results.push(...batchOutcomes.map(({ result }) => result));
+		for (const outcome of batchOutcomes) {
+			if (outcome.maxModelCalls !== undefined) {
+				maxModelCalls = Math.min(maxModelCalls ?? outcome.maxModelCalls, outcome.maxModelCalls);
+			}
+			if (outcome.reviewAtModelCalls !== undefined) {
+				reviewAtModelCalls = Math.min(reviewAtModelCalls ?? outcome.reviewAtModelCalls, outcome.reviewAtModelCalls);
+			}
+		}
+		index += batch.length;
+		const terminalFailure = batchOutcomes.find((outcome) => outcome.terminalFailure)?.terminalFailure;
+		if (terminalFailure) {
+			for (const skippedCall of request.calls.slice(index)) {
+				results.push(skipToolCall(skippedCall, request.emit, "Skipped after a terminal tool failure."));
+			}
+			return {
+				results,
+				terminalFailure,
+				...(maxModelCalls === undefined ? {} : { maxModelCalls }),
+				...(reviewAtModelCalls === undefined ? {} : { reviewAtModelCalls }),
+			};
+		}
 
 		const steeringMessages = await request.takeSteeringMessages?.({
 			modelCallIndex: request.modelCallIndex + 1,
@@ -40,20 +79,49 @@ export async function executeRuntimeToolCalls(request: ExecuteToolCallsRequest):
 			signal: request.signal,
 		});
 		if (steeringMessages && steeringMessages.length > 0) {
-			for (const skippedCall of request.calls.slice(index + 1)) {
+			for (const skippedCall of request.calls.slice(index)) {
 				results.push(skipToolCall(skippedCall, request.emit));
 			}
-			return { results, steeringMessages };
+			return {
+				results,
+				steeringMessages,
+				...(maxModelCalls === undefined ? {} : { maxModelCalls }),
+				...(reviewAtModelCalls === undefined ? {} : { reviewAtModelCalls }),
+			};
 		}
 	}
-	return { results };
+	return {
+		results,
+		...(maxModelCalls === undefined ? {} : { maxModelCalls }),
+		...(reviewAtModelCalls === undefined ? {} : { reviewAtModelCalls }),
+	};
 }
 
-async function executeOne(call: ToolCall, request: ExecuteToolCallsRequest): Promise<ToolResultMessage> {
+function collectExecutionBatch(
+	calls: readonly ToolCall[],
+	tools: readonly RuntimeToolDefinition[],
+	start: number,
+): readonly ToolCall[] {
+	const first = calls[start];
+	const firstTool = tools.find((candidate) => candidate.name === first.name);
+	if (firstTool?.executionMode !== "parallel") return [first];
+	let end = start + 1;
+	while (end < calls.length && end - start < MAX_PARALLEL_TOOL_CALLS) {
+		const tool = tools.find((candidate) => candidate.name === calls[end].name);
+		if (tool?.executionMode !== "parallel") break;
+		end += 1;
+	}
+	return calls.slice(start, end);
+}
+
+async function executeOne(call: ToolCall, request: ExecuteToolCallsRequest): Promise<ToolExecutionOutcome> {
 	const startedAt = Date.now();
 	const phases: AgentToolPhase[] = [];
 	const tool = request.tools.find((candidate) => candidate.name === call.name);
 	let result: ToolResultMessage;
+	let maxModelCalls: number | undefined;
+	let reviewAtModelCalls: number | undefined;
+	let stopOnError = false;
 
 	if (!tool) {
 		const message = `Tool ${call.name} not found`;
@@ -67,9 +135,30 @@ async function executeOne(call: ToolCall, request: ExecuteToolCallsRequest): Pro
 			request.emit({ type: "tool_execution_start", call, startedAt });
 			result = toolError(call, validation.error, "AGENT_TOOL_INPUT_INVALID");
 		} else {
+			stopOnError =
+				tool.runPolicy?.stopOnError === true || tool.runPolicy?.resolveStopOnError?.(validation.input) === true;
+			const resolvedLimit = tool.runPolicy?.resolveMaxModelCalls?.(validation.input);
+			if (resolvedLimit !== undefined) {
+				if (!Number.isInteger(resolvedLimit) || resolvedLimit <= 0) {
+					throw new Error(`Tool ${tool.name} resolved an invalid maxModelCalls value: ${resolvedLimit}`);
+				}
+				maxModelCalls = resolvedLimit;
+			}
 			request.emit({ type: "tool_validation", call, valid: true });
 			request.emit({ type: "tool_execution_start", call, startedAt });
 			result = await executeValidatedTool(call, tool, validation.input, request, startedAt, phases);
+			const resolvedBudget = tool.runPolicy?.resolveModelCallBudget?.(validation.input, {
+				content: result.content,
+				details: result.details,
+				isError: result.isError,
+			});
+			validateResolvedBudget(tool.name, resolvedBudget);
+			maxModelCalls = Math.min(
+				maxModelCalls ?? resolvedBudget?.maxModelCalls ?? Number.POSITIVE_INFINITY,
+				resolvedBudget?.maxModelCalls ?? Number.POSITIVE_INFINITY,
+			);
+			if (!Number.isFinite(maxModelCalls)) maxModelCalls = undefined;
+			reviewAtModelCalls = resolvedBudget?.reviewAtModelCalls;
 		}
 	}
 
@@ -81,7 +170,33 @@ async function executeOne(call: ToolCall, request: ExecuteToolCallsRequest): Pro
 		durationMs: Date.now() - startedAt,
 		phases: [...phases],
 	});
-	return result;
+	return {
+		result,
+		...(stopOnError && result.isError ? { terminalFailure: result } : {}),
+		...(maxModelCalls === undefined ? {} : { maxModelCalls }),
+		...(reviewAtModelCalls === undefined ? {} : { reviewAtModelCalls }),
+	};
+}
+
+function validateResolvedBudget(toolName: string, budget: AgentResolvedModelCallBudget | undefined): void {
+	if (!budget) return;
+	for (const [name, value] of [
+		["maxModelCalls", budget.maxModelCalls],
+		["reviewAtModelCalls", budget.reviewAtModelCalls],
+	] as const) {
+		if (value !== undefined && (!Number.isInteger(value) || value <= 0)) {
+			throw new Error(`Tool ${toolName} resolved an invalid ${name} value: ${value}`);
+		}
+	}
+	if (
+		budget.maxModelCalls !== undefined &&
+		budget.reviewAtModelCalls !== undefined &&
+		budget.reviewAtModelCalls >= budget.maxModelCalls
+	) {
+		throw new Error(
+			`Tool ${toolName} resolved reviewAtModelCalls=${budget.reviewAtModelCalls} at or above maxModelCalls=${budget.maxModelCalls}`,
+		);
+	}
 }
 
 async function executeValidatedTool(
@@ -150,9 +265,13 @@ function validateToolInput(
 	}
 }
 
-function skipToolCall(call: ToolCall, emit: (event: AgentExecutionEvent) => void): ToolResultMessage {
+function skipToolCall(
+	call: ToolCall,
+	emit: (event: AgentExecutionEvent) => void,
+	message = "Skipped due to queued user message.",
+): ToolResultMessage {
 	const startedAt = Date.now();
-	const result = toolError(call, "Skipped due to queued user message.", "AGENT_TOOL_SKIPPED", {});
+	const result = toolError(call, message, "AGENT_TOOL_SKIPPED", {});
 	emit({ type: "tool_execution_start", call, startedAt });
 	emit({ type: "tool_execution_finish", call, result, startedAt, durationMs: 0, phases: [] });
 	return result;

@@ -15,8 +15,17 @@ export interface OcrPageResult {
 	width: number;
 	height: number;
 	source: "text-layer" | "ocr";
+	renderedImageDataUrl?: string;
 	ocrDurationMs?: number;
 	confidence?: number;
+	lines?: OcrLineResult[];
+}
+
+export interface OcrLineResult {
+	text: string;
+	box: [[number, number], [number, number], [number, number], [number, number]];
+	confidence: number;
+	confidenceScore: number;
 }
 
 export interface PdfOcrInput {
@@ -26,6 +35,7 @@ export interface PdfOcrInput {
 	langs: string[];
 	preferTextLayer: boolean;
 	textLayerMinChars: number;
+	capturePages: boolean;
 	debug: boolean;
 	onProgress?: (event: OcrProgressEvent) => void;
 	onLog?: (level: "info" | "warn" | "error", message: string) => void;
@@ -220,6 +230,7 @@ export async function runPdfOcr(input: PdfOcrInput): Promise<PdfOcrResult> {
 			langs: input.langs,
 			preferTextLayer: input.preferTextLayer,
 			textLayerMinChars: input.textLayerMinChars,
+			capturePages: input.capturePages,
 		}),
 		[arrayBuffer],
 	);

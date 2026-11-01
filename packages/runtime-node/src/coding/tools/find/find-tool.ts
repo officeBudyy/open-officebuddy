@@ -70,6 +70,7 @@ export function createFindTool(cwd: string, options: FindToolOptions = {}): Runt
 
 	return {
 		name: "find",
+		executionMode: "parallel",
 		label: "find",
 		description: FIND_TOOL_DESCRIPTION,
 		inputSchema: FindToolInputSchema,

@@ -22,7 +22,7 @@ const QUOTA =
 
 /** 鉴权失败：密钥无效 / 过期 / 无权限。 */
 const AUTH =
-	/\b401\b|\b403\b|unauthorized|forbidden|invalid.?api.?key|invalid.?x-api-key|authentication.?(error|failed)|permission.?denied|no api key found|api key not|未登录|登录已过期|密钥无效/i;
+	/\b401\b|\b403\b|unauthorized|forbidden|invalid.?api.?key|invalid.?x-api-key|authentication.?(error|failed)|permission.?denied|no api key found|no credentials configured|requires at least one available model|api key not|未登录|登录已过期|密钥无效/i;
 
 /** 限流：请求太密，等一会儿就好。 */
 const RATE_LIMIT = /\b429\b|rate.?limit|too many requests|overloaded|请求过于频繁/i;

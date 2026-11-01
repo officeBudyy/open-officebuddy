@@ -118,8 +118,16 @@ export class SessionInputQueue implements TurnInputQueue {
 	}
 
 	enqueueContext(behavior: SessionStreamingBehavior, context: readonly SessionContextRecord[]): number {
-		this.enqueueEntry(behavior, { context } satisfies QueuedSessionInput);
-		return this.pendingCount;
+		return this.enqueueContextWithId(behavior, context).pendingCount;
+	}
+
+	enqueueContextWithId(
+		behavior: SessionStreamingBehavior,
+		context: readonly SessionContextRecord[],
+		options?: { readonly internal?: boolean },
+	): { readonly id: string; readonly pendingCount: number } {
+		const id = this.enqueueEntry(behavior, { context } satisfies QueuedSessionInput, options);
+		return { id, pendingCount: this.pendingCount };
 	}
 
 	enqueueOperationWithId(operation: SessionQueueOperation): {
@@ -304,8 +312,16 @@ export class SessionInputQueue implements TurnInputQueue {
 		};
 	}
 
-	private enqueueEntry(behavior: SessionStreamingBehavior, input: QueuedSessionInput): string {
-		const slot: QueueSlot = { id: createRuntimeId(), input };
+	private enqueueEntry(
+		behavior: SessionStreamingBehavior,
+		input: QueuedSessionInput,
+		options?: { readonly internal?: boolean },
+	): string {
+		const slot: QueueSlot = {
+			id: createRuntimeId(),
+			input,
+			...(options?.internal ? { internal: true } : {}),
+		};
 		if (behavior === "steer") this.steeringQueue.push(slot);
 		else this.followUpQueue.push(slot);
 		this.notifyChange();

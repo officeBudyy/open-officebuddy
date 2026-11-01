@@ -506,7 +506,9 @@ function resolveInitialModel(
 ): Model<Api> {
 	const model = request.model ?? defaults.initialModel ?? defaults.modelRegistry.getAvailable()[0];
 	if (!model) {
-		throw new Error("Desktop Runtime requires at least one available model");
+		throw new Error(
+			"No credentials configured for any available model. Configure an API token before creating a session.",
+		);
 	}
 	return model;
 }

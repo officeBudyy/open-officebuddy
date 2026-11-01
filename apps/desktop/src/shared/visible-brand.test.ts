@@ -17,13 +17,7 @@ describe("visible brand", () => {
 	});
 
 	it("preserves compatibility identifiers and compound code names", () => {
-		const identifiers = [
-			"@astravia/ai",
-			".astravia",
-			"astravia://settings",
-			"ASTRAVIA_API_KEY",
-			"AstraviaKit",
-		];
+		const identifiers = ["@astravia/ai", ".astravia", "astravia://settings", "ASTRAVIA_API_KEY", "AstraviaKit"];
 
 		expect(applyVisibleBrand(identifiers)).toEqual(identifiers);
 	});

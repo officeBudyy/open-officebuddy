@@ -5,7 +5,7 @@ import {
 	type ForegroundCommandOperations,
 } from "@astravia/runtime-node/coding";
 import type { CodingToolCatalogEntry } from "@astravia/runtime-tools";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { CodingAgentSandboxAuthorizationPort } from "../../src/execution/sandbox/authorization-contract.js";
 import { CodingAgentSessionExecutionRuntime } from "../../src/execution/session/runtime.js";
 import { createCodingAgentNodeSessionExecutionEnvironment } from "../../src/host/tool-environment/node/node-session-execution-environment.js";
@@ -162,6 +162,48 @@ describe("CodingAgentSessionExecutionRuntime", () => {
 			expect(second.records).toEqual([]);
 		} finally {
 			await Promise.all([first.runtime.dispose(), second.runtime.dispose()]);
+		}
+	});
+
+	it("cancels a queued completion notification after task_output observes the finished task", async () => {
+		const fixture = createRuntimeFixture("session-observed-task");
+		const queued = new Set(["queue-task-b1"]);
+		const session = {
+			state: "running",
+			queueContext: vi.fn(() => ({
+				status: "queued",
+				behavior: "followUp",
+				pendingCount: 1,
+				id: "queue-task-b1",
+			})),
+			removeQueued: vi.fn((id: string) => queued.delete(id)),
+		} as unknown as AgentSession;
+		fixture.runtime.createExecutionController(session);
+
+		try {
+			const task = fixture.runtime.backgroundService.spawn({
+				command: process.platform === "win32" ? "Write-Output done" : "true",
+				cwd: process.cwd(),
+				env: { ...process.env },
+			});
+			await fixture.runtime.backgroundService.wait(task.id, { maxMs: 5_000 });
+			expect(session.queueContext).toHaveBeenCalledOnce();
+			expect(fixture.asyncDeliveries).toBe(0);
+
+			const taskOutput = fixture.runtime.readRegistrations().find(({ tool }) => tool.name === "task_output")?.tool;
+			if (!taskOutput) throw new Error("Expected task_output");
+			await taskOutput.execute({
+				sessionId: "session-observed-task",
+				turnId: "turn",
+				toolCallId: "task-output-call",
+				input: { task_id: task.id },
+				signal: new AbortController().signal,
+			});
+
+			expect(session.removeQueued).toHaveBeenCalledWith("queue-task-b1");
+			expect(queued).toEqual(new Set());
+		} finally {
+			await fixture.runtime.dispose();
 		}
 	});
 });

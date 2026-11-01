@@ -72,7 +72,9 @@ export class ActionApprovalBroker implements ActionApprovalRequester {
 			};
 			const onAbort = (): void => {
 				log.warn("request: aborted by signal", { approvalId, actionId: request.actionId });
-				cancel(new ActionError("ACTION_CANCELLED", "officebuddy action 请求已取消。", { actionId: request.actionId }));
+				cancel(
+					new ActionError("ACTION_CANCELLED", "officebuddy action 请求已取消。", { actionId: request.actionId }),
+				);
 			};
 			const timeout = setTimeout(() => {
 				log.warn("request: approval timeout", {

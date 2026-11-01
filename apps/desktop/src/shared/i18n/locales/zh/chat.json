@@ -958,6 +958,10 @@
 		"greetingDefault": "今天怎么样？",
 		"greetingTitle": "你好，{{nickname}}",
 		"subtitle": "我可以帮助你处理工作，有什么我可以帮你的吗？",
+		"errors": {
+			"createFailedTitle": "无法创建会话",
+			"modelCredentialsRequired": "尚未配置可用模型的 API Token。请先前往模型设置完成配置，然后重新发送。"
+		},
 		"defaultContext": "普通会话",
 		"teamNewWorkspaceContext": "新工作空间",
 		"projectContext": "项目 · {{name}}",
