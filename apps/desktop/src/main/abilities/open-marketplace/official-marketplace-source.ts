@@ -7,6 +7,7 @@
 
 /** 内置来源的固定 id：缓存目录、升级对账和默认 IPC 参数都以它为准。 */
 export const DEFAULT_MARKETPLACE_SOURCE_ID = "astravia-official";
-export const OFFICIAL_MARKETPLACE_REPOSITORY = "https://github.com/maomaochong-ai/astravia-official-marketplace";
+/** 官方市场托管在 gitee（分发分支 gh-pages 携带构建产物 .astravia/marketplace.json）。 */
+export const OFFICIAL_MARKETPLACE_REPOSITORY = "https://gitee.com/energyPlatform/office-marketplace";
 export const OFFICIAL_MARKETPLACE_NAME = "officebuddy Official";
 export const OFFICIAL_MARKETPLACE_REF = "gh-pages";

@@ -51,9 +51,14 @@ test("does not supply a hard-coded marketplace in open-source build environments
 	assert.equal(createOpenSourceBuildEnvironment({ ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY: "" }).ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY, "");
 });
 
-test("validates GitHub source overrides independently of the cloud edition", () => {
+test("validates GitHub and Gitee source overrides independently of the cloud edition", () => {
 	for (const env of [commercialEnv, openSourceEnv]) {
 		assert.doesNotThrow(() => validateDesktopBuildEnvironment({ env: { ...env, ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY: "example/catalog" } }));
+		assert.doesNotThrow(() =>
+			validateDesktopBuildEnvironment({
+				env: { ...env, ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY: "https://gitee.com/energyPlatform/office-marketplace" },
+			}),
+		);
 		assert.throws(() => validateDesktopBuildEnvironment({ env: { ...env, ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY: "https://invalid.example/catalog" } }), /ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY/);
 		assert.doesNotThrow(() => validateDesktopBuildEnvironment({ env: { ...env, ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY: "" } }));
 	}

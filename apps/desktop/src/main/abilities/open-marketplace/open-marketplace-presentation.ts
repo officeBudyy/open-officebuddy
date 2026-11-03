@@ -333,6 +333,7 @@ export function readMarketplaceMemberMetadata(
 	// Referenced details are resolved separately, with the same path/size limits as listed abilities.
 	return marketplaceAbilitySchema.parse({
 		...descriptor,
+		form: member.form,
 		detail: {},
 		source: member.source,
 		releases: member.releases,

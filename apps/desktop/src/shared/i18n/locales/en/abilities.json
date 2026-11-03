@@ -15,6 +15,24 @@
 		"plugin": "Plugin",
 		"bundle": "Bundle"
 	},
+	"section": {
+		"skills": {
+			"title": "Skills",
+			"description": "Professional knowledge, working methods, and reusable agent workflows"
+		},
+		"connectors": {
+			"title": "Connectors",
+			"description": "Connect external accounts, services, and data sources"
+		},
+		"apps": {
+			"title": "Apps",
+			"description": "Complete tools that open and run directly in OfficeBuddy"
+		},
+		"bundles": {
+			"title": "Bundles",
+			"description": "Add a coordinated set of skills, connectors, and apps"
+		}
+	},
 	"scope": {
 		"discover": "Public",
 		"mine": "Personal"
@@ -107,7 +125,7 @@
 		"filteredHint": "Nothing matches the current filters. Try clearing them"
 	},
 	"error": {
-		"sourcesFailed": "GitHub sources failed to sync (cached content remains available): {{names}}",
+		"sourcesFailed": "Marketplace sources failed to sync (cached content remains available): {{names}}",
 		"sourcesOutdated": "These sources need a newer Astravia before they can load: {{names}}",
 		"serverFailed": "Cloud marketplace failed to load; other sources remain available",
 		"loadFailed": "Failed to load abilities",
@@ -518,19 +536,19 @@
 		"trigger": "Sources",
 		"dialog": {
 			"title": "Marketplace sources",
-			"description": "Manage GitHub marketplace sources. Enabled sources are aggregated in the marketplace; the built-in official source cannot be disabled or removed."
+			"description": "Manage GitHub / Gitee marketplace sources. Enabled sources are aggregated in the marketplace; the built-in official source cannot be disabled or removed."
 		},
 		"empty": "No sources configured yet",
 		"builtinBadge": "Built-in",
 		"lockedHint": "The built-in official source is always enabled and cannot be removed",
-		"credentialConfigured": "GitHub access credential configured",
+		"credentialConfigured": "Repository access credential configured",
 		"status": {
 			"disabled": "Disabled",
 			"pending": "Not synced yet",
-			"authRequired": "A GitHub credential is required or has expired",
-			"forbidden": "The GitHub credential cannot read this repository",
+			"authRequired": "A repository credential is required or has expired",
+			"forbidden": "The credential cannot read this repository",
 			"notFound": "The repository, branch, or marketplace manifest was not found",
-			"rateLimited": "GitHub rate limit reached; try again later",
+			"rateLimited": "Repository host rate limit reached; try again later",
 			"appOutdated": "This Astravia version is too old; upgrade to {{version}} or newer",
 			"ready": "Synced · {{version}}",
 			"failed": "Sync failed; retry available",
@@ -542,18 +560,18 @@
 			"add": "Add source",
 			"edit": "Edit source",
 			"remove": "Remove source",
-			"clearCredential": "Clear GitHub access credential",
-			"configureCredential": "Configure GitHub access credential",
+			"clearCredential": "Clear repository access credential",
+			"configureCredential": "Configure repository access credential",
 			"confirmRemove": "Confirm removal",
 			"toggle": "Enable source"
 		},
 		"form": {
 			"addTitle": "Add source",
 			"editTitle": "Edit source",
-			"repositoryLabel": "GitHub repository",
-			"repositoryPlaceholder": "owner/repo or https://github.com/owner/repo",
-			"credentialLabel": "GitHub access token (optional)",
-			"credentialPlaceholder": "Fine-grained token, Contents read-only",
+			"repositoryLabel": "Repository (GitHub / Gitee)",
+			"repositoryPlaceholder": "owner/repo or https://gitee.com/owner/repo",
+			"credentialLabel": "Repository access token (optional)",
+			"credentialPlaceholder": "Read-only repository token",
 			"credentialHint": "The token stays in this device's secure storage and is never uploaded to Astravia.",
 			"nameLabel": "Name",
 			"namePlaceholder": "Defaults to the repository name",

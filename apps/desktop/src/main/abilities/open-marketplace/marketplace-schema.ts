@@ -138,6 +138,7 @@ export const marketplaceDetailSchema = detailLocaleSchema.extend({
 });
 
 const sourceSchema = z.object({ path: z.string().min(1) }).passthrough();
+const abilityFormSchema = z.enum(["skills", "connectors", "apps", "bundles"]);
 const pluginReleaseSchema = z.object({
 	version: stableVersionSchema,
 	minAppVersion: stableVersionSchema,
@@ -167,6 +168,7 @@ const abilityBaseSchema = z
 		icon: z.string().default(""),
 		category: z.string().default(""),
 		categoryI18n: z.record(z.string(), z.string()).optional(),
+		form: abilityFormSchema.optional(),
 		tags: z.array(z.string()).default([]),
 		detail: marketplaceDetailSchema.default({}),
 	})
@@ -207,6 +209,7 @@ const mcpAbilitySchema = abilityBaseSchema.extend({
 const bundleMemberSchema = z.object({
 	type: z.enum(["skill", "scene", "mcp", "plugin"]),
 	slug: z.string().regex(SLUG_PATTERN),
+	form: abilityFormSchema.optional(),
 	source: sourceSchema.optional(),
 	/** Schema v3 bundle-only plugins keep release metadata in the index. */
 	releases: z.array(pluginReleaseSchema).min(1).optional(),
@@ -243,6 +246,35 @@ export type MarketplaceManifest = z.infer<typeof marketplaceManifestSchema>;
 export type MarketplaceAbilityManifest = z.infer<typeof marketplaceAbilitySchema>;
 export type MarketplacePluginRelease = z.infer<typeof pluginReleaseSchema>;
 export type MarketplaceBundleMember = z.infer<typeof bundleMemberSchema>;
+
+function marketplaceAbilityForm(
+	type: MarketplaceAbilityManifest["type"],
+	sourcePath?: string,
+): z.infer<typeof abilityFormSchema> {
+	if (type === "bundle") return "bundles";
+	if (type === "skill" || type === "scene") return "skills";
+	if (type === "mcp") return "connectors";
+	if (sourcePath?.startsWith("abilities/connectors/")) return "connectors";
+	return "apps";
+}
+
+function assertAbilityForm(
+	type: MarketplaceAbilityManifest["type"],
+	form: z.infer<typeof abilityFormSchema>,
+	sourcePath?: string,
+): void {
+	const allowed =
+		type === "bundle"
+			? form === "bundles"
+			: type === "skill" || type === "scene"
+				? form === "skills"
+				: type === "mcp"
+					? form === "connectors"
+					: form === "connectors" || form === "apps";
+	if (!allowed) throw new Error(`Ability form does not match type: ${type}:${form}`);
+	const pathForm = sourcePath?.match(/^abilities\/(skills|connectors|apps|bundles)\//)?.[1];
+	if (pathForm && pathForm !== form) throw new Error(`Ability form does not match source path: ${form}:${sourcePath}`);
+}
 
 export function normalizeMarketplaceSourcePath(value: string): string {
 	const slashPath = value.replace(/\\/g, "/");
@@ -289,6 +321,8 @@ export function parseMarketplaceManifest(input: unknown): MarketplaceManifest {
 		}
 		const source = ability.source;
 		if (source) source.path = normalizeMarketplaceSourcePath(source.path);
+		ability.form ??= marketplaceAbilityForm(ability.type, source?.path);
+		assertAbilityForm(ability.type, ability.form, source?.path);
 	}
 	const bySlug = new Map(manifest.abilities.map((ability) => [ability.slug, ability]));
 	const bundlePluginReleases = new Map<string, string>();
@@ -307,6 +341,8 @@ export function parseMarketplaceManifest(input: unknown): MarketplaceManifest {
 					throw new Error("Package bundle members require schemaVersion 2 or newer");
 				member.source.path = normalizeMarketplaceSourcePath(member.source.path);
 			}
+			member.form ??= marketplaceAbilityForm(member.type, member.source?.path);
+			assertAbilityForm(member.type, member.form, member.source?.path);
 			const memberId = `${member.type}:${member.slug}`;
 			if (memberIds.has(memberId)) throw new Error(`Duplicate bundle member: ${memberId}`);
 			memberIds.add(memberId);

@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MarketplaceSource } from "../../../preload/api-types/abilities";
+import { marketplaceArchiveUrl } from "./marketplace-hosts";
 import { MarketplaceSourceStore } from "./marketplace-source-store";
 import { OFFICIAL_MARKETPLACE_REF, OFFICIAL_MARKETPLACE_REPOSITORY } from "./official-marketplace-source";
 
@@ -118,7 +119,7 @@ describe("MarketplaceSourceStore", () => {
 						name: "officebuddy Official",
 						repository: OFFICIAL_MARKETPLACE_REPOSITORY,
 						ref: OFFICIAL_MARKETPLACE_REF,
-						archiveUrl: `${OFFICIAL_MARKETPLACE_REPOSITORY}/archive/refs/heads/${OFFICIAL_MARKETPLACE_REF}.zip`,
+						archiveUrl: marketplaceArchiveUrl(OFFICIAL_MARKETPLACE_REPOSITORY, OFFICIAL_MARKETPLACE_REF),
 						builtin: true,
 						enabled: true,
 					},
@@ -126,6 +127,36 @@ describe("MarketplaceSourceStore", () => {
 			}
 		},
 	);
+
+	it("replaces the persisted GitHub official source with the Gitee official source", async () => {
+		vi.stubEnv("ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY", undefined);
+		const filePath = await temporaryFile();
+		await writeFile(
+			filePath,
+			JSON.stringify({
+				version: 1,
+				sources: [
+					{
+						...builtinSource(),
+						id: "astravia-official",
+						repository: "https://github.com/maomaochong-ai/astravia-official-marketplace",
+						archiveUrl:
+							"https://github.com/maomaochong-ai/astravia-official-marketplace/archive/refs/heads/gh-pages.zip",
+						ref: "gh-pages",
+					},
+				],
+			}),
+		);
+
+		expect(new MarketplaceSourceStore({ filePath }).list()).toMatchObject([
+			{
+				id: "astravia-official",
+				name: "officebuddy Official",
+				repository: "https://gitee.com/energyPlatform/office-marketplace",
+				archiveUrl: "https://gitee.com/energyPlatform/office-marketplace/repository/archive/gh-pages.zip",
+			},
+		]);
+	});
 
 	it("keeps main as the fallback for a custom distribution repository", async () => {
 		vi.stubEnv("ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY", "example/community-market");
@@ -154,7 +185,7 @@ describe("MarketplaceSourceStore", () => {
 						id: "astravia-official",
 						name: "Astravia Official",
 						repository: OFFICIAL_MARKETPLACE_REPOSITORY,
-						archiveUrl: `${OFFICIAL_MARKETPLACE_REPOSITORY}/archive/refs/heads/main.zip`,
+						archiveUrl: `${OFFICIAL_MARKETPLACE_REPOSITORY}/repository/archive/main.zip`,
 						ref: "main",
 						autoUpdate: false,
 					},
@@ -170,7 +201,7 @@ describe("MarketplaceSourceStore", () => {
 				name: "officebuddy Official",
 				repository: OFFICIAL_MARKETPLACE_REPOSITORY,
 				ref: OFFICIAL_MARKETPLACE_REF,
-				archiveUrl: `${OFFICIAL_MARKETPLACE_REPOSITORY}/archive/refs/heads/${OFFICIAL_MARKETPLACE_REF}.zip`,
+				archiveUrl: marketplaceArchiveUrl(OFFICIAL_MARKETPLACE_REPOSITORY, OFFICIAL_MARKETPLACE_REF),
 				autoUpdate: false,
 			},
 		]);

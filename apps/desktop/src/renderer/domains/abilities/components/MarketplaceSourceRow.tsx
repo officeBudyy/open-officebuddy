@@ -59,7 +59,7 @@ export function MarketplaceSourceRow({
 
 	return (
 		<div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-3 py-2.5">
-			<span className="icon-[mdi--github] h-5 w-5 shrink-0 text-muted-foreground/70" />
+			<span className="icon-[solar--server-square-linear] h-5 w-5 shrink-0 text-muted-foreground/70" />
 			<div className="min-w-0 flex-1">
 				<div className="flex items-center gap-1.5">
 					<span className="truncate text-[12px] font-semibold text-foreground">{source.name}</span>
@@ -70,7 +70,7 @@ export function MarketplaceSourceRow({
 					)}
 				</div>
 				<p className="truncate text-[11px] text-muted-foreground/60">
-					{source.repository.replace("https://github.com/", "")} · {source.ref}
+					{source.repository.replace(/^https:\/\/(github|gitee)\.com\//, "")} · {source.ref}
 				</p>
 				<p role="status" className="text-[11px] text-muted-foreground/70">
 					{!source.enabled

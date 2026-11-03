@@ -384,6 +384,117 @@ describe("OpenMarketplaceService", () => {
 		);
 	});
 
+	it("downloads a Gitee archive over the repository archive URL with a curl-style user agent", async () => {
+		const rootDir = await temporaryRoot();
+		const zip = archive();
+		const fetchArchive = vi.fn(async (_url: string, init?: RequestInit) => {
+			expect(init?.headers).toMatchObject({ "User-Agent": "curl/8" });
+			expect(init?.headers).not.toHaveProperty("Authorization");
+			expect(init?.redirect).toBe("follow");
+			return response(zip);
+		});
+		const service = new OpenMarketplaceService({
+			appVersion: APP_VERSION,
+			rootDir,
+			repository: "https://gitee.com/energyPlatform/office-marketplace",
+			sourceRef: "gh-pages",
+			fetchArchive,
+		});
+		const snapshot = await service.refresh();
+		expect(snapshot.error).toBeUndefined();
+		expect(fetchArchive).toHaveBeenCalledWith(
+			"https://gitee.com/energyPlatform/office-marketplace/repository/archive/gh-pages.zip",
+			expect.anything(),
+		);
+	});
+
+	it("rejects a Gitee archive that is an HTML risk-control page instead of a zip", async () => {
+		const rootDir = await temporaryRoot();
+		const html = Buffer.from("<!DOCTYPE html><html><title>下载仓库</title></html>");
+		const fetchArchive = vi.fn(
+			async () =>
+				new Response(new Uint8Array(html), {
+					status: 200,
+					headers: { "content-type": "text/html; charset=utf-8", "content-length": String(html.byteLength) },
+				}),
+		);
+		const service = new OpenMarketplaceService({
+			appVersion: APP_VERSION,
+			rootDir,
+			repository: "https://gitee.com/energyPlatform/office-marketplace",
+			sourceRef: "gh-pages",
+			fetchArchive,
+		});
+		const snapshot = await service.refresh();
+		expect(snapshot.error).toBe("sync-failed");
+		// 内容不可接受：同一下载不重试。
+		expect(fetchArchive).toHaveBeenCalledTimes(1);
+	});
+
+	it("fetches the Gitee manifest over the plain raw URL without credentials", async () => {
+		const rootDir = await temporaryRoot();
+		const zip = archive();
+		const initial = new OpenMarketplaceService({
+			appVersion: APP_VERSION,
+			rootDir,
+			repository: "https://gitee.com/energyPlatform/office-marketplace",
+			sourceRef: "gh-pages",
+			fetchArchive: async () => response(zip),
+		});
+		await initial.refresh();
+		const fetchManifest = vi.fn(async (_url: string, init?: RequestInit) => {
+			expect(init?.headers).not.toHaveProperty("Authorization");
+			return manifestResponse(zip);
+		});
+		const service = new OpenMarketplaceService({
+			appVersion: APP_VERSION,
+			rootDir,
+			repository: "https://gitee.com/energyPlatform/office-marketplace",
+			sourceRef: "gh-pages",
+			fetchManifest,
+		});
+		const snapshot = await service.list();
+		expect(snapshot.error).toBeUndefined();
+		expect(snapshot.marketplaceVersion).toBe("2026.07.1");
+		await vi.waitFor(() => expect(fetchManifest).toHaveBeenCalledOnce());
+		expect(fetchManifest).toHaveBeenCalledWith(
+			"https://gitee.com/energyPlatform/office-marketplace/raw/gh-pages/.astravia/marketplace.json",
+			expect.anything(),
+		);
+	});
+
+	it("uses the Gitee API v5 with a query access token when one is configured", async () => {
+		const rootDir = await temporaryRoot();
+		const zip = archive();
+		const initial = new OpenMarketplaceService({
+			appVersion: APP_VERSION,
+			rootDir,
+			repository: "https://gitee.com/energyPlatform/office-marketplace",
+			sourceRef: "gh-pages",
+			fetchArchive: async () => response(zip),
+		});
+		await initial.refresh();
+		const fetchManifest = vi.fn(async (_url: string, init?: RequestInit) => {
+			expect(init?.headers).not.toHaveProperty("Authorization");
+			return githubManifestResponse(zip);
+		});
+		const service = new OpenMarketplaceService({
+			appVersion: APP_VERSION,
+			rootDir,
+			repository: "https://gitee.com/energyPlatform/office-marketplace",
+			sourceRef: "gh-pages",
+			getAccessToken: () => "gitee-token",
+			fetchManifest,
+		});
+		const snapshot = await service.list();
+		expect(snapshot.error).toBeUndefined();
+		await vi.waitFor(() => expect(fetchManifest).toHaveBeenCalledOnce());
+		expect(fetchManifest).toHaveBeenCalledWith(
+			"https://gitee.com/api/v5/repos/energyPlatform/office-marketplace/contents/.astravia/marketplace.json?ref=gh-pages&access_token=gitee-token",
+			expect.anything(),
+		);
+	});
+
 	it("uses the GitHub Contents API and decodes its base64 manifest payload", async () => {
 		const rootDir = await temporaryRoot();
 		const zip = archive();

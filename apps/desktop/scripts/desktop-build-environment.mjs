@@ -78,14 +78,18 @@ function validateMarketplaceRepository(env, errors) {
 		try {
 			const url = new URL(repository.replace(/\.git$/i, "").replace(/\/$/, ""));
 			const segments = url.pathname.split("/").filter(Boolean);
-			if (url.protocol !== "https:" || url.hostname.toLowerCase() !== "github.com" || segments.length !== 2) {
+			if (
+				url.protocol !== "https:" ||
+				!["github.com", "gitee.com"].includes(url.hostname.toLowerCase()) ||
+				segments.length !== 2
+			) {
 				errors.push(
-					"ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY must be a GitHub owner/repo or https://github.com/owner/repo",
+					"ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY must be an owner/repo or a GitHub/Gitee repository URL",
 				);
 			}
 		} catch {
 			errors.push(
-				"ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY must be a GitHub owner/repo or https://github.com/owner/repo",
+				"ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY must be an owner/repo or a GitHub/Gitee repository URL",
 			);
 		}
 	}

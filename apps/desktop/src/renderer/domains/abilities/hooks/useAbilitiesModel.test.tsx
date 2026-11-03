@@ -297,7 +297,7 @@ it("seeds the search keyword from an external deep link and lets the page take o
 	expect(mine.result.current.scope).toBe("mine");
 });
 
-it("renders abilities in a flat grid by default when ENABLE_ABILITY_CATEGORIES is false", async () => {
+it("renders the default catalog in product-facing form sections", async () => {
 	const repository = "https://github.com/example/flat";
 	const source: MarketplaceSource = {
 		id: "flat-source", name: "Flat", type: "github", repository,
@@ -308,8 +308,10 @@ it("renders abilities in a flat grid by default when ENABLE_ABILITY_CATEGORIES i
 	const snapshot: OpenMarketplaceSourceSnapshot = {
 		source, sourceId: source.id, marketplaceVersion: "1", repository, syncedAt: source.updatedAt, stale: false,
 		abilities: [
-			{ type: "skill", slug: "skill-a", name: "Skill A", description: "", icon: "", version: "1.0.0", configVersion: 1, author: "", license: "", category: "CategoryA", tags: [], config: {}, detail: {}, origin: { kind: "github-marketplace", sourceId: source.id, marketplace: "flat", marketplaceVersion: "1", repository } },
-			{ type: "skill", slug: "skill-b", name: "Skill B", description: "", icon: "", version: "1.0.0", configVersion: 1, author: "", license: "", category: "CategoryB", tags: [], config: {}, detail: {}, origin: { kind: "github-marketplace", sourceId: source.id, marketplace: "flat", marketplaceVersion: "1", repository } },
+			{ type: "skill", form: "skills", slug: "skill-a", name: "Skill A", description: "", icon: "", version: "1.0.0", configVersion: 1, author: "", license: "", category: "CategoryA", tags: [], config: {}, detail: {}, origin: { kind: "github-marketplace", sourceId: source.id, marketplace: "flat", marketplaceVersion: "1", repository } },
+			{ type: "skill", form: "skills", slug: "skill-b", name: "Skill B", description: "", icon: "", version: "1.0.0", configVersion: 1, author: "", license: "", category: "CategoryB", tags: [], config: {}, detail: {}, origin: { kind: "github-marketplace", sourceId: source.id, marketplace: "flat", marketplaceVersion: "1", repository } },
+			{ type: "plugin", form: "connectors", slug: "feishu", name: "Feishu", description: "", icon: "", version: "1.0.0", configVersion: 1, author: "", license: "", category: "Productivity", tags: [], config: { permissions: [], commands: [] }, detail: {}, origin: { kind: "github-marketplace", sourceId: source.id, marketplace: "flat", marketplaceVersion: "1", repository } },
+			{ type: "plugin", form: "apps", slug: "reader", name: "Reader", description: "", icon: "", version: "1.0.0", configVersion: 1, author: "", license: "", category: "Productivity", tags: [], config: { permissions: [], commands: [] }, detail: {}, origin: { kind: "github-marketplace", sourceId: source.id, marketplace: "flat", marketplaceVersion: "1", repository } },
 		],
 	};
 	const catalog: OpenMarketplaceCatalog = { sources: [source], snapshots: [snapshot], abilities: snapshot.abilities, failedSourceIds: [] };
@@ -329,8 +331,13 @@ it("renders abilities in a flat grid by default when ENABLE_ABILITY_CATEGORIES i
 	const view = render(<AbilitiesPageView model={result.current} />);
 	expect(screen.queryByRole("heading", { name: "CategoryA" })).toBeNull();
 	expect(screen.queryByRole("heading", { name: "CategoryB" })).toBeNull();
+	expect(screen.getByRole("heading", { name: "Skills" })).toBeTruthy();
+	expect(screen.getByRole("heading", { name: "Connectors" })).toBeTruthy();
+	expect(screen.getByRole("heading", { name: "Apps" })).toBeTruthy();
 	expect(screen.getByText("Skill A")).toBeTruthy();
 	expect(screen.getByText("Skill B")).toBeTruthy();
+	expect(screen.getByText("Feishu")).toBeTruthy();
+	expect(screen.getByText("Reader")).toBeTruthy();
 	view.unmount();
 });
 

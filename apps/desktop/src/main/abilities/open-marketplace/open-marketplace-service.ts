@@ -15,6 +15,7 @@ import { getAppLogger } from "../../logger.js";
 import { PLUGIN_API_VERSION } from "../../plugins/plugin-api-version.js";
 import { loadMarketplaceCatalog } from "./marketplace-catalog.js";
 import { isAppVersionCompatible, isValidAppVersion } from "./marketplace-compatibility.js";
+import { marketplaceArchiveUrl, marketplaceHost, marketplaceManifestUrl } from "./marketplace-hosts.js";
 import { selectMarketplacePluginReleases } from "./marketplace-plugin-releases.js";
 import { type MarketplaceManifest, parseMarketplaceManifest } from "./marketplace-schema.js";
 import { DEFAULT_MARKETPLACE_SOURCE_ID } from "./official-marketplace-source.js";
@@ -187,32 +188,46 @@ function normalizeArchiveEntryPath(value: string): string {
 	return normalized;
 }
 
-function marketplaceManifestUrl(repository: string, ref: string): string {
-	const parsed = new URL(repository);
-	const encodedRef = ref.split("/").map(encodeURIComponent).join("/");
-	return `${parsed.origin}${parsed.pathname}/raw/refs/heads/${encodedRef}/.astravia/marketplace.json`;
-}
-
-function githubRepositoryCoordinates(repository: string): { owner: string; repository: string } {
+function repositoryCoordinates(repository: string): { owner: string; repository: string } {
 	const segments = new URL(repository).pathname.split("/").filter(Boolean);
 	const owner = segments[0];
 	const name = segments[1];
-	if (!owner || !name || segments.length !== 2) throw new Error("GitHub repository URL is invalid");
+	if (!owner || !name || segments.length !== 2) throw new Error("Marketplace repository URL is invalid");
 	return { owner: encodeURIComponent(owner), repository: encodeURIComponent(name) };
 }
 
 function githubManifestUrl(repository: string, ref: string): string {
-	const coordinates = githubRepositoryCoordinates(repository);
+	const coordinates = repositoryCoordinates(repository);
 	return `https://api.github.com/repos/${coordinates.owner}/${coordinates.repository}/contents/.astravia/marketplace.json?ref=${encodeURIComponent(ref)}`;
 }
 
 function githubZipballUrl(repository: string, ref: string): string {
-	const coordinates = githubRepositoryCoordinates(repository);
+	const coordinates = repositoryCoordinates(repository);
 	return `https://api.github.com/repos/${coordinates.owner}/${coordinates.repository}/zipball/${encodeURIComponent(ref)}`;
+}
+
+/** 带凭证走 Gitee API v5（access_token 放查询参数，与 Gitee 文档一致）。 */
+function giteeManifestUrl(repository: string, ref: string, token: string): string {
+	const coordinates = repositoryCoordinates(repository);
+	return `https://gitee.com/api/v5/repos/${coordinates.owner}/${coordinates.repository}/contents/.astravia/marketplace.json?ref=${encodeURIComponent(ref)}&access_token=${encodeURIComponent(token)}`;
+}
+
+function giteeZipballUrl(repository: string, ref: string, token: string): string {
+	const coordinates = repositoryCoordinates(repository);
+	return `https://gitee.com/api/v5/repos/${coordinates.owner}/${coordinates.repository}/zipball/${encodeURIComponent(ref)}?access_token=${encodeURIComponent(token)}`;
 }
 
 function githubHeaders(accept: string): Record<string, string> {
 	return { Accept: accept, "User-Agent": "Astravia-Desktop" };
+}
+
+/**
+ * Gitee 归档端点按 User-Agent 白名单直发 zip：只有 curl / node 等工具标识能过，
+ * 浏览器或自定义标识（含 Electron 默认的 Chromium UA）都会收到 200 + 「下载仓库」
+ * 确认页（HTML），解包必然失败。因此 Gitee 的归档下载固定使用 curl 风格 UA。
+ */
+function giteeArchiveHeaders(): Record<string, string> {
+	return { Accept: "application/zip", "User-Agent": "curl/8" };
 }
 
 function githubApiHeaders(accept: string, token: string): Record<string, string> {
@@ -265,6 +280,7 @@ function toOpenMarketplaceAbility(
 		listed,
 		slug: ability.slug,
 		type: ability.type,
+		form: ability.form,
 		name: ability.name,
 		description: ability.description,
 		license: ability.license,
@@ -322,7 +338,7 @@ export class OpenMarketplaceService {
 		this.archiveUrl =
 			options.archiveUrl ??
 			(options.repository ? undefined : process.env.ASTRAVIA_OPEN_MARKETPLACE_ARCHIVE_URL?.trim() || undefined) ??
-			`${this.repository}/archive/refs/heads/${this.sourceRef.split("/").map(encodeURIComponent).join("/")}.zip`;
+			marketplaceArchiveUrl(this.repository, this.sourceRef);
 		if (!isValidAppVersion(options.appVersion)) {
 			throw new Error(`Invalid desktop app version: ${options.appVersion}`);
 		}
@@ -646,19 +662,32 @@ export class OpenMarketplaceService {
 		armStall(this.archiveDownload.headerTimeoutMs);
 		try {
 			const token = this.getAccessToken()?.trim();
+			const isGitee = marketplaceHost(this.repository) === "gitee";
 			const response = await this.fetchArchive(
-				token ? githubZipballUrl(this.repository, this.sourceRef) : this.archiveUrl,
+				token
+					? isGitee
+						? giteeZipballUrl(this.repository, this.sourceRef, token)
+						: githubZipballUrl(this.repository, this.sourceRef)
+					: this.archiveUrl,
 				{
-					headers: token
-						? githubApiHeaders("application/vnd.github+json", token)
-						: githubHeaders("application/zip"),
 					// Electron's Chromium fetch cancels manual redirects. Its network stack
 					// strips Authorization when following the cross-origin GitHub download redirect.
+					headers:
+						token && !isGitee
+							? githubApiHeaders("application/vnd.github+json", token)
+							: isGitee
+								? giteeArchiveHeaders()
+								: githubHeaders("application/zip"),
 					redirect: "follow",
 					signal: controller.signal,
 				},
 			);
 			if (!response.ok) throw requestError(response.status, "Open marketplace download");
+			const archiveContentType = response.headers.get("content-type") ?? "";
+			if (archiveContentType.toLowerCase().startsWith("text/html")) {
+				// Gitee 风控确认页 / 任何 HTML 响应都不是可用归档；立即失败避免误报网络错误。
+				throw new MarketplaceContentError("Open marketplace archive response is an HTML page, not a zip archive");
+			}
 			const declaredLength = Number(response.headers.get("content-length"));
 			if (Number.isFinite(declaredLength) && declaredLength > MAX_ARCHIVE_BYTES) {
 				throw new MarketplaceContentError("Open marketplace archive is too large");
@@ -705,14 +734,18 @@ export class OpenMarketplaceService {
 		const timer = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
 		try {
 			const token = this.getAccessToken()?.trim();
+			const isGitee = marketplaceHost(this.repository) === "gitee";
 			const response = await this.fetchManifest(
 				token
-					? githubManifestUrl(this.repository, this.sourceRef)
+					? isGitee
+						? giteeManifestUrl(this.repository, this.sourceRef, token)
+						: githubManifestUrl(this.repository, this.sourceRef)
 					: marketplaceManifestUrl(this.repository, this.sourceRef),
 				{
-					headers: token
-						? githubApiHeaders("application/vnd.github+json", token)
-						: githubHeaders("application/json"),
+					headers:
+						token && !isGitee
+							? githubApiHeaders("application/vnd.github+json", token)
+							: githubHeaders("application/json"),
 					redirect: "follow",
 					signal: controller.signal,
 				},
@@ -729,10 +762,10 @@ export class OpenMarketplaceService {
 			if (!token) return parseMarketplaceManifest(JSON.parse(text) as unknown);
 			const payload: unknown = JSON.parse(text);
 			if (payload == null || typeof payload !== "object" || Array.isArray(payload)) {
-				throw new Error("GitHub manifest response is invalid");
+				throw new Error("Marketplace manifest response is invalid");
 			}
 			const content = (payload as Record<string, unknown>).content;
-			if (typeof content !== "string") throw new Error("GitHub manifest response has no content");
+			if (typeof content !== "string") throw new Error("Marketplace manifest response has no content");
 			return parseMarketplaceManifest(
 				JSON.parse(Buffer.from(content.replace(/\s/g, ""), "base64").toString("utf8")) as unknown,
 			);

@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { CapabilitiesTour } from "@shared/tour";
 import { SettingsAiAssist } from "../../settings/ai-assist";
 import { resolveCategoryLabel } from "../lib/ability-presentation";
+import { groupAbilitiesByForm } from "../lib/group-abilities-by-form";
 import {
 	ABILITY_CATEGORY_CONNECTORS,
 	ABILITY_CATEGORY_UNCATEGORIZED,
@@ -40,6 +41,7 @@ export function AbilitiesPageView({
 	const [sourcesDialogOpen, setSourcesDialogOpen] = useState(false);
 	const isPublic = model.scope === "discover" || (model.scope as string) === "public";
 	const filtered = countActiveAbilityFilters(model.filter) > 0;
+	const formSections = groupAbilitiesByForm(model.items);
 
 	return (
 		<div className="relative flex h-full w-full flex-1 flex-col overflow-hidden">
@@ -125,7 +127,7 @@ export function AbilitiesPageView({
 						</div>
 						<div className="flex items-center gap-2">
 							<Button variant="ghost" size="sm" onClick={() => setSourcesDialogOpen(true)}>
-								<span className="icon-[mdi--github] h-3.5 w-3.5" />
+								<span className="icon-[solar--server-square-linear] h-3.5 w-3.5" />
 								{t("sources.trigger")}
 							</Button>
 							<Button variant="ghost" size="sm" disabled={model.refreshing} onClick={model.refresh}>
@@ -203,7 +205,7 @@ export function AbilitiesPageView({
 													{group.items.length}
 												</span>
 											</div>
-											<div className="grid grid-cols-2 gap-x-3 gap-y-0.5 lg:grid-cols-3">
+											<div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-2.5">
 												{group.items.map((item) => (
 													<AbilityCard key={item.id} item={item} model={model} />
 												))}
@@ -211,11 +213,30 @@ export function AbilitiesPageView({
 										</section>
 									))
 								) : (
-									<div className="grid grid-cols-2 gap-x-3 gap-y-0.5 lg:grid-cols-3">
-										{model.items.map((item) => (
-											<AbilityCard key={item.id} item={item} model={model} />
-										))}
-									</div>
+									formSections.map((section) => (
+										<section key={section.form} className="flex flex-col gap-2">
+											<div className="flex items-end justify-between gap-3">
+												<div>
+													<div className="flex items-baseline gap-2">
+														<h2 className="text-[13px] font-semibold text-foreground/90">
+															{t(`section.${section.form}.title`)}
+														</h2>
+														<span className="text-[11px] tabular-nums text-muted-foreground/50">
+															{section.items.length}
+														</span>
+													</div>
+													<p className="mt-0.5 text-[11px] text-muted-foreground/60">
+														{t(`section.${section.form}.description`)}
+													</p>
+												</div>
+											</div>
+											<div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-2.5">
+												{section.items.map((item) => (
+													<AbilityCard key={item.id} item={item} model={model} />
+												))}
+											</div>
+										</section>
+									))
 								)}
 								{model.hasMore && (
 									<div className="flex justify-center pt-2">

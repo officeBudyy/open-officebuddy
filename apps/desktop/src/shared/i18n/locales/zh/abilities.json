@@ -15,6 +15,24 @@
 		"plugin": "插件",
 		"bundle": "套装"
 	},
+	"section": {
+		"skills": {
+			"title": "技能",
+			"description": "为 Agent 提供专业知识、工作方法和可复用流程"
+		},
+		"connectors": {
+			"title": "连接器",
+			"description": "连接外部账号、服务与数据源"
+		},
+		"apps": {
+			"title": "应用",
+			"description": "在 OfficeBuddy 中直接打开和使用的完整工具"
+		},
+		"bundles": {
+			"title": "组合包",
+			"description": "一次添加一组配合使用的技能、连接器和应用"
+		}
+	},
 	"scope": {
 		"discover": "公开",
 		"mine": "个人"
@@ -107,7 +125,7 @@
 		"filteredHint": "当前筛选下没有能力，试试清除筛选"
 	},
 	"error": {
-		"sourcesFailed": "以下 GitHub 来源同步失败（如有缓存则继续显示）：{{names}}",
+		"sourcesFailed": "以下市场来源同步失败（如有缓存则继续显示）：{{names}}",
 		"sourcesOutdated": "以下来源需要更新 Astravia 后才能加载：{{names}}",
 		"serverFailed": "云能力市场加载失败，其他来源仍可使用",
 		"loadFailed": "能力列表加载失败",
@@ -518,19 +536,19 @@
 		"trigger": "来源",
 		"dialog": {
 			"title": "能力来源",
-			"description": "管理 GitHub 能力市场来源。启用的来源会在能力市场中聚合展示，内置官方来源不可停用或删除。"
+			"description": "管理 GitHub / Gitee 能力市场来源。启用的来源会在能力市场中聚合展示，内置官方来源不可停用或删除。"
 		},
 		"empty": "还没有配置任何来源",
 		"builtinBadge": "内置",
 		"lockedHint": "内置官方来源始终启用，不可停用或删除",
-		"credentialConfigured": "已配置 GitHub 访问凭据",
+		"credentialConfigured": "已配置仓库访问凭据",
 		"status": {
 			"disabled": "已停用",
 			"pending": "尚未同步",
-			"authRequired": "需要 GitHub 凭据或凭据已失效",
-			"forbidden": "GitHub 凭据无权读取此仓库",
+			"authRequired": "需要仓库访问凭据或凭据已失效",
+			"forbidden": "访问凭据无权读取此仓库",
 			"notFound": "仓库、分支或市场清单不存在",
-			"rateLimited": "GitHub 请求频率受限，请稍后重试",
+			"rateLimited": "仓库托管站点请求频率受限，请稍后重试",
 			"appOutdated": "当前 Astravia 版本过旧，需升级到 {{version}} 或更高版本",
 			"ready": "已同步 · {{version}}",
 			"failed": "同步失败，可重试",
@@ -542,18 +560,18 @@
 			"add": "添加来源",
 			"edit": "编辑来源",
 			"remove": "删除来源",
-			"clearCredential": "清除 GitHub 访问凭据",
-			"configureCredential": "配置 GitHub 访问凭据",
+			"clearCredential": "清除仓库访问凭据",
+			"configureCredential": "配置仓库访问凭据",
 			"confirmRemove": "确认删除",
 			"toggle": "启用来源"
 		},
 		"form": {
 			"addTitle": "添加来源",
 			"editTitle": "编辑来源",
-			"repositoryLabel": "GitHub 仓库",
-			"repositoryPlaceholder": "owner/repo 或 https://github.com/owner/repo",
-			"credentialLabel": "GitHub 访问令牌（可选）",
-			"credentialPlaceholder": "Fine-grained token，Contents 只读",
+			"repositoryLabel": "仓库地址（GitHub / Gitee）",
+			"repositoryPlaceholder": "owner/repo 或 https://gitee.com/owner/repo",
+			"credentialLabel": "仓库访问令牌（可选）",
+			"credentialPlaceholder": "仓库只读访问令牌",
 			"credentialHint": "令牌只保存在本机安全存储中，不会上传到 Astravia。",
 			"nameLabel": "名称",
 			"namePlaceholder": "留空则取仓库名",

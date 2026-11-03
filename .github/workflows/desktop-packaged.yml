@@ -99,7 +99,7 @@ jobs:
         env:
           ASTRAVIA_BUILD_ENV: test
           ASTRAVIA_CLOUD_ENABLED: "false"
-          ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY: maomaochong-ai/astravia-official-marketplace
+          ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY: https://gitee.com/energyPlatform/office-marketplace
           ASTRAVIA_SPEECH_INPUT_ENABLED: "false"
           ASTRAVIA_UPDATE_GITHUB_OWNER: maomaochong-ai
           ASTRAVIA_UPDATE_GITHUB_REPO: open-astravia

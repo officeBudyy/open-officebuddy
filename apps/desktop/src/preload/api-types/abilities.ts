@@ -187,6 +187,8 @@ export interface OpenMarketplaceAbility {
 	listed?: boolean;
 	slug: string;
 	type: "skill" | "scene" | "mcp" | "plugin" | "bundle";
+	/** Product-facing form; unlike type, connector plugins remain connectors. */
+	form?: "skills" | "connectors" | "apps" | "bundles";
 	name: string;
 	description: string;
 	license: string;

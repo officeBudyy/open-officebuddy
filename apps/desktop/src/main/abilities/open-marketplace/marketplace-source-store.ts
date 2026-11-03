@@ -7,6 +7,7 @@ import type {
 	MarketplaceSource,
 	UpdateMarketplaceSourceInput,
 } from "../../../preload/api-types/abilities.js";
+import { marketplaceArchiveUrl, marketplaceHost, SUPPORTED_MARKETPLACE_HOSTS } from "./marketplace-hosts.js";
 import { reconcileMarketplaceSources } from "./marketplace-source-policy.js";
 import {
 	DEFAULT_MARKETPLACE_SOURCE_ID,
@@ -45,20 +46,16 @@ export function normalizeGitHubRepository(value: string): string {
 	try {
 		parsed = new URL(trimmed);
 	} catch {
-		throw new Error("Marketplace repository must be a GitHub owner/repo or URL");
+		throw new Error("Marketplace repository must be a GitHub/Gitee owner/repo or URL");
 	}
-	if (parsed.protocol !== "https:" || parsed.hostname.toLowerCase() !== "github.com") {
-		throw new Error("Marketplace repository must use https://github.com");
+	if (parsed.protocol !== "https:" || !SUPPORTED_MARKETPLACE_HOSTS.has(parsed.hostname.toLowerCase())) {
+		throw new Error("Marketplace repository must use https://github.com or https://gitee.com");
 	}
 	const segments = parsed.pathname.split("/").filter(Boolean);
 	if (segments.length !== 2 || !segments[0] || !segments[1]) {
 		throw new Error("Marketplace repository URL must identify exactly one repository");
 	}
-	return `https://github.com/${segments[0]}/${segments[1]}`;
-}
-
-export function marketplaceArchiveUrl(repository: string, ref: string): string {
-	return `${repository}/archive/refs/heads/${ref.split("/").map(encodeURIComponent).join("/")}.zip`;
+	return `https://${parsed.hostname.toLowerCase()}/${segments[0]}/${segments[1]}`;
 }
 
 function validateRef(value: string | undefined, fallback = "main"): string {
@@ -70,11 +67,12 @@ function validateRef(value: string | undefined, fallback = "main"): string {
 }
 
 function sourceIdForRepository(repository: string): string {
+	const host = marketplaceHost(repository) === "gitee" ? "gitee" : "github";
 	const path = new URL(repository).pathname
 		.slice(1)
 		.toLowerCase()
 		.replace(/[^a-z0-9-]+/g, "-");
-	return `github-${path}`.slice(0, 96);
+	return `${host}-${path}`.slice(0, 96);
 }
 
 function parseSource(value: unknown): MarketplaceSource | null {

@@ -21,6 +21,7 @@ function toMarketAbility(
 		listed: ability.listed,
 		slug: ability.slug,
 		type: ability.type,
+		form: ability.form,
 		name: ability.name,
 		description: ability.description,
 		license: ability.license,

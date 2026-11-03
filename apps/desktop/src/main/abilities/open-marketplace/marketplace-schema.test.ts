@@ -22,6 +22,43 @@ function validManifest(): Record<string, unknown> {
 }
 
 describe("parseMarketplaceManifest", () => {
+	it("derives product forms for legacy entries and preserves explicit connector plugins", () => {
+		const manifest = validManifest();
+		manifest.abilities = [
+			{
+				type: "skill",
+				slug: "demo-skill",
+				name: "Demo Skill",
+				version: "1.0.0",
+				source: { path: "abilities/skills/demo-skill" },
+			},
+			{
+				type: "plugin",
+				form: "connectors",
+				slug: "demo",
+				name: "Demo",
+				version: "1.0.0",
+				source: { path: "abilities/connectors/demo" },
+			},
+		];
+		const parsed = parseMarketplaceManifest(manifest);
+		expect(parsed.abilities.map((ability) => ability.form)).toEqual(["skills", "connectors"]);
+	});
+
+	it("rejects a product form that conflicts with its source path", () => {
+		const manifest = validManifest();
+		manifest.abilities = [
+			{
+				type: "plugin",
+				form: "apps",
+				slug: "demo",
+				name: "Demo",
+				version: "1.0.0",
+				source: { path: "abilities/connectors/demo" },
+			},
+		];
+		expect(() => parseMarketplaceManifest(manifest)).toThrow("Ability form does not match source path");
+	});
 	it("requires versioned releases for bundle-only plugins in schema v3", () => {
 		const member = {
 			type: "plugin",

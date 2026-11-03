@@ -478,6 +478,8 @@ export interface MarketAbility {
 	/** 机器标识，与 type 联合唯一。 */
 	slug: string;
 	type: AbilityType;
+	/** Product-facing form supplied by open marketplaces; server entries may omit it. */
+	form?: "skills" | "connectors" | "apps" | "bundles";
 	name: string;
 	description: string;
 	license: string;
