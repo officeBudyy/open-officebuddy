@@ -5,7 +5,7 @@ import type { WebhookEndpointSecret } from "./types.js";
 
 /**
  * Sensitive webhook credentials. Persisted under
- *   ~/.astravia/desktop-app/webhook-credentials.json
+ *   ~/.officeBuddy/desktop-app/webhook-credentials.json
  *
  * Stored as plain JSON with chmod 0600, mirroring the IM credential store.
  * The renderer never reads this file directly — it only sees masked URLs

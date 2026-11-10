@@ -1,6 +1,6 @@
 # Apple 证书申请与 macOS 签名/公证手册
 
-面向 Astravia 桌面端 macOS 发版：从零申请公司主体的 Apple 开发者账号，拿到 **Developer ID Application** 证书与公证凭据，注入构建，直到用户双击 DMG 不再看到「已损坏」。
+面向 officeBuddy 桌面端 macOS 发版：从零申请公司主体的 Apple 开发者账号，拿到 **Developer ID Application** 证书与公证凭据，注入构建，直到用户双击 DMG 不再看到「已损坏」。
 
 构建侧改动见 `apps/desktop/scripts/prepare-pack.js` 的 `resolveMacSigning()`。**只要环境变量齐全就自动开启签名+公证，一个都不设就是现在的未签名产物**，不需要改代码。
 
@@ -13,7 +13,7 @@
 | 产物 | 用途 | 来源 |
 |---|---|---|
 | Apple Developer Program 会员资格（Organization） | 前提，$99/年 | developer.apple.com |
-| **Developer ID Application** 证书 + 私钥（`.p12`） | 给 `Astravia.app` 签名 | 开发者后台创建，本机钥匙串导出 |
+| **Developer ID Application** 证书 + 私钥（`.p12`） | 给 `officeBuddy.app` 签名 | 开发者后台创建，本机钥匙串导出 |
 | **Team ID**（10 位，如 `A1B2C3D4E5`） | 公证时指定团队 | 开发者后台 Membership 页 |
 | App Store Connect **API Key**（`.p8`）或 **App 专用密码** | 提交公证 | App Store Connect / appleid.apple.com |
 
@@ -203,14 +203,14 @@ macOS 在 matrix 里是 `dist:mac:arm64` 与 `dist:mac:x64` 两个任务（内�
 
 ## 5. 验证
 
-拿到 `apps/desktop/release/Astravia-<version>.dmg` 后逐条跑：
+拿到 `apps/desktop/release/officeBuddy-<version>.dmg` 后逐条跑：
 
 ```bash
 # 1. 挂载 DMG
-hdiutil attach release/Astravia-*.dmg
+hdiutil attach release/officeBuddy-*.dmg
 
 # 2. 公证票据已钉进 app
-xcrun stapler validate /Volumes/Astravia*/Astravia.app
+xcrun stapler validate /Volumes/officeBuddy*/officeBuddy.app
 # 期望：The validate action worked!
 #
 # 注意校验对象是 app 不是 DMG：electron-builder 的顺序是「签 app → 公证 app →
@@ -220,20 +220,20 @@ xcrun stapler validate /Volumes/Astravia*/Astravia.app
 # app 已钉票据，装好后离线启动不受影响。
 
 # 3. 检查 app 签名
-codesign -dv --verbose=4 /Volumes/Astravia*/Astravia.app
+codesign -dv --verbose=4 /Volumes/officeBuddy*/officeBuddy.app
 # 期望：Authority=Developer ID Application: <公司名> (<TeamID>)
 #       flags 里含 runtime（= hardened runtime 生效）
 #       TeamIdentifier=<TeamID>，不是 not set
 
 # 4. 深度校验所有嵌套二进制
-codesign --verify --deep --strict --verbose=2 /Volumes/Astravia*/Astravia.app
+codesign --verify --deep --strict --verbose=2 /Volumes/officeBuddy*/officeBuddy.app
 # 期望：valid on disk / satisfies its Designated Requirement
 
 # 5. Gatekeeper 放行
-spctl -a -vvv -t install /Volumes/Astravia*/Astravia.app
+spctl -a -vvv -t install /Volumes/officeBuddy*/officeBuddy.app
 # 期望：accepted，source=Notarized Developer ID
 
-hdiutil detach /Volumes/Astravia*
+hdiutil detach /Volumes/officeBuddy*
 ```
 
 最后必须做一次**真机端到端验证**：把 DMG 上传到 CDN，从**另一台没装过开发者证书的 Mac** 用浏览器下载（一定要走浏览器，`scp`/AirDrop 不会打 quarantine 标记，测不出问题），拖入 `/Applications` 双击——应该直接启动，不出现任何「已损坏」「无法验证开发者」弹窗。

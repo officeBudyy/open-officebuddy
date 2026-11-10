@@ -156,7 +156,7 @@ const CONFIG_PATH = join(getAstraviaHomePath(), "desktop-config.json");
 /**
  * SSH 主机单独成文件，而不是 desktop-config.json 的一个字段。
  *
- * 开发版与已安装的正式版共用 `~/.astravia`。0.5.58 及更早版本按自己的字段白名单整份重写
+ * 开发版与已安装的正式版共用 `~/.officeBuddy`。0.5.58 及更早版本按自己的字段白名单整份重写
  * desktop-config.json，不认识的 sshHosts 随之消失——它们被 astravia:// 链接、通知之类
  * 顺手拉起一次就够了，写回代码里再怎么保留未知字段也管不到已经发出去的旧版本。
  * 旧版本不知道这个文件，也就碰不到它。

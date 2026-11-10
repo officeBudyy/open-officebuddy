@@ -11,6 +11,7 @@ import { usePromptPrediction } from "./usePromptPrediction";
 import { useSessionStateEvents } from "./useSessionStateEvents";
 
 const DELTA_FLUSH_INTERVAL_MS = 100;
+const RECENT_EVENT_KEY_LIMIT = 4_096;
 // Keep a 100ms ceiling rather than rAF: markdown re-parse of the live tail is the
 // expensive work, and a 120Hz display would otherwise commit ~2× more parses.
 
@@ -48,6 +49,20 @@ export function useSessionEventController({ activeSessionRef }: SessionEventCont
 	const flushTimerRef = useRef<number | null>(null);
 	const heldWritesRef = useRef<{ runtimeId: string; actions: ConversationFeedAction[] } | null>(null);
 	const activeTurnIdRef = useRef<string | null>(null);
+	const recentEventKeysRef = useRef<string[]>([]);
+	const seenEventKeysRef = useRef<Set<string>>(new Set());
+
+	const acceptEventOnce = useCallback((event: SessionEvent): boolean => {
+		const key = `${event.eventId}:${event.timestamp}`;
+		if (seenEventKeysRef.current.has(key)) return false;
+		seenEventKeysRef.current.add(key);
+		recentEventKeysRef.current.push(key);
+		if (recentEventKeysRef.current.length > RECENT_EVENT_KEY_LIMIT) {
+			const expired = recentEventKeysRef.current.shift();
+			if (expired) seenEventKeysRef.current.delete(expired);
+		}
+		return true;
+	}, []);
 
 	const writeFeed = useCallback((action: ConversationFeedAction & { readonly runtimeId: string }) => {
 		const held = heldWritesRef.current;
@@ -94,6 +109,8 @@ export function useSessionEventController({ activeSessionRef }: SessionEventCont
 		pendingFeedEventsRef.current = null;
 		heldWritesRef.current = null;
 		activeTurnIdRef.current = null;
+		recentEventKeysRef.current = [];
+		seenEventKeysRef.current.clear();
 	}, []);
 
 	useEffect(() => resetEventBuffers, [resetEventBuffers]);
@@ -174,6 +191,9 @@ export function useSessionEventController({ activeSessionRef }: SessionEventCont
 			// level owner is cleared the moment any openSession starts.
 			if (activeSessionRef.current?.runtimeId !== sessionId) return;
 			if (getChatStreamOwner() !== sessionId) return;
+			// Re-attaching a live session can briefly leave two IPC subscriptions active.
+			// Both deliver the exact same event; accept it once so deltas are not rendered twice.
+			if (!acceptEventOnce(event)) return;
 			switch (routeSessionEvent(event)) {
 				case "conversation-feed":
 					enqueueFeedEvent(sessionId, event);
@@ -190,7 +210,7 @@ export function useSessionEventController({ activeSessionRef }: SessionEventCont
 					return;
 			}
 		},
-		[activeSessionRef, applySessionStateEvent, applyTurnLifecycle, enqueueFeedEvent],
+		[acceptEventOnce, activeSessionRef, applySessionStateEvent, applyTurnLifecycle, enqueueFeedEvent],
 	);
 
 	return { bumpSuggestionToken, createSessionEventHandler, resetEventBuffers, holdFeedWrites, releaseFeedWrites };

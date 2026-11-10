@@ -71,9 +71,13 @@ func applyEnvOverrides(cfg *Config) {
 }
 
 // applyDefaults fills in any zero-valued fields with sensible defaults
-// derived from $HOME/.astravia. Idempotent: calling it twice yields the same
+// derived from ASTRAVIA_HOME or $HOME/.officeBuddy. Idempotent: calling it twice yields the same
 // Config.
 func applyDefaults(cfg *Config) error {
+	dataHome, err := defaultDataHome()
+	if err != nil {
+		return err
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("resolve home dir: %w", err)
@@ -97,8 +101,7 @@ func applyDefaults(cfg *Config) error {
 		cfg.Logging.Level = "info"
 	}
 
-	astraviaDir := filepath.Join(home, ".astravia")
-	gatewayDir := filepath.Join(astraviaDir, "im-gateway")
+	gatewayDir := filepath.Join(dataHome, "im-gateway")
 	if cfg.Paths.ConversationCwd == "" {
 		cfg.Paths.ConversationCwd = filepath.Join(gatewayDir, "conversation")
 	}
@@ -120,6 +123,17 @@ func applyDefaults(cfg *Config) error {
 	cfg.Paths.WechatState = expandTilde(cfg.Paths.WechatState, home)
 	cfg.Paths.WhatsappState = expandTilde(cfg.Paths.WhatsappState, home)
 	return nil
+}
+
+func defaultDataHome() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("resolve home dir: %w", err)
+	}
+	if configured := strings.TrimSpace(os.Getenv("ASTRAVIA_HOME")); configured != "" {
+		return expandTilde(configured, home), nil
+	}
+	return filepath.Join(home, ".officeBuddy"), nil
 }
 
 func expandTilde(p, home string) string {

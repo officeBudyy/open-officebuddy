@@ -47,6 +47,7 @@ export interface UpdaterSystemEvents {
 }
 
 export interface UpdaterServiceOptions {
+	enabled?: boolean;
 	autoDownloadDelayMs?: number;
 	autoDownloadRetryDelaysMs?: readonly number[];
 	downloadStallTimeoutMs?: number;
@@ -84,6 +85,7 @@ export class UpdaterService {
 	private readonly backgroundCheckMinGapMs: number;
 	private readonly checkRetryDelaysMs: readonly number[];
 	private readonly systemEvents: UpdaterSystemEvents | undefined;
+	private readonly enabled: boolean;
 
 	constructor(
 		private readonly engine: UpdateEngine,
@@ -96,6 +98,7 @@ export class UpdaterService {
 			phase: "idle",
 			currentVersion,
 		};
+		this.enabled = options.enabled ?? true;
 		this.autoDownloadDelayMs = options.autoDownloadDelayMs ?? DEFAULT_AUTO_DOWNLOAD_DELAY_MS;
 		this.autoDownloadRetryDelaysMs = options.autoDownloadRetryDelaysMs ?? DEFAULT_AUTO_DOWNLOAD_RETRY_DELAYS_MS;
 		this.downloadStallTimeoutMs = options.downloadStallTimeoutMs ?? DEFAULT_DOWNLOAD_STALL_TIMEOUT_MS;
@@ -116,7 +119,7 @@ export class UpdaterService {
 	}
 
 	async onAppReady(): Promise<void> {
-		if (!this.isPackaged) return;
+		if (!this.isPackaged || !this.enabled) return;
 		await this.engine.onAppReady?.();
 		this.disposeSystemEvents =
 			this.systemEvents?.onResume(() => {
@@ -144,6 +147,13 @@ export class UpdaterService {
 	}
 
 	private async runCheck(): Promise<UpdaterState> {
+		if (!this.enabled) {
+			this.setState({
+				phase: "idle",
+				error: this.translate("updater.errors.configurationUnavailable"),
+			});
+			return this.getState();
+		}
 		if (!this.isPackaged) {
 			this.setState({
 				phase: "error",
@@ -331,7 +341,7 @@ export class UpdaterService {
 	 * 避免刚查完又被积压的定时器再查一次。
 	 */
 	async syncInBackground(): Promise<void> {
-		if (!this.isPackaged) return;
+		if (!this.isPackaged || !this.enabled) return;
 		if (Date.now() - this.lastCheckStartedAt < this.backgroundCheckMinGapMs) return;
 		await this.checkIfNotBusy();
 		this.schedulePeriodicCheck();

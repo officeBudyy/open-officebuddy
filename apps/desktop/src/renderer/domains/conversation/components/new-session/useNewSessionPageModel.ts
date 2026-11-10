@@ -43,6 +43,7 @@ import {
 	isTeamTarget,
 	type NewSessionTargetKey,
 	parseAgentTargetKey,
+	parseEnterpriseExpertTargetKey,
 	parseNewSessionTarget,
 	parseTeamTargetKey,
 } from "./target";
@@ -115,6 +116,7 @@ export function useNewSessionPageModel(): NewSessionPageModel {
 	// 单个智能体走的是普通会话链路，只在创建时多带一个身份；只有团队才需要 Team 编排。
 	const selectedTeamKey = isTeamTarget(targetKey) ? targetKey : null;
 	const selectedAgentProfileId = parseAgentTargetKey(targetKey);
+	const selectedEnterpriseExpertId = parseEnterpriseExpertTargetKey(targetKey);
 	// 项目选择器只覆盖页面本地上下文，不切路由：草稿按 `new:${routeCwd}` 隔离，
 	// 换项目若走路由就会把用户已经打好的正文换走。
 	const projectSelection = useNewSessionProjectSelection(decodedCwd);
@@ -189,6 +191,7 @@ export function useNewSessionPageModel(): NewSessionPageModel {
 		openSession,
 		sendMessage,
 		...(selectedAgentProfileId ? { agentProfileId: selectedAgentProfileId } : {}),
+		...(selectedEnterpriseExpertId ? { enterpriseExpertId: selectedEnterpriseExpertId } : {}),
 	});
 	const teamDraft = useNewSessionTeamDraft({
 		targetKey: selectedTeamKey,
@@ -214,8 +217,17 @@ export function useNewSessionPageModel(): NewSessionPageModel {
 				// 差别仅在于 useNewSessionSend 是否带上 agentProfileId。
 				agentDispatch: newSessionSend.send,
 				agentKey: selectedAgentProfileId ? targetKey : null,
+				enterpriseDispatch: newSessionSend.send,
+				enterpriseKey: selectedEnterpriseExpertId ? targetKey : null,
 			}),
-		[newSessionSend.send, selectedAgentProfileId, selectedTeamKey, targetKey, teamDraft.send],
+		[
+			newSessionSend.send,
+			selectedAgentProfileId,
+			selectedEnterpriseExpertId,
+			selectedTeamKey,
+			targetKey,
+			teamDraft.send,
+		],
 	);
 	const handleSelectTarget = useCallback(
 		(next: NewSessionTargetKey | null) => {

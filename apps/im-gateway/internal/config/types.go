@@ -169,17 +169,17 @@ type LoggingConfig struct {
 }
 
 // PathsConfig overrides on-disk file locations. All optional; sane defaults
-// are derived from $HOME/.astravia when fields are empty.
+// are derived from $HOME/.officeBuddy when fields are empty.
 type PathsConfig struct {
 	// ConversationCwd is the absolute cwd shared by all im-gateway IM
 	// sessions (see CONTEXT.md → "im-gateway cwd"). Physically separate
 	// from desktop-app's "对话" cwd so the two sides don't share sessions
-	// or generated artifacts. Defaults to ~/.astravia/im-gateway/conversation.
+	// or generated artifacts. Defaults to ~/.officeBuddy/im-gateway/conversation.
 	ConversationCwd string `yaml:"conversationCwd,omitempty"`
-	State           string `yaml:"state,omitempty"`         // ~/.astravia/im-gateway/state.json
-	LogsDir         string `yaml:"logsDir,omitempty"`       // ~/.astravia/im-gateway/logs/
-	WechatState     string `yaml:"wechatState,omitempty"`   // ~/.astravia/im-gateway/wechat.json
-	WhatsappState   string `yaml:"whatsappState,omitempty"` // ~/.astravia/im-gateway/whatsapp.db
+	State           string `yaml:"state,omitempty"`         // ~/.officeBuddy/im-gateway/state.json
+	LogsDir         string `yaml:"logsDir,omitempty"`       // ~/.officeBuddy/im-gateway/logs/
+	WechatState     string `yaml:"wechatState,omitempty"`   // ~/.officeBuddy/im-gateway/wechat.json
+	WhatsappState   string `yaml:"whatsappState,omitempty"` // ~/.officeBuddy/im-gateway/whatsapp.db
 }
 
 // Credentials carries secret values loaded separately from Config.
@@ -187,7 +187,7 @@ type PathsConfig struct {
 // Loading order (later overrides earlier):
 //  1. OS keychain (macOS Keychain / linux Secret Service / Windows
 //     Credential Manager)
-//  2. ~/.astravia/im-gateway/credentials.yaml (chmod 0600)
+//  2. ~/.officeBuddy/im-gateway/credentials.yaml (chmod 0600)
 //  3. Environment variables (IM_GATEWAY_FEISHU_APP_ID etc.)
 //
 // Source records which mechanism actually provided the values, used in

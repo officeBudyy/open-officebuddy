@@ -97,11 +97,11 @@ export interface DesktopConfigSnapshot extends Omit<DesktopConfig, "proxy"> {
 	proxy: DesktopProxyConfigSnapshot;
 	sandbox: SandboxCapability;
 	linuxSandbox: LinuxSandboxConfigState;
-	/** 默认「对话」项目的绝对路径（~/.astravia/conversation），主进程已确保目录存在。 */
+	/** 默认「对话」项目的绝对路径（~/.officeBuddy/conversation），主进程已确保目录存在。 */
 	defaultConversationCwd: string;
-	/** im-gateway 自己的 cwd（~/.astravia/im-gateway/conversation）。Claw tab 据此判定一条 session 是否来自 IM。 */
+	/** im-gateway 自己的 cwd（~/.officeBuddy/im-gateway/conversation）。Claw tab 据此判定一条 session 是否来自 IM。 */
 	defaultImConversationCwd: string;
-	/** 知识库加工特殊项目的绝对路径（~/.astravia/knowledges/processing_records）。 */
+	/** 知识库加工特殊项目的绝对路径（~/.officeBuddy/knowledges/processing_records）。 */
 	knowledgeProcessingCwd: string;
 }
 

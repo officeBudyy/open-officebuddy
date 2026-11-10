@@ -10,6 +10,7 @@ const commercialEnv = {
 	ASTRAVIA_CLOUD_ENABLED: "true",
 	ASTRAVIA_SERVER_URL: "https://api.example.com/api/v1",
 	ASTRAVIA_UPDATE_PROVIDER: "generic",
+	ASTRAVIA_UPDATE_URL: "https://releases.example.com/desktop/stable",
 	ASTRAVIA_VENDOR_PLATFORM: "win32-x64",
 };
 
@@ -17,7 +18,7 @@ const openSourceEnv = createOpenSourceBuildEnvironment({
 	ASTRAVIA_VENDOR_PLATFORM: "linux-x64",
 });
 
-test("accepts a commercial Windows build with the default generic updater", () => {
+test("accepts a commercial Windows build with an explicit generic updater", () => {
 	const config = validateDesktopBuildEnvironment({ env: commercialEnv, platform: "win32", arch: "x64" });
 	assert.equal(config.edition, "commercial");
 	assert.equal(config.updateConfig.provider, "generic");
@@ -34,7 +35,7 @@ test("creates deterministic open-source defaults while preserving fork coordinat
 	});
 	assert.equal(env.ASTRAVIA_CLOUD_ENABLED, "false");
 	assert.equal(env.ASTRAVIA_SERVER_URL, "");
-	assert.equal(env.ASTRAVIA_UPDATE_PROVIDER, "github");
+	assert.equal(env.ASTRAVIA_UPDATE_PROVIDER, "none");
 	assert.equal(env.ASTRAVIA_UPDATE_GITHUB_OWNER, "example");
 	assert.equal(env.ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY, "example/marketplace");
 });
@@ -42,8 +43,22 @@ test("creates deterministic open-source defaults while preserving fork coordinat
 test("accepts an open-source Linux build", () => {
 	const config = validateDesktopBuildEnvironment({ env: openSourceEnv, platform: "linux", arch: "x64" });
 	assert.equal(config.edition, "opensource");
-	assert.equal(config.updateConfig.provider, "github");
+	assert.equal(config.updateConfig, null);
 	assert.deepEqual(config.platformTags, ["linux-x64"]);
+});
+
+test("allows an open-source fork to opt into its own generic update feed", () => {
+	const env = createOpenSourceBuildEnvironment({
+		ASTRAVIA_UPDATE_PROVIDER: "generic",
+		ASTRAVIA_UPDATE_URL: "https://downloads.example.com/officebuddy/stable",
+		ASTRAVIA_VENDOR_PLATFORM: "linux-x64",
+	});
+	const config = validateDesktopBuildEnvironment({ env, platform: "linux", arch: "x64" });
+	assert.deepEqual(config.updateConfig, {
+		provider: "generic",
+		url: "https://downloads.example.com/officebuddy/stable",
+		useMultipleRangeRequest: true,
+	});
 });
 
 test("does not supply a hard-coded marketplace in open-source build environments", () => {
@@ -122,7 +137,12 @@ test("requires a secure production updater and valid GitHub coordinates", () => 
 	assert.throws(
 		() =>
 			validateDesktopBuildEnvironment({
-				env: { ...openSourceEnv, ASTRAVIA_UPDATE_GITHUB_OWNER: "invalid/owner" },
+				env: {
+					...openSourceEnv,
+					ASTRAVIA_UPDATE_PROVIDER: "github",
+					ASTRAVIA_UPDATE_GITHUB_OWNER: "invalid/owner",
+					ASTRAVIA_UPDATE_GITHUB_REPO: "officebuddy",
+				},
 			}),
 		/ASTRAVIA_UPDATE_GITHUB_OWNER/,
 	);

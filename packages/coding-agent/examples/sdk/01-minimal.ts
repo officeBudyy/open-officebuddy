@@ -2,7 +2,7 @@
  * Minimal SDK Usage
  *
  * Uses all defaults: discovers skills, extensions, tools, context files
- * from cwd and ~/.astravia/agent. Model chosen from settings or first available.
+ * from cwd and ~/.officeBuddy/agent. Model chosen from settings or first available.
  */
 
 import { createCodingAgentSession } from "@astravia/coding-agent/sdk";

@@ -85,7 +85,7 @@ type FeishuConfig struct {
 //     the active transport;
 //   - the absolute path to the persistent state file (so the parent can
 //     keep that file alongside its other astravia data and override the
-//     ~/.astravia/im-gateway/wechat.json default).
+//     ~/.officeBuddy/im-gateway/wechat.json default).
 type WechatConfig struct {
 	Enabled   bool   `json:"enabled"`
 	StatePath string `json:"statePath,omitempty"`
@@ -233,7 +233,7 @@ type CodingAgentSpec struct {
 	PackageDir string `json:"packageDir,omitempty"`
 	// ServerURL, when non-empty, is forwarded to the spawned subprocess as
 	// the `ASTRAVIA_SERVER_URL` environment variable. coding-agent's main.ts
-	// otherwise reads serverUrl from `~/.astravia/agent/settings.json`, which
+	// otherwise reads serverUrl from `~/.officeBuddy/agent/settings.json`, which
 	// may carry a stale LAN address (test env / fresh dev login residue)
 	// that produces 401 on the prod gateway. With this env present the
 	// agent ignores the settings residue and uses the host-injected URL.

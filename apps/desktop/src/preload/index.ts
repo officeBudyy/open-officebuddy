@@ -11,6 +11,7 @@ import { createAppshotApi } from "./apis/appshot.js";
 import { createBatchTasksApi } from "./apis/batch-tasks.js";
 import { createConversationTagsApi } from "./apis/conversation-tags.js";
 import { createDownloadsApi } from "./apis/downloads.js";
+import { createEnterpriseExpertsApi } from "./apis/enterprise-experts.js";
 import { createI18nApi } from "./apis/i18n.js";
 import { createImApi } from "./apis/im.js";
 import { createMemoryApi } from "./apis/memory.js";
@@ -46,6 +47,7 @@ const rawApi: Omit<DesktopApi, "hostAccess"> = {
 	...createAbilitiesApi(ipcRenderer),
 	...createMarkdownApi(ipcRenderer),
 	...createAgentTeamsApi(ipcRenderer),
+	...createEnterpriseExpertsApi(ipcRenderer),
 	...createActionApprovalApi(ipcRenderer),
 	...createAppLifecycleApi(ipcRenderer),
 	...createAppMonitorApi(ipcRenderer),

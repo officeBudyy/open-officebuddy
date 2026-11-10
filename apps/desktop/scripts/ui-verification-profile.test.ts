@@ -42,7 +42,7 @@ describe("UI verification profiles", () => {
     const environment = createProfileEnvironment(layout, { ASTRAVIA_UI_VERIFICATION: "stale" });
 
     expect(layout.statePath).toBeNull();
-    expect(layout.astraviaHome).toBe(join(root, ".astravia-dev"));
+    expect(layout.astraviaHome).toBe(join(root, ".officeBuddy-dev"));
     expect(environment.ASTRAVIA_UI_VERIFICATION).toBeUndefined();
   });
 });

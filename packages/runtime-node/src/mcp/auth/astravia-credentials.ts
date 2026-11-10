@@ -1,7 +1,7 @@
 /**
  * 读取 Astravia 客户端下沉的登录态。
  *
- * 桌面端登录、刷新、登出时都会把当前 access token 写进 `~/.astravia/auth.json`
+ * 桌面端登录、刷新、登出时都会把当前 access token 写进 `~/.officeBuddy/auth.json`
  * （见 desktop-app 的 credential-store），这是宿主与外部进程之间唯一的凭据契约：
  * 不去翻客户端的 settings.json，免得把「客户端配置文件的内部结构」变成外部契约。
  *
@@ -10,8 +10,8 @@
  */
 
 import { readFileSync } from "node:fs";
-import { homedir } from "node:os";
 import { join } from "node:path";
+import { getAstraviaHomePath } from "@astravia/action-rpc";
 
 export interface AstraviaCredentials {
 	/** 服务根，不含 API 前缀 */
@@ -22,9 +22,9 @@ export interface AstraviaCredentials {
 
 export const ASTRAVIA_API_PREFIX = "/api/v1";
 
-/** 凭据文件路径：`~/.astravia/auth.json`，显式运行时目录或 ASTRAVIA_HOME 可覆盖根目录。 */
+/** 凭据文件路径：`~/.officeBuddy/auth.json`，显式运行时目录或 ASTRAVIA_HOME 可覆盖根目录。 */
 export function astraviaCredentialsPath(astraviaHome?: string): string {
-	const home = astraviaHome?.trim() || process.env.ASTRAVIA_HOME?.trim() || join(homedir(), ".astravia");
+	const home = astraviaHome?.trim() || getAstraviaHomePath();
 	return join(home, "auth.json");
 }
 

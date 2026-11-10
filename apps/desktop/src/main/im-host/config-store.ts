@@ -6,7 +6,7 @@ import { type ImTransportSelector, isImTransportSelector } from "./channels.js";
 
 /**
  * Non-secret IM bridge configuration. Stored in plaintext under
- *   ~/.astravia/desktop-app/im-config.json
+ *   ~/.officeBuddy/desktop-app/im-config.json
  *
  * Sensitive fields (App Secret, Verification Token, Encrypt Key, bot
  * tokens) live in credential-store.ts; this file only carries the toggles
@@ -23,7 +23,7 @@ export type { ImTransportSelector };
 /**
  * Optional override telling coding-agent which model to use for IM
  * sessions. When undefined, IM sessions fall back to whatever model the
- * user's agent settings (`~/.astravia/agent/settings.json`) point at — same
+ * user's agent settings (`~/.officeBuddy/agent/settings.json`) point at — same
  * behaviour as the desktop "对话" page. When set, the spec is forwarded
  * to the spawned agent-rpc subprocess via `--model <provider>:<model>`
  * (or just `<model>` if provider is omitted).

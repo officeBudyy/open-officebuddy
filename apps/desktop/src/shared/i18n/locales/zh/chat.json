@@ -1000,6 +1000,8 @@
 			"memberCount": "{{count}} 位成员",
 			"groupTeams": "团队",
 			"groupAgents": "智能体",
+			"groupEnterpriseExperts": "企业专家",
+			"enterpriseRemote": "任务由远程企业专家执行",
 			"pick": "切换智能体",
 			"pickTitle": "指定一个团队或单个智能体来完成这次任务",
 			"switchTitle": "更换本次会话的团队或智能体"

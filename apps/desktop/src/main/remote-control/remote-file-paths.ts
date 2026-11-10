@@ -172,8 +172,9 @@ const HOME_SECRETS = [
 	"Library/Cookies",
 ];
 
-/** Under `~/.astravia` only these hold things the phone should see: session workspaces, uploads, knowledge. */
+/** Under officeBuddy's current or legacy home only these hold things the phone should see. */
 const ASTRAVIA_READABLE = new Set(["conversation", "workspace", "im-gateway", "knowledges", "remote-uploads"]);
+const ASTRAVIA_HOME_DIRECTORY_NAMES = new Set([".officeBuddy", ".astravia"]);
 
 function segments(value: string): string[] {
 	return value.split(/[\\/]+/).filter(Boolean);
@@ -196,6 +197,8 @@ export function isBlockedForPhone(target: string, context: Pick<RemotePathContex
 	const rel = segments(path.relative(home, target));
 	const relText = rel.join("/");
 	if (HOME_SECRETS.some((secret) => relText === secret || relText.startsWith(`${secret}/`))) return true;
-	if (rel[0] === ".astravia") return rel.length < 2 || !ASTRAVIA_READABLE.has(rel[1] ?? "");
+	if (ASTRAVIA_HOME_DIRECTORY_NAMES.has(rel[0] ?? "")) {
+		return rel.length < 2 || !ASTRAVIA_READABLE.has(rel[1] ?? "");
+	}
 	return false;
 }

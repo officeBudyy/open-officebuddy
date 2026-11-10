@@ -157,6 +157,7 @@ const systemEvents = {
 	},
 };
 export const updaterService = new UpdaterService(updaterEngine, currentVersion, app.isPackaged, mainT, {
+	enabled: process.env.ASTRAVIA_UPDATE_PROVIDER !== "none",
 	systemEvents,
 });
 
@@ -176,7 +177,7 @@ function upgradeE2eStatePaths(): string[] {
 		join(getAstraviaHomePath(), "desktop-upgrade-e2e.json"),
 		// ShipIt can relaunch without the test environment. Keep one fallback marker
 		// under the runner user's normal Astravia home so the second process can find it.
-		join(homedir(), ".astravia", "desktop-upgrade-e2e.json"),
+		join(homedir(), ".officeBuddy", "desktop-upgrade-e2e.json"),
 	].filter((path, index, paths): path is string => Boolean(path) && paths.indexOf(path) === index);
 }
 

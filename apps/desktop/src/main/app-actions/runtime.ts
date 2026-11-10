@@ -14,8 +14,13 @@ const log = getAppLogger("action-runtime");
 
 function isDevelopmentConfigDir(value: string | undefined): boolean {
 	if (!value) return false;
-	const normalized = value.trim().replaceAll("\\", "/").replace(/\/+$/u, "");
-	return normalized === ".astravia-dev" || normalized.endsWith("/.astravia-dev");
+	const normalized = value.trim().replaceAll("\\", "/").replace(/\/+$/u, "").toLowerCase();
+	return (
+		normalized === ".officebuddy-dev" ||
+		normalized.endsWith("/.officebuddy-dev") ||
+		normalized === ".astravia-dev" ||
+		normalized.endsWith("/.astravia-dev")
+	);
 }
 
 /** Explicit development-only approval bypass for local action iteration. */

@@ -117,6 +117,7 @@ function renderView(
 			onDeleteTeam={handlers.onDeleteTeam ?? vi.fn()}
 			onOpenAgent={onOpenAgent}
 			onCreateAgent={vi.fn()}
+			onStartEnterpriseExpert={vi.fn()}
 		/>,
 	);
 }

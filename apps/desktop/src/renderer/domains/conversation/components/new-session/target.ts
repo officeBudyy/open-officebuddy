@@ -22,6 +22,16 @@ export function parseAgentTargetKey(value: string | null | undefined): string | 
 	return id.length > 0 ? id : null;
 }
 
+export function enterpriseExpertTargetKey(expertId: string): NewSessionTargetKey {
+	return `enterprise:${expertId}` as NewSessionTargetKey;
+}
+
+export function parseEnterpriseExpertTargetKey(value: string | null | undefined): string | null {
+	if (!value?.startsWith("enterprise:")) return null;
+	const id = value.slice("enterprise:".length).trim();
+	return id.length > 0 ? id : null;
+}
+
 /**
  * 单个 Agent 走的是普通会话链路（人格与能力由主进程按身份裁剪），只有团队才需要
  * Team 编排与专用编辑器。因此凡是「要不要按团队处理」的判断都必须问这个，

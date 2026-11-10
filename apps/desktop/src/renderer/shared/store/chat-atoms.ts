@@ -1,5 +1,5 @@
 import type { ContextCompactionEligibility, ContextCompositionReport } from "@astravia/runtime-core";
-import type { DesktopMcpElicitationRequest } from "@preload/api";
+import type { DesktopMcpElicitationRequest, EnterpriseExpertSummary } from "@preload/api";
 import type {
 	AppshotAttachment,
 	ChatErrorDetails,
@@ -100,6 +100,8 @@ export interface ActiveSession {
 	 * 仅用于展示（回合头像与昵称）；能力裁剪始终发生在主进程。
 	 */
 	agentProfileId?: string;
+	/** 会话绑定的远程企业专家快照，仅用于展示和远程能力降级。 */
+	enterpriseExpert?: EnterpriseExpertSummary;
 }
 
 /**
@@ -487,6 +489,7 @@ export interface OpenSessionOptions {
 	 * 打开既有会话不必传，主进程从会话目录旁挂的绑定记录读回。
 	 */
 	agentProfileId?: string;
+	enterpriseExpertId?: string;
 }
 
 /** Immutable input captured before a new session has a runtimeId. */

@@ -228,15 +228,16 @@ bun run package:win:portable
 
 - `ASTRAVIA_UPDATE_PROVIDER=generic`：R2、自建对象存储或任意静态 HTTP/CDN。
 - `ASTRAVIA_UPDATE_PROVIDER=github`：公开 GitHub Releases。
-- 未设置 `ASTRAVIA_UPDATE_PROVIDER`：默认使用 stable 更新源 `https://releases.astravia.dev/desktop/stable`。
-- `ASTRAVIA_UPDATE_PROVIDER=none`：不受支持，打包时直接失败；所有可打包产物都必须有更新源配置。
+- 未设置 `ASTRAVIA_UPDATE_PROVIDER` 或设为 `none`：不生成更新源配置，客户端不会自动检查更新。
+- 启用 `generic` 时必须同时设置 `ASTRAVIA_UPDATE_URL`；启用 `github` 时必须设置 owner/repo。这样 fork 不会意外连接 Astravia 官方更新源。
 
 发布 workflow 的最后一步会执行 `node scripts/verify-update-feed.mjs`：它读取三平台 metadata，确认版本与本次发布版本一致，并对每个引用的安装包执行公开可读性检查。CDN 不支持 HEAD 时会回退到 Range GET。只有不发布的手动构建跳过公开 feed 检查；手动 `test` / `stable` 发布与 tag 发布一样会在上传后执行该检查。
 
-正式环境默认读取：
+使用自有静态更新源时配置：
 
 ```text
-https://releases.astravia.dev/desktop/stable
+ASTRAVIA_UPDATE_PROVIDER=generic
+ASTRAVIA_UPDATE_URL=https://downloads.example.com/officebuddy/stable
 ```
 
 ### 使用 test 通道验证真实升级

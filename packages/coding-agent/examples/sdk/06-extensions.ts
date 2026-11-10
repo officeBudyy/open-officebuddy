@@ -5,7 +5,7 @@
  * They provide a unified system for extensions, custom tools, commands, and more.
  *
  * By default, extension files are discovered from:
- * - ~/.astravia/agent/extensions/
+ * - ~/.officeBuddy/agent/extensions/
  * - <cwd>/.astravia/extensions/
  * - Paths specified in settings.json "extensions" array
  *

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import test from "node:test";
 import {
 	clearLinuxUnpackedPackageType,
@@ -12,7 +12,7 @@ import {
 
 test("Linux unpacked E2E uses the built AppImage as the updater runtime image", async () => {
 	const packageRoot = await mkdtemp(join(tmpdir(), "astravia-packaged-e2e-"));
-	const appImage = join(packageRoot, "release", "Astravia-1.2.3.AppImage");
+	const appImage = join(packageRoot, "release", "officeBuddy-1.2.3.AppImage");
 	await mkdir(join(packageRoot, "release"), { recursive: true });
 	await writeFile(appImage, "appimage");
 
@@ -42,7 +42,7 @@ test("Linux packaged E2E rejects unsafe or missing AppImage paths", async () => 
 test("Linux packaged E2E stages an isolated AppImage before updater tests", async () => {
 	const packageRoot = await mkdtemp(join(tmpdir(), "astravia-packaged-e2e-"));
 	const temporaryRoot = await mkdtemp(join(tmpdir(), "astravia-packaged-e2e-stage-"));
-	const releaseAppImage = join(packageRoot, "release", "Astravia-1.2.3.AppImage");
+	const releaseAppImage = join(packageRoot, "release", "officeBuddy-1.2.3.AppImage");
 	await mkdir(join(packageRoot, "release"), { recursive: true });
 	await writeFile(releaseAppImage, "release-appimage");
 
@@ -87,6 +87,27 @@ test("Windows packaged E2E rejects an unsafe version pointer", async () => {
 
 	try {
 		assert.throws(() => resolvePackagedE2eBinaryPath(packageRoot, "win32"), /invalid version pointer/);
+	} finally {
+		await rm(packageRoot, { recursive: true, force: true });
+	}
+});
+
+test("macOS packaged E2E resolves the officeBuddy app and executable", async () => {
+	const packageRoot = await mkdtemp(join(tmpdir(), "astravia-packaged-e2e-"));
+	const binaryPath = join(
+		packageRoot,
+		"release",
+		"mac-arm64",
+		"officeBuddy.app",
+		"Contents",
+		"MacOS",
+		"officeBuddy",
+	);
+	await mkdir(dirname(binaryPath), { recursive: true });
+	await writeFile(binaryPath, "electron");
+
+	try {
+		assert.equal(resolvePackagedE2eBinaryPath(packageRoot, "darwin"), binaryPath);
 	} finally {
 		await rm(packageRoot, { recursive: true, force: true });
 	}

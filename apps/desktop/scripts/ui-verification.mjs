@@ -317,7 +317,7 @@ function prepareProfile(layout, sync = false) {
 	mkdirSync(layout.artifactDir, { recursive: true });
 	if (layout.profile !== "debug") return null;
 	return seedDebugProfile({
-		sourceHome: join(homedir(), ".astravia-dev"),
+		sourceHome: join(homedir(), ".officeBuddy-dev"),
 		targetHome: layout.astraviaHome,
 		workspacePath: repoRoot,
 		sync,

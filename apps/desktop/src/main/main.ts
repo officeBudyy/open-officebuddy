@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { URL } from "node:url";
-import { ASTRAVIA_HOME_ENV, getAstraviaHomePath } from "@astravia/action-rpc";
+import { getAstraviaHomePath } from "@astravia/action-rpc";
 import { app, type BrowserWindow, dialog, ipcMain, nativeImage, nativeTheme, protocol, session, shell } from "electron";
 import type { ExternalApplicationKind } from "../preload/api-types/system.js";
 import { APP_RUNTIME_NAME } from "../shared/app-identity.js";
@@ -210,8 +210,6 @@ const rendererCdp = configureRendererCdp({
 	devServerUrl: process.env.ASTRAVIA_DESKTOP_DEV_URL,
 	portValue: process.env.ASTRAVIA_DEBUG_CDP_PORT,
 });
-process.env[ASTRAVIA_HOME_ENV] = getAstraviaHomePath();
-
 if (isCliMode) {
 	const cliUserDataDir =
 		ocrCliCommand !== null
@@ -249,7 +247,7 @@ if (isCliMode) {
 
 // app 名字必须在任何 safeStorage 调用之前固定，且开发态与打包版取同一个值：
 // safeStorage 按 app 名字定位主密钥，名字分叉会让两侧各持一把密钥，
-// 共享 ~/.astravia 时表现为凭据"丢失"并互相覆盖（见 shared/app-identity.ts）。
+// 共享 ~/.officeBuddy 时表现为凭据"丢失"并互相覆盖（见 shared/app-identity.ts）。
 app.name = APP_RUNTIME_NAME;
 
 let ipcTeardown: IpcTeardown | undefined;
@@ -701,7 +699,7 @@ if (!gotSingleLock) {
 			mainLog.error("failed to ensure im-gateway conversation dir", err);
 		}
 
-		// 托管运行时(ADR-0011):首启从内置 vendor 拷贝 node/python 到 ~/.astravia/runtimes,
+		// 托管运行时(ADR-0011):首启从内置 vendor 拷贝 node/python 到 ~/.officeBuddy/runtimes,
 		// 再把它们 + 国内镜像源注入全局 process.env。必须早于 getImHost().bootstrap()——
 		// 快速应用已经存在的托管运行时路径；vendor seed、系统探测和 shim 修复放到
 		// 首帧之后执行，避免这些维护工作阻塞窗口出现。

@@ -10,7 +10,7 @@ export interface MemoryFilePaths {
 
 /**
  * 解析两个作用域各自的 MEMORY.md 路径。用户级路径由调用方注入（IPC 层传
- * `getUserMemoryPath()`），使单元测试可以指向临时目录而不触碰真实的 `~/.astravia`。
+ * `getUserMemoryPath()`），使单元测试可以指向临时目录而不触碰真实的 `~/.officeBuddy`。
  */
 export function resolveMemoryFilePaths(userMemoryFile: string, cwd: string): MemoryFilePaths {
 	return { user: userMemoryFile, project: cwd ? getProjectMemoryPath(cwd) : null };

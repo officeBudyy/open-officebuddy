@@ -66,7 +66,7 @@ The first-milestone gateway only handles private chats. Open Feishu, search for 
 im-gateway init
 ```
 
-This creates `~/.astravia/im-gateway/config.yaml` and `~/.astravia/im-gateway/credentials.yaml`. Edit the config to select Feishu:
+This creates `~/.officeBuddy/im-gateway/config.yaml` and `~/.officeBuddy/im-gateway/credentials.yaml`. Edit the config to select Feishu:
 
 ```yaml
 transport:

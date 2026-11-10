@@ -96,12 +96,12 @@ export function resolveProfileLayout(
   const profileRuntimeDir = join(runtimeRoot, options.profile);
 
   if (options.profile === "dev") {
-    const astraviaHome = join(homeDirectory, ".astravia-dev");
+    const astraviaHome = join(homeDirectory, ".officeBuddy-dev");
     return {
       profile: options.profile,
       workspaceId: options.workspaceId,
       sessionName: `astravia-dev-${options.workspaceId}`,
-      configDir: ".astravia-dev",
+      configDir: ".officeBuddy-dev",
       astraviaHome,
       userDataDir: join(astraviaHome, "electron-user-data"),
       endpointFile: join(astraviaHome, "action-server.json"),

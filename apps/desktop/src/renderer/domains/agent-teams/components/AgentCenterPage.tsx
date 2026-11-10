@@ -125,6 +125,9 @@ export function AgentCenterPage(): JSX.Element {
 				onDeleteTeam={(teamId) => requestDeleteTeam(model.findTeam(teamId))}
 				onOpenAgent={openAgent}
 				onCreateAgent={() => void navigate({ to: "/agents", search: { agent: "new" }, replace: true })}
+				onStartEnterpriseExpert={(expertId) =>
+					void navigate({ to: "/new-session", search: { target: `enterprise:${expertId}` } })
+				}
 			/>
 
 			{(agentMounted || agentParam !== undefined) && (

@@ -27,6 +27,7 @@ import type {
 	SessionStateSnapshot,
 	SettingsPatch,
 } from "@astravia/runtime-core";
+import type { EnterpriseExpertSummary } from "../../shared/enterprise-experts.js";
 import type { DesktopMcpAppResourceRead, DesktopMcpAppSurface, DesktopMcpAppToolCall } from "../../shared/mcp-app.js";
 import type {
 	DesktopMcpElicitationRequest,
@@ -88,6 +89,8 @@ export interface DesktopCodingAgentSessionConfig extends SessionConfig {
 	 * 恢复既有会话不必传，主进程从会话目录旁挂的绑定记录读回。
 	 */
 	readonly agentProfileId?: string;
+	/** 企业专家身份；仅用于主进程建立远程会话绑定。 */
+	readonly enterpriseExpertId?: string;
 	readonly appendSystemPrompt?: string;
 	readonly enableBackgroundTasks?: boolean;
 	readonly includeAgentSkills?: boolean;
@@ -139,7 +142,13 @@ export interface DesktopSessionApi {
 		config: DesktopCodingAgentSessionConfig | undefined,
 		kind: DesktopSessionKind,
 		traceContext?: DesktopSessionTraceContext,
-	): Promise<{ sessionId: string; sessionPath: string; cwd?: string; agentProfileId?: string }>;
+	): Promise<{
+		sessionId: string;
+		sessionPath: string;
+		cwd?: string;
+		agentProfileId?: string;
+		enterpriseExpert?: EnterpriseExpertSummary;
+	}>;
 	listProjects(): Promise<ProjectInfo[]>;
 	listSessions(cwd: string): Promise<DesktopSessionHistoryInfo[]>;
 	searchSessions(

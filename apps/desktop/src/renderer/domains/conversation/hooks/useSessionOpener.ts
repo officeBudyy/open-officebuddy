@@ -364,6 +364,7 @@ export function useSessionOpener(): SessionOpenerController {
 						executionMode,
 						scenario,
 						...(options?.agentProfileId ? { agentProfileId: options.agentProfileId } : {}),
+						...(options?.enterpriseExpertId ? { enterpriseExpertId: options.enterpriseExpertId } : {}),
 					},
 					sessionKind,
 					interactionId ? { interactionId } : undefined,
@@ -437,6 +438,7 @@ export function useSessionOpener(): SessionOpenerController {
 				sessionPath: canonicalSessionPath,
 				runtimeId: sessionId,
 				...(createResult.agentProfileId ? { agentProfileId: createResult.agentProfileId } : {}),
+				...(createResult.enterpriseExpert ? { enterpriseExpert: createResult.enterpriseExpert } : {}),
 			};
 			// 新会话在 create 返回后立即结束「正在创建会话」过渡态：会话已落库，
 			// 后续 attach / getState 属于 runtime 就绪，用户已能看到 ChatView。
@@ -640,6 +642,7 @@ export function useSessionOpener(): SessionOpenerController {
 					parentSessionPath,
 					parentEntryId,
 					...(createResult.agentProfileId ? { agentProfileId: createResult.agentProfileId } : {}),
+					...(createResult.enterpriseExpert ? { enterpriseExpert: createResult.enterpriseExpert } : {}),
 				};
 				commitActiveSession(sessionInfo);
 			}

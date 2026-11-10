@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { agentTargetKey, teamTargetKey } from "./target";
+import { agentTargetKey, enterpriseExpertTargetKey, teamTargetKey } from "./target";
 import { createNewSessionTargetStrategyRegistry } from "./target-strategy";
 
 describe("new-session target strategy registry", () => {
@@ -12,6 +12,8 @@ describe("new-session target strategy registry", () => {
 			teamKey: teamTargetKey("team-1"),
 			agentDispatch: vi.fn(async () => undefined),
 			agentKey: null,
+			enterpriseDispatch: vi.fn(async () => undefined),
+			enterpriseKey: null,
 		});
 		await registry.resolve(null).dispatch();
 		await registry.resolve(teamTargetKey("team-1")).dispatch();
@@ -29,10 +31,28 @@ describe("new-session target strategy registry", () => {
 			teamKey: null,
 			agentDispatch: agent,
 			agentKey: agentTargetKey("agent-1"),
+			enterpriseDispatch: vi.fn(async () => undefined),
+			enterpriseKey: null,
 		});
 		await registry.resolve(agentTargetKey("agent-1")).dispatch();
 		await expect(registry.resolve(teamTargetKey("team-1")).dispatch()).rejects.toThrow("Unknown new-session target");
 		expect(agent).toHaveBeenCalledOnce();
 		expect(team).not.toHaveBeenCalled();
+	});
+
+	it("routes a selected enterprise expert through the remote session dispatch", async () => {
+		const enterprise = vi.fn(async () => undefined);
+		const key = enterpriseExpertTargetKey("policy");
+		const registry = createNewSessionTargetStrategyRegistry({
+			conversationDispatch: vi.fn(async () => undefined),
+			teamDispatch: vi.fn(async () => undefined),
+			teamKey: null,
+			agentDispatch: vi.fn(async () => undefined),
+			agentKey: null,
+			enterpriseDispatch: enterprise,
+			enterpriseKey: key,
+		});
+		await registry.resolve(key).dispatch();
+		expect(enterprise).toHaveBeenCalledOnce();
 	});
 });

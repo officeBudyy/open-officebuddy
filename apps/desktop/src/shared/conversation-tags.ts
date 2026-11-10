@@ -2,7 +2,7 @@
  * 会话标签的纯领域模型。
  *
  * 标签是「用户资产」而非会话内容：它不写进会话文件（append-only JSONL），
- * 而是以软链的方式落在 ~/.astravia/desktop-app/conversation-tags.json —— 这样
+ * 而是以软链的方式落在 ~/.officeBuddy/desktop-app/conversation-tags.json —— 这样
  * 只读来源的会话同样可被标注，重装应用也不丢失。
  *
  * 这里只放不依赖 fs/electron 的纯函数，主进程仓库与渲染进程共用同一套语义。

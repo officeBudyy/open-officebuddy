@@ -12,7 +12,7 @@
  * Save modes (tool param, env var, or config file):
  *   save=none     - Don't save to disk (default)
  *   save=project  - Save to <repo>/.astravia/generated-images/
- *   save=global   - Save to ~/.astravia/agent/generated-images/
+ *   save=global   - Save to ~/.officeBuddy/agent/generated-images/
  *   save=custom   - Save to saveDir param or PI_IMAGE_SAVE_DIR
  *
  * Environment variables:
@@ -20,7 +20,7 @@
  *   PI_IMAGE_SAVE_DIR   - Directory for custom save mode
  *
  * Config files (project overrides global):
- *   ~/.astravia/agent/extensions/antigravity-image-gen.json
+ *   ~/.officeBuddy/agent/extensions/antigravity-image-gen.json
  *   <repo>/.astravia/extensions/antigravity-image-gen.json
  *   Example: { "save": "global" }
  */

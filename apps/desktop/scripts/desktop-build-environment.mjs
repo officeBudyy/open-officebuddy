@@ -6,9 +6,7 @@ import { resolveUpdatePublishConfig } from "./resolve-update-publish-config.mjs"
 export const OPEN_SOURCE_BUILD_DEFAULTS = Object.freeze({
 	ASTRAVIA_BUILD_ENV: "opensource",
 	ASTRAVIA_CLOUD_ENABLED: "false",
-	ASTRAVIA_UPDATE_PROVIDER: "github",
-	ASTRAVIA_UPDATE_GITHUB_OWNER: "maomaochong-ai",
-	ASTRAVIA_UPDATE_GITHUB_REPO: "open-astravia",
+	ASTRAVIA_UPDATE_PROVIDER: "none",
 });
 
 const SUPPORTED_PLATFORM_TAGS = new Set([
@@ -208,6 +206,8 @@ export function createOpenSourceBuildEnvironment(env = process.env) {
 	for (const key of [
 		"ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY",
 		"ASTRAVIA_OPEN_MARKETPLACE_REF",
+		"ASTRAVIA_UPDATE_PROVIDER",
+		"ASTRAVIA_UPDATE_URL",
 		"ASTRAVIA_UPDATE_GITHUB_OWNER",
 		"ASTRAVIA_UPDATE_GITHUB_REPO",
 	]) {
@@ -262,9 +262,7 @@ export function validateDesktopBuildEnvironment({
 	} else if (cloudFlag === "false") {
 		if (readValue(env, "ASTRAVIA_SERVER_URL")) errors.push("ASTRAVIA_SERVER_URL must be empty for an open-source build");
 		if (readValue(env, "ASTRAVIA_SITE_URL")) errors.push("ASTRAVIA_SITE_URL must be empty for an open-source build");
-		if (updateConfig && updateConfig.provider !== "github") {
-			errors.push("open-source builds must use ASTRAVIA_UPDATE_PROVIDER=github");
-		}
+		// Forks may publish through GitHub Releases or any static HTTP/CDN feed.
 	}
 	validateMarketplaceRepository(env, errors);
 

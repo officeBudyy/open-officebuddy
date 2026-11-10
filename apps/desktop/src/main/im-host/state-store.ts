@@ -10,7 +10,7 @@ import type { SessionStateEntry } from "./host-protocol.js";
  * apply them here and atomically rewrite the file. On sidecar (re)start we
  * read this file and replay the snapshot via the init frame.
  *
- * Path: ~/.astravia/desktop-app/im-state.json
+ * Path: ~/.officeBuddy/desktop-app/im-state.json
  *
  * Schema v3: keyed by (userId, chatId). v3 supersedes v2 in everything but
  * version number — ADR-0005 split im-gateway's cwd from the desktop "对话"

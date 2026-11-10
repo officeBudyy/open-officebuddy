@@ -3,7 +3,7 @@
 //
 // # Boundary rules
 //
-//   - This package owns ~/.astravia/im-gateway/state.json. No other package
+//   - This package owns ~/.officeBuddy/im-gateway/state.json. No other package
 //     touches that file directly.
 //   - All writes go through the standard write-temp + fsync + rename
 //     atomic-write pattern so a crash mid-write cannot leave a corrupt

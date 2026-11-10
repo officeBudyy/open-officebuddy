@@ -9,7 +9,7 @@ import { isDesktopReleaseVersion } from "./release-version.mjs";
 const execFileAsync = promisify(execFile);
 const packageDir = resolve(import.meta.dirname, "..");
 const defaultReleaseDir = join(packageDir, "release");
-const requiredPayloadPaths = ["/opt/Astravia/Astravia", "/opt/Astravia/resources/package-type"];
+const requiredPayloadPaths = ["/opt/officeBuddy/Astravia", "/opt/officeBuddy/resources/package-type"];
 
 function requireValue(value, label) {
 	if (typeof value !== "string" || value.trim().length === 0) {

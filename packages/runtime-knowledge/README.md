@@ -17,4 +17,4 @@ Runtime-owned Knowledge capability for Agent hosts.
 
 Hosts must pass the Knowledge root explicitly. Node application hosts can bind this package through
 `createNodeKnowledgeRuntime(root)` from `@astravia/runtime-node/host`; this package never selects the default
-`~/.astravia/knowledges` location or reads a process-level enablement switch.
+`~/.officeBuddy/knowledges` location or reads a process-level enablement switch.

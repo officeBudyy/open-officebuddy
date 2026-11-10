@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { stringify } from "yaml";
+import { DESKTOP_PRODUCT_NAME } from "./desktop-packaging-layout.mjs";
 import { desktopVersionInfoVersion, isDesktopReleaseVersion } from "./release-version.mjs";
 
 const require = createRequire(import.meta.url);
@@ -108,7 +109,7 @@ async function main() {
 	if (publishConfig) {
 		console.log(`[build-inno] wrote app-update.yml for ${publishConfig.provider}`);
 	}
-	const fileName = `Astravia-${version}-win-${arch}.exe`;
+	const fileName = `${DESKTOP_PRODUCT_NAME}-${version}-win-${arch}.exe`;
 	const verificationManifestPath = join(releaseDir, `${fileName}.files.json`);
 	await writeInnoVerificationManifest(join(sourceDir, "versions", version), verificationManifestPath, version);
 

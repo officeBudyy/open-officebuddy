@@ -6,13 +6,14 @@ import type { HookConfigLayer, HookConfigSource } from "./hooks/types.js";
 
 /** Project / user config directory basename (brand default). */
 export const ASTRAVIA_HOOK_CONFIG_DIR_NAME = ".astravia";
+const DEFAULT_USER_HOME_DIRECTORY_NAME = ".officeBuddy";
 
 export interface BuildDefaultHookConfigLayersOptions {
 	/** Session project working directory. */
 	cwd: string;
 	/**
 	 * Astravia user data root.
-	 * Default: `~/.astravia` (HOME / USERPROFILE / os.homedir()).
+	 * Default: `~/.officeBuddy` (HOME / USERPROFILE / os.homedir()).
 	 * Coding Agent should pass `getAstraviaHomePath()` so `ASTRAVIA_HOME` applies.
 	 */
 	astraviaHome?: string;
@@ -54,7 +55,7 @@ export interface BuildDefaultHookConfigLayersOptions {
 export function buildDefaultHookConfigLayers(options: BuildDefaultHookConfigLayersOptions): HookConfigLayer[] {
 	const env = options.env ?? process.env;
 	const homeDir = options.homeDir ?? resolveHomeDir(env);
-	const astraviaHome = options.astraviaHome ?? join(homeDir, ASTRAVIA_HOOK_CONFIG_DIR_NAME);
+	const astraviaHome = options.astraviaHome ?? join(homeDir, DEFAULT_USER_HOME_DIRECTORY_NAME);
 	const configDirName = options.configDirName ?? ASTRAVIA_HOOK_CONFIG_DIR_NAME;
 	const projectAstraviaDir = join(options.cwd, configDirName);
 

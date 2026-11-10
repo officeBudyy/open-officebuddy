@@ -25,7 +25,7 @@ export function ModelsSettingsView({
 			footer={
 				model.config ? (
 					<div className="mt-6 text-center text-[11px] text-muted-foreground/60">
-						{t("configFilePath")}: ~/.astravia/agent/models.json
+						{t("configFilePath")}: ~/.officeBuddy/agent/models.json
 					</div>
 				) : undefined
 			}

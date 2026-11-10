@@ -23,7 +23,7 @@ const sourcePath = join(projectRoot, "native", "appshot", "main.swift");
 const iconSourcePath = join(projectRoot, "build", "icon.icns");
 
 const APP_NAME = "Astravia Computer Use";
-const DISPLAY_NAME = "officebuddy Computer Use";
+const DISPLAY_NAME = "officeBuddy Computer Use";
 const BUNDLE_ID = "com.astravia.desktop.computer-use";
 
 function resolveOutDir() {
@@ -58,7 +58,7 @@ function infoPlistContents() {
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0</string>
 	<key>NSScreenCaptureUsageDescription</key>
-	<string>officebuddy Computer Use needs to record your screen to capture the active window for the assistant.</string>
+	<string>officeBuddy Computer Use needs to record your screen to capture the active window for the assistant.</string>
 </dict>
 </plist>
 `;

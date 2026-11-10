@@ -15,11 +15,23 @@ import { useEffect, useState } from "react";
 export function useBoundAgentParticipants(): readonly ConversationParticipantViewModel[] | undefined {
 	const activeSession = useAtomValue(activeSessionAtom);
 	const agentProfileId = activeSession?.agentProfileId;
+	const enterpriseExpert = activeSession?.enterpriseExpert;
 	const [participants, setParticipants] = useState<readonly ConversationParticipantViewModel[]>();
 	const resolveAvatar = useAgentAvatarResolver();
 	const localize = useAgentTeamResourceLocalizer();
 
 	useEffect(() => {
+		if (enterpriseExpert) {
+			setParticipants([
+				{
+					id: DEFAULT_AGENT_PARTICIPANT_ID,
+					kind: "agent",
+					name: enterpriseExpert.name,
+					...(enterpriseExpert.avatarUrl ? { avatar: enterpriseExpert.avatarUrl } : {}),
+				},
+			]);
+			return;
+		}
 		if (!agentProfileId) {
 			setParticipants(undefined);
 			return;
@@ -51,7 +63,7 @@ export function useBoundAgentParticipants(): readonly ConversationParticipantVie
 		return () => {
 			cancelled = true;
 		};
-	}, [agentProfileId, localize, resolveAvatar]);
+	}, [agentProfileId, enterpriseExpert, localize, resolveAvatar]);
 
 	return participants;
 }

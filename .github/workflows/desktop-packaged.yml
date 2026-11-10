@@ -101,8 +101,8 @@ jobs:
           ASTRAVIA_CLOUD_ENABLED: "false"
           ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY: https://gitee.com/energyPlatform/office-marketplace
           ASTRAVIA_SPEECH_INPUT_ENABLED: "false"
-          ASTRAVIA_UPDATE_GITHUB_OWNER: maomaochong-ai
-          ASTRAVIA_UPDATE_GITHUB_REPO: open-astravia
+          ASTRAVIA_UPDATE_GITHUB_OWNER: ${{ github.repository_owner }}
+          ASTRAVIA_UPDATE_GITHUB_REPO: ${{ github.event.repository.name }}
           ASTRAVIA_UPDATE_PROVIDER: github
         run: bun run ${{ matrix.build-command }}
 

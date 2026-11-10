@@ -143,8 +143,8 @@ uses the root Turborepo task graph and local cache to build changed workspace pr
 plugin and theme manifests, then starts the renderer, theme server, and Electron process in parallel.
 
 Normal development is isolated from packaged application data: it defaults to
-`ASTRAVIA_CONFIG_DIR=.astravia-dev` and stores the Chromium profile under
-`~/.astravia-dev/electron-user-data`. Packaged builds continue to use `~/.astravia`. Set
+`ASTRAVIA_CONFIG_DIR=.officeBuddy-dev` and stores the Chromium profile under
+`~/.officeBuddy-dev/electron-user-data`. Packaged builds continue to use `~/.officeBuddy`. Set
 `ASTRAVIA_CONFIG_DIR` and `ASTRAVIA_DESKTOP_USER_DATA_DIR` together when a custom isolated development
 environment is required.
 
@@ -153,7 +153,7 @@ switches the whole environment — data root and browser profile — with no sha
 Two scripts make the common pair explicit:
 
 ```bash
-bun run dev:isolated   # ~/.astravia-dev (same as `bun dev`)
+bun run dev:isolated   # ~/.officeBuddy-dev (same as `bun dev`)
 bun run dev:home       # ~/.astravia
 ```
 

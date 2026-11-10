@@ -16,7 +16,7 @@ import {
 } from "../../shared/conversation-tags.js";
 
 /**
- * 会话标签仓库：~/.astravia/desktop-app/conversation-tags.json 的单一写者。
+ * 会话标签仓库：~/.officeBuddy/desktop-app/conversation-tags.json 的单一写者。
  *
  * 启动读一次进内存，之后所有变更改内存再原子落盘，永不重新读盘——
  * 写入是同步的且中间没有 await，因此「读-改-写」不存在交错窗口。

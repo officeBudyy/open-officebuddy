@@ -1,6 +1,5 @@
-const SUPPORTED_PROVIDERS = new Set(["generic", "github"]);
-const DEFAULT_UPDATE_PROVIDER = "generic";
-const DEFAULT_UPDATE_URL = "https://releases.astravia.dev/desktop/stable";
+const SUPPORTED_PROVIDERS = new Set(["none", "generic", "github"]);
+const DEFAULT_UPDATE_PROVIDER = "none";
 
 function requireValue(env, key, provider) {
 	const value = env[key]?.trim();
@@ -22,13 +21,14 @@ export function resolveUpdatePublishConfig(env = process.env) {
 	const provider = (env.ASTRAVIA_UPDATE_PROVIDER?.trim() || DEFAULT_UPDATE_PROVIDER).toLowerCase();
 	if (!SUPPORTED_PROVIDERS.has(provider)) {
 		throw new Error(
-			`[update-publish] unsupported ASTRAVIA_UPDATE_PROVIDER=${provider}; expected generic or github`,
+			`[update-publish] unsupported ASTRAVIA_UPDATE_PROVIDER=${provider}; expected none, generic, or github`,
 		);
 	}
+	if (provider === "none") return null;
 	if (provider === "generic") {
 		return {
 			provider: "generic",
-			url: normalizeHttpUrl(env.ASTRAVIA_UPDATE_URL?.trim() || DEFAULT_UPDATE_URL),
+			url: normalizeHttpUrl(requireValue(env, "ASTRAVIA_UPDATE_URL", provider)),
 			useMultipleRangeRequest: true,
 		};
 	}

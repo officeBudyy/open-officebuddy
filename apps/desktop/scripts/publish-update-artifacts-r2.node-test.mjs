@@ -34,8 +34,8 @@ test("collectArtifacts uploads updater files and matching Windows supplements be
 			),
 			writeFile(join(directory, "Astravia Setup 1.2.3.exe"), "installer"),
 			writeFile(join(directory, "Astravia Setup 1.2.3.exe.blockmap"), "blockmap"),
-			writeFile(join(directory, "Astravia-1.2.3-win-x64.msi"), "msi"),
-			writeFile(join(directory, "Astravia-1.2.3-win-x64.zip"), "zip"),
+			writeFile(join(directory, "officeBuddy-1.2.3-win-x64.msi"), "msi"),
+			writeFile(join(directory, "officeBuddy-1.2.3-win-x64.zip"), "zip"),
 			writeFile(join(directory, "Astravia Setup 1.2.2.exe"), "stale"),
 			writeFile(join(directory, "Astravia-1.2.2-win-x64.msi"), "stale"),
 		]);
@@ -43,8 +43,8 @@ test("collectArtifacts uploads updater files and matching Windows supplements be
 		assert.deepEqual(await collectArtifacts(directory), [
 			"Astravia Setup 1.2.3.exe",
 			"Astravia Setup 1.2.3.exe.blockmap",
-			"Astravia-1.2.3-win-x64.msi",
-			"Astravia-1.2.3-win-x64.zip",
+			"officeBuddy-1.2.3-win-x64.msi",
+			"officeBuddy-1.2.3-win-x64.zip",
 			"latest.yml",
 		]);
 	} finally {

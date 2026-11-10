@@ -11,11 +11,11 @@ import (
 // regardless of whether the file exists yet. Used by `im-gateway init`
 // and `im-gateway start` (when no path is given on the command line).
 func DefaultConfigPath() (string, error) {
-	home, err := os.UserHomeDir()
+	home, err := defaultDataHome()
 	if err != nil {
-		return "", fmt.Errorf("resolve home dir: %w", err)
+		return "", err
 	}
-	return filepath.Join(home, ".astravia", "im-gateway", "config.yaml"), nil
+	return filepath.Join(home, "im-gateway", "config.yaml"), nil
 }
 
 // GenerateTemplate writes a starter config.yaml + an empty credentials.yaml
@@ -110,9 +110,9 @@ logging:
 
 # Override on-disk file locations. All optional.
 # paths:
-#   conversationCwd: ~/.astravia/im-gateway/conversation
-#   state: ~/.astravia/im-gateway/state.json
-#   logsDir: ~/.astravia/im-gateway/logs
+#   conversationCwd: ~/.officeBuddy/im-gateway/conversation
+#   state: ~/.officeBuddy/im-gateway/state.json
+#   logsDir: ~/.officeBuddy/im-gateway/logs
 `
 
 const credentialsTemplate = `# astravia im-gateway credentials

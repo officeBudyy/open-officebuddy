@@ -8,9 +8,9 @@ test("pins the dev data home under the dev config dir even when the host exports
 	// 宿主导出的 ASTRAVIA_HOME 优先级高于 ASTRAVIA_CONFIG_DIR：透进来就会和宿主共用 sessions。
 	const env = resolveDevLaunchEnvironment({ ASTRAVIA_HOME: "/Users/tester/.astravia" }, home);
 
-	assert.equal(env.configDir, ".astravia-dev");
-	assert.equal(env.homePath, "/Users/tester/.astravia-dev");
-	assert.equal(env.userDataDir, "/Users/tester/.astravia-dev/electron-user-data");
+	assert.equal(env.configDir, ".officeBuddy-dev");
+	assert.equal(env.homePath, "/Users/tester/.officeBuddy-dev");
+	assert.equal(env.userDataDir, "/Users/tester/.officeBuddy-dev/electron-user-data");
 });
 
 test("keeps the data home aligned when ASTRAVIA_CONFIG_DIR is overridden", () => {
@@ -26,8 +26,8 @@ test("keeps the data home aligned when ASTRAVIA_CONFIG_DIR is overridden", () =>
 test("pins the data home to the verification config dir during ui verification", () => {
 	const env = resolveDevLaunchEnvironment({ ASTRAVIA_UI_VERIFICATION: "1", ASTRAVIA_HOME: "/Users/tester/.astravia" }, home);
 
-	assert.equal(env.configDir, ".astravia-ui-verify");
-	assert.equal(env.homePath, "/Users/tester/.astravia-ui-verify");
+	assert.equal(env.configDir, ".officeBuddy-ui-verify");
+	assert.equal(env.homePath, "/Users/tester/.officeBuddy-ui-verify");
 });
 
 test("honours an explicit ASTRAVIA_DEV_HOME escape hatch", () => {
@@ -37,7 +37,7 @@ test("honours an explicit ASTRAVIA_DEV_HOME escape hatch", () => {
 	);
 
 	assert.equal(env.homePath, "/Volumes/scratch/dev-home");
-	assert.equal(env.configDir, ".astravia-dev");
+	assert.equal(env.configDir, ".officeBuddy-dev");
 });
 
 test("resolves an explicit desktop user data dir independently of the data home", () => {
@@ -47,18 +47,18 @@ test("resolves an explicit desktop user data dir independently of the data home"
 	);
 
 	assert.equal(env.userDataDir, "/Volumes/scratch/user-data");
-	assert.equal(env.homePath, "/Users/tester/.astravia-dev");
+	assert.equal(env.homePath, "/Users/tester/.officeBuddy-dev");
 });
 
 test("treats an inherited absolute ASTRAVIA_CONFIG_DIR as the config root, not a child of home", () => {
 	// 已安装的桌面应用导出的就是绝对路径；直接 join 会拼出 ~/Users/<name>/... 这种重复前缀。
 	const env = resolveDevLaunchEnvironment(
-		{ ASTRAVIA_HOME: "/Users/tester/.astravia", ASTRAVIA_CONFIG_DIR: "/Users/tester/.astravia-dev" },
+		{ ASTRAVIA_HOME: "/Users/tester/.astravia", ASTRAVIA_CONFIG_DIR: "/Users/tester/.officeBuddy-dev" },
 		home,
 	);
 
-	assert.equal(env.homePath, "/Users/tester/.astravia-dev");
-	assert.equal(env.userDataDir, "/Users/tester/.astravia-dev/electron-user-data");
+	assert.equal(env.homePath, "/Users/tester/.officeBuddy-dev");
+	assert.equal(env.userDataDir, "/Users/tester/.officeBuddy-dev/electron-user-data");
 });
 
 test("expands a tilde-prefixed dev home against the passed home directory", () => {

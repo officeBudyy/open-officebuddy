@@ -2,19 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { resolveUpdatePublishConfig } from "./resolve-update-publish-config.mjs";
 
-const DEFAULT_UPDATE_URL = "https://releases.astravia.dev/desktop/stable";
-
-test("defaults packaged builds to the official stable update feed", () => {
-	assert.deepEqual(resolveUpdatePublishConfig({}), {
-		provider: "generic",
-		url: DEFAULT_UPDATE_URL,
-		useMultipleRangeRequest: true,
-	});
+test("disables updates when a packaged build has no explicit provider", () => {
+	assert.equal(resolveUpdatePublishConfig({}), null);
 });
 
 test("allows an explicit update URL to override the stable default", () => {
 	assert.deepEqual(
 		resolveUpdatePublishConfig({
+			ASTRAVIA_UPDATE_PROVIDER: "generic",
 			ASTRAVIA_UPDATE_URL: "https://releases.example.com/desktop/test/",
 		}),
 		{
@@ -25,10 +20,14 @@ test("allows an explicit update URL to override the stable default", () => {
 	);
 });
 
-test("rejects a package without an update provider", () => {
+test("allows a package to explicitly disable updates", () => {
+	assert.equal(resolveUpdatePublishConfig({ ASTRAVIA_UPDATE_PROVIDER: "none" }), null);
+});
+
+test("requires a URL when the generic provider is enabled", () => {
 	assert.throws(
-		() => resolveUpdatePublishConfig({ ASTRAVIA_UPDATE_PROVIDER: "none" }),
-		/expected generic or github/,
+		() => resolveUpdatePublishConfig({ ASTRAVIA_UPDATE_PROVIDER: "generic" }),
+		/ASTRAVIA_UPDATE_URL is required/,
 	);
 });
 

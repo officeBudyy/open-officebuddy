@@ -14,6 +14,7 @@ import { registerDebugIpc } from "./debug.js";
 import { registerDiagnosticsIpc } from "./diagnostics.js";
 import { registerDialogIpc } from "./dialog.js";
 import { registerDownloadsIpc } from "./downloads.js";
+import { registerEnterpriseExpertsIpc } from "./enterprise-experts.js";
 import { registerFileTransferIpc } from "./file-transfer.js";
 import { registerFsIpc } from "./fs.js";
 import { registerImIpc } from "./im.js";
@@ -50,6 +51,7 @@ interface IpcTeardown {
 	teardownAbilities: () => void;
 	teardownMarkdown: () => void;
 	teardownAgentTeams: () => void;
+	teardownEnterpriseExperts: () => void;
 	teardownActionApproval: () => void;
 	teardownAppMonitor: () => void;
 	teardownSession: () => void;
@@ -103,6 +105,7 @@ export function registerAllIpc(
 		teardownAbilities: registerAbilitiesIpc(),
 		teardownMarkdown: registerMarkdownIpc(webContents),
 		teardownAgentTeams: registerAgentTeamsIpc(),
+		teardownEnterpriseExperts: registerEnterpriseExpertsIpc(),
 		teardownActionApproval: registerActionApprovalIpc(options.actionApprovalBroker),
 		teardownAppMonitor: registerAppMonitorIpc(),
 		teardownSession: registerSessionIpc(webContents),
@@ -149,6 +152,7 @@ export function teardownAllIpc(teardown: IpcTeardown): void {
 	teardown.teardownAbilities();
 	teardown.teardownMarkdown();
 	teardown.teardownAgentTeams();
+	teardown.teardownEnterpriseExperts();
 	teardown.teardownActionApproval();
 	teardown.teardownAppMonitor();
 	teardown.teardownSession();

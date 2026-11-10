@@ -12,8 +12,8 @@ import {
 } from "./verify-linux-packages.mjs";
 
 const paths = [
-	"/opt/Astravia/Astravia",
-	"/opt/Astravia/resources/package-type",
+	"/opt/officeBuddy/Astravia",
+	"/opt/officeBuddy/resources/package-type",
 	"/usr/share/applications/astravia.desktop",
 	"/usr/share/icons/hicolor/512x512/apps/astravia.png",
 ];
@@ -45,7 +45,7 @@ test("Linux package inspection rejects wrong identities and incomplete payloads"
 				deb: { name: "astravia", version: "1.2.3", arch: "amd64", paths },
 				rpm: { name: "astravia", version: "1.2.3", arch: "x86_64", paths: paths.slice(1) },
 			}),
-		/RPM package is missing \/opt\/Astravia\/Astravia/,
+		/RPM package is missing \/opt\/officeBuddy\/Astravia/,
 	);
 });
 
@@ -61,10 +61,10 @@ test("package command output parsers normalize Debian and RPM metadata", () => {
 	});
 	assert.deepEqual(
 		parseDebContents(
-			"-rwxr-xr-x root/root 123 2026-01-01 00:00 ./opt/Astravia/Astravia\n" +
-				"lrwxrwxrwx root/root 0 2026-01-01 00:00 ./usr/bin/astravia -> /opt/Astravia/Astravia\n",
+			"-rwxr-xr-x root/root 123 2026-01-01 00:00 ./opt/officeBuddy/Astravia\n" +
+				"lrwxrwxrwx root/root 0 2026-01-01 00:00 ./usr/bin/astravia -> /opt/officeBuddy/Astravia\n",
 		),
-		["/opt/Astravia/Astravia", "/usr/bin/astravia"],
+		["/opt/officeBuddy/Astravia", "/usr/bin/astravia"],
 	);
 });
 

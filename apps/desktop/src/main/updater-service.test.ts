@@ -103,6 +103,32 @@ describe("UpdaterService", () => {
 		vi.useRealTimers();
 	});
 
+	it("does not contact an update feed when updates are disabled at build time", async () => {
+		const engine = createAvailableEngine();
+		const checkSpy = vi.spyOn(engine, "checkForUpdates");
+		const resume = createResumeEvents();
+		const service = new UpdaterService(engine, "0.5.21", true, translate, {
+			enabled: false,
+			periodicCheckIntervalMs: 60_000,
+			systemEvents: resume.events,
+		});
+
+		await service.onAppReady();
+		await vi.advanceTimersByTimeAsync(180_000);
+		resume.emit();
+		await vi.advanceTimersByTimeAsync(0);
+
+		expect(checkSpy).not.toHaveBeenCalled();
+		expect(resume.listenerCount()).toBe(0);
+
+		await service.check();
+		expect(checkSpy).not.toHaveBeenCalled();
+		expect(service.getState()).toMatchObject({
+			phase: "idle",
+			error: "updater.errors.configurationUnavailable",
+		});
+	});
+
 	it("maps an available electron-updater release to the existing state contract", async () => {
 		const engine = createAvailableEngine();
 		const service = new UpdaterService(engine, "0.5.21", true, translate);

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { stat } from "node:fs/promises";
 import { extname, isAbsolute, resolve } from "node:path";
 import type { AgentTeamDocument } from "@astravia/agent-team";
@@ -15,10 +16,17 @@ import {
 } from "@astravia/runtime-core";
 import { resolveProjectExecutionMode, sanitizeRuntimeErrorMessage } from "@astravia/runtime-desktop";
 import { isSshProjectUri, normalizeProjectCwd } from "@astravia/ssh-transport";
+import type { EnterpriseExpertSessionBinding } from "../../shared/enterprise-experts.js";
 import { type DesktopSessionHistoryInfo, UNAVAILABLE_RUNTIME_SESSION_ACCESS } from "../../shared/session-access.js";
 import { agentTeamStore } from "../agent-teams/agent-team-store.js";
 import { ensureLegacyAgentTeamOwnershipCatalog } from "../agent-teams/team-ownership-backfill.js";
 import { monitorRuntimeSession } from "../app-monitor/app-monitor-service.js";
+import { enterpriseExpertService } from "../enterprise-experts/enterprise-expert-service.js";
+import {
+	readEnterpriseExpertSessionBinding,
+	recordEnterpriseExpertSessionBinding,
+} from "../enterprise-experts/enterprise-expert-session-binding-store.js";
+import { enterpriseExpertSessionRuntime } from "../enterprise-experts/enterprise-expert-session-runtime-host.js";
 import { allowProjectRoot, readDesktopConfig } from "../ipc/fs.js";
 import { getAppLogger } from "../logger.js";
 import { getSharedRuntime } from "../runtime.js";
@@ -85,6 +93,7 @@ export interface DesktopConversationSession {
 	source: DesktopConversationSource;
 	/** 生效的 Agent 绑定；渲染层据此展示回合头像与昵称。降级或未绑定时缺省。 */
 	agentProfileId?: string;
+	enterpriseExpert?: EnterpriseExpertSessionBinding["expert"];
 }
 
 export interface DesktopConversationTurnResult {
@@ -211,6 +220,14 @@ export class DesktopConversationService {
 				// 然后才在读会话时报一个存储层的英文错，用户看到的是长时间空白加天书。
 				await this.assertSessionFileExists(absolutePath);
 			}
+			const enterpriseBinding = await trace.measure("resolve-enterprise-expert", async () => {
+				if (config?.sessionPath) return readEnterpriseExpertSessionBinding(config.sessionPath);
+				if (!config?.enterpriseExpertId) return undefined;
+				const experts = await enterpriseExpertService.list();
+				const expert = experts.find((candidate) => candidate.id === config?.enterpriseExpertId);
+				if (!expert) throw new Error("The selected enterprise expert is no longer available");
+				return { expert, threadId: randomUUID() } satisfies EnterpriseExpertSessionBinding;
+			});
 			// 远程项目没有沙箱可言，先把模式定下来：否则默认开着沙箱的用户会在这里被
 			// 「本机沙箱不可用」挡住，或者带着一套不存在的沙箱工具集进入会话。
 			const executionMode = resolveProjectExecutionMode(config?.cwd, config?.executionMode);
@@ -223,7 +240,9 @@ export class DesktopConversationService {
 			);
 			// 绑定的 Agent：新建取渲染层传入的身份，恢复取会话目录旁挂的记录。
 			// 能力白名单在这里由主进程查表折算，渲染层始终只经手身份。
-			const agentProfile = await trace.measure("resolve-agent-profile", () => this.resolveBoundAgentProfile(config));
+			const agentProfile = enterpriseBinding
+				? undefined
+				: await trace.measure("resolve-agent-profile", () => this.resolveBoundAgentProfile(config));
 			const resolvedConfig = await trace.measure("resolve-config", () =>
 				resolveDesktopSessionConfig(
 					agentProfile
@@ -251,6 +270,12 @@ export class DesktopConversationService {
 					recordSessionAgentBinding(sessionPath, agentProfile.agentProfileId),
 				);
 			}
+			if (enterpriseBinding) {
+				await trace.measure("record-enterprise-expert-binding", () =>
+					recordEnterpriseExpertSessionBinding(sessionPath, enterpriseBinding),
+				);
+				enterpriseExpertSessionRuntime.register(result.sessionId, enterpriseBinding);
+			}
 			monitorRuntimeSession(this.runtime, result.sessionId, source === "automation" ? "automation" : "interactive");
 			log.info("session created", {
 				sessionId: result.sessionId,
@@ -268,6 +293,7 @@ export class DesktopConversationService {
 				listCwd: resolveSessionListCwd(config?.cwd ?? resolvedConfig.cwd),
 				source,
 				...(agentProfile ? { agentProfileId: agentProfile.agentProfileId } : {}),
+				...(enterpriseBinding ? { enterpriseExpert: enterpriseBinding.expert } : {}),
 			};
 			trace.complete({ sessionId: result.sessionId, kind, source });
 			return session;

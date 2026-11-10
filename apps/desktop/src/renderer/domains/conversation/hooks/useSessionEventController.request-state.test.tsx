@@ -68,7 +68,7 @@ describe("conversation request preparation", () => {
 			role: "assistant",
 			content: [{ type: "text", text: "hello back" }],
 		} as unknown as AssistantMessage;
-		send({
+		const textEvent: SessionEvent = {
 			...base,
 			channel: "assistant",
 			type: "text_delta",
@@ -78,7 +78,10 @@ describe("conversation request preparation", () => {
 			delta: "hello back",
 			partial,
 			timestamp: 7_200,
-		});
+		};
+		send(textEvent);
+		// A short-lived duplicate IPC subscription must not append the same delta twice.
+		send(textEvent);
 		act(() => vi.advanceTimersByTime(100));
 		expect(tail()).toMatchObject({ text: "hello back", startedAt: 1_000, modelRequestStartedAt: 7_000 });
 		send({ ...base, type: "conversation.turn.completed", turnId: "turn-1", stopReason: "stop", timestamp: 8_000 });

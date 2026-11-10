@@ -1,6 +1,7 @@
 import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
+import { DESKTOP_MAC_EXECUTABLE_NAME, DESKTOP_PRODUCT_NAME } from "./desktop-packaging-layout.mjs";
 
 const PACKAGE_VERSION_PATTERN = /^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$/;
 
@@ -29,7 +30,7 @@ export function resolvePackagedE2eAppImagePath(packageRoot, version) {
 	if (typeof version !== "string" || !PACKAGE_VERSION_PATTERN.test(version)) {
 		throw new Error(`Linux packaged E2E has an invalid application version: ${String(version)}`);
 	}
-	const appImagePath = join(packageRoot, "release", `Astravia-${version}.AppImage`);
+	const appImagePath = join(packageRoot, "release", `${DESKTOP_PRODUCT_NAME}-${version}.AppImage`);
 	if (existsSync(appImagePath)) return appImagePath;
 	throw new Error(
 		`Linux packaged E2E AppImage not found: ${appImagePath}. Run bun run dist:linux:test first.`,
@@ -65,9 +66,9 @@ export function resolvePackagedE2eBinaryPath(packageRoot, platform = process.pla
 			? [resolveWindowsVersionedBinary(join(releaseRoot, "win-unpacked"))]
 			: platform === "darwin"
 				? [
-						join(releaseRoot, "mac-arm64", "Astravia.app", "Contents", "MacOS", "Astravia"),
-						join(releaseRoot, "mac", "Astravia.app", "Contents", "MacOS", "Astravia"),
-						join(releaseRoot, "mac-x64", "Astravia.app", "Contents", "MacOS", "Astravia"),
+						join(releaseRoot, "mac-arm64", `${DESKTOP_PRODUCT_NAME}.app`, "Contents", "MacOS", DESKTOP_MAC_EXECUTABLE_NAME),
+						join(releaseRoot, "mac", `${DESKTOP_PRODUCT_NAME}.app`, "Contents", "MacOS", DESKTOP_MAC_EXECUTABLE_NAME),
+						join(releaseRoot, "mac-x64", `${DESKTOP_PRODUCT_NAME}.app`, "Contents", "MacOS", DESKTOP_MAC_EXECUTABLE_NAME),
 					]
 				: platform === "linux"
 					? [join(releaseRoot, "linux-unpacked", "Astravia")]

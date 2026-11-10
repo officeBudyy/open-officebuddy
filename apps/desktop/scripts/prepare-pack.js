@@ -5,7 +5,13 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { resolveBuildResourceFilters } from "./build-resource-filters.mjs";
 import { validateDesktopBuildEnvironment } from "./desktop-build-environment.mjs";
-import { DESKTOP_BUILD_OUTPUTS, ASTRAVIA_PLUGIN_FILE_ASSOCIATION } from "./desktop-packaging-layout.mjs";
+import {
+	ASTRAVIA_PLUGIN_FILE_ASSOCIATION,
+	DESKTOP_BUILD_OUTPUTS,
+	DESKTOP_EXECUTABLE_NAME,
+	DESKTOP_MAC_EXECUTABLE_NAME,
+	DESKTOP_PRODUCT_NAME,
+} from "./desktop-packaging-layout.mjs";
 import { LINUX_PACKAGE_METADATA, LINUX_RELEASE_TARGETS } from "./linux-packaging-contract.mjs";
 import { loadBuildEnv } from "./load-build-env.mjs";
 import { resolveInstalledPackageRoot } from "./installed-package-root.mjs";
@@ -282,7 +288,7 @@ if (preparedSpeechModel) {
 const appPkg = {
 	name: "astravia",
 	version: appVersion,
-	description: "officebuddy Desktop App",
+	description: `${DESKTOP_PRODUCT_NAME} Desktop App`,
 	author: LINUX_PACKAGE_METADATA.author,
 	homepage: LINUX_PACKAGE_METADATA.homepage,
 	license: LINUX_PACKAGE_METADATA.license,
@@ -510,7 +516,7 @@ if (!existsSync(bundledAgentRpcCli)) {
 //
 // The agent-facing `astravia` command is @astravia/cli-host, not the desktop
 // executable. Stage it into Resources/cli-app/ so Desktop can write
-// ~/.astravia/agent/bin/astravia as a stable shim to this entry.
+// ~/.officeBuddy/agent/bin/astravia as a stable shim to this entry.
 const stagedCliAppDir = join(buildStageDir, "cli-app");
 rmSync(stagedCliAppDir, { recursive: true, force: true });
 mkdirSync(stagedCliAppDir, { recursive: true });
@@ -581,7 +587,7 @@ if (existsSync(runtimeCoreSandboxDir)) {
 // =============================================================================
 //
 // 把当前构建目标平台的 Node + Python(python-build-standalone)原始归档内置进
-// Resources/vendor/{node,python}/,首启时由 main 进程解压到 ~/.astravia/runtimes/。
+// Resources/vendor/{node,python}/,首启时由 main 进程解压到 ~/.officeBuddy/runtimes/。
 // 这是普通用户「下载下来就有环境」的本体。Node 走 npmmirror、Python 走 GitHub
 // (国内无稳定公共镜像,故必须内置)。构建机有网即可;无法联网的构建可设
 // ASTRAVIA_SKIP_VENDOR=1 跳过(产物退化为「面板手动下载」,不推荐发版用)。
@@ -724,8 +730,8 @@ const extraResources = resolveExtraResources();
 // Write electron-builder config
 const builderConfig = {
 	appId: "com.astravia.desktop",
-	productName: "Astravia",
-	executableName: "Astravia",
+	productName: DESKTOP_PRODUCT_NAME,
+	executableName: DESKTOP_EXECUTABLE_NAME,
 	afterPack: join(projectRoot, "scripts", "windows-version-layout.mjs"),
 	electronVersion,
 	electronLanguages: ["zh-CN", "en-US"],
@@ -734,11 +740,12 @@ const builderConfig = {
 	...(releaseInfo ? { releaseInfo } : {}),
 	files: ["**/*", ...extraResources.map(({ from }) => `!${from}/**/*`)],
 	protocols: {
-		name: "officebuddy",
+		name: DESKTOP_PRODUCT_NAME,
 		schemes: ["astravia"],
 	},
 	fileAssociations: [ASTRAVIA_PLUGIN_FILE_ASSOCIATION],
 	mac: {
+		executableName: DESKTOP_MAC_EXECUTABLE_NAME,
 		target: ["dmg", "zip"],
 		category: "public.app-category.productivity",
 		icon: "build/icon.icns",
@@ -765,19 +772,19 @@ const builderConfig = {
 		// 用户的本地模型（Ollama / LM Studio / vLLM 等）通常监听在局域网
 		// 明文 HTTP（http://192.168.x.x:port）。macOS 14+ 的 TCC 与 ATS 默认
 		// 会静默拦截这种请求，表现为 Finder 双击启动后随机出现 "Connection
-		// error."，而从终端启动 Astravia 时 launchd context 不同会偶发放行。
+		// error."，而从终端启动 officeBuddy 时 launchd context 不同会偶发放行。
 		// 三个 key 缺一不可：
 		//   - NSAppTransportSecurity.NSAllowsLocalNetworking：放开局域网明文 HTTP
 		//   - NSLocalNetworkUsageDescription：macOS 14+ 触发本地网络权限弹窗
 		//   - NSBonjourServices：协助 TCC 识别 app 需要本地网络访问
 		extendInfo: {
-			CFBundleDisplayName: "officebuddy",
-			CFBundleName: "officebuddy",
+			CFBundleDisplayName: DESKTOP_PRODUCT_NAME,
+			CFBundleName: DESKTOP_PRODUCT_NAME,
 			NSAppTransportSecurity: {
 				NSAllowsLocalNetworking: true,
 			},
 			NSLocalNetworkUsageDescription:
-				"officebuddy 需要访问本地网络以连接你在局域网内运行的 AI 模型服务（如 Ollama、LM Studio、vLLM 等）。",
+				`${DESKTOP_PRODUCT_NAME} 需要访问本地网络以连接你在局域网内运行的 AI 模型服务（如 Ollama、LM Studio、vLLM 等）。`,
 			NSBonjourServices: ["_http._tcp", "_https._tcp"],
 		},
 	},
@@ -787,16 +794,17 @@ const builderConfig = {
 	// 位置必须与那里的 ICON_CENTERS_X_2X 对齐）。
 	// 未签名构建为三图标：多出的「修复已损坏.app」由 scripts/build-mac-repair-helper.js
 	// osacompile 生成，用户首次需 control-click → 「打开」绕过 Gatekeeper，
-	// 之后弹原生密码框对 /Applications/Astravia.app 执行 xattr -dr com.apple.quarantine。
+	// 之后弹原生密码框对 /Applications/officeBuddy.app 执行 xattr -dr com.apple.quarantine。
 	// 签名+公证构建不存在「已损坏」问题，退回两图标常规版式。
 	dmg: {
+		title: "${productName} ${version}",
 		background: "build/background.png",
 		window: { width: 660, height: 440 },
 		iconSize: 100,
 		iconTextSize: 12,
 		contents: macSigning.enabled
 			? [
-					{ x: 180, y: 200, type: "file" }, // Astravia.app（electron-builder 自动填入产物路径）
+					{ x: 180, y: 200, type: "file" }, // officeBuddy.app（electron-builder 自动填入产物路径）
 					{ x: 480, y: 200, type: "link", path: "/Applications" },
 				]
 			: [
@@ -813,15 +821,15 @@ const builderConfig = {
 	linux: {
 		target: LINUX_RELEASE_TARGETS,
 		category: "Utility",
-		description: "officebuddy AI agent desktop application",
+		description: `${DESKTOP_PRODUCT_NAME} AI agent desktop application`,
 		icon: "build/icon.png",
 		maintainer: LINUX_PACKAGE_METADATA.maintainer,
 		synopsis: "AI agent desktop application",
 		vendor: LINUX_PACKAGE_METADATA.vendor,
 		desktop: {
 			entry: {
-				Name: "officebuddy",
-				Comment: "officebuddy AI agent desktop application",
+				Name: DESKTOP_PRODUCT_NAME,
+				Comment: `${DESKTOP_PRODUCT_NAME} AI agent desktop application`,
 			},
 		},
 	},

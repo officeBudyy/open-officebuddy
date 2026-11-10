@@ -8,11 +8,11 @@ export const ASTRAVIA_HOME_ENV = "ASTRAVIA_HOME";
 export const ASTRAVIA_CONFIG_DIR_ENV = "ASTRAVIA_CONFIG_DIR";
 
 /**
- * 默认配置目录名（即品牌名）。这是整个仓库配置目录的唯一来源——
- * 既用于用户主目录根（~/<name>），也用于项目内目录（projectDir/<name>）。
- * 改品牌只改这一处；按环境隔离（如 dev）则用 ASTRAVIA_CONFIG_DIR 覆盖。
+ * 默认用户数据目录名（即品牌名）。按环境隔离（如 dev）仍可用
+ * ASTRAVIA_CONFIG_DIR 覆盖。项目内已有的 `.astravia/` 元数据目录属于兼容格式，
+ * 不跟随用户数据根目录改名。
  */
-export const DEFAULT_CONFIG_DIR_NAME = ".astravia";
+export const DEFAULT_CONFIG_DIR_NAME = ".officeBuddy";
 
 function expandTilde(p: string): string {
 	if (p === "~") return homedir();
@@ -21,8 +21,7 @@ function expandTilde(p: string): string {
 }
 
 /**
- * 配置目录名。ASTRAVIA_CONFIG_DIR 覆盖，否则用默认品牌名。
- * 用户主目录根与项目内目录都从它派生，保证两者始终一致。
+ * 用户数据目录名。ASTRAVIA_CONFIG_DIR 覆盖，否则用默认品牌名。
  */
 export function getAstraviaConfigDirName(): string {
 	return process.env[ASTRAVIA_CONFIG_DIR_ENV] || DEFAULT_CONFIG_DIR_NAME;

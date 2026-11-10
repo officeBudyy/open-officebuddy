@@ -137,11 +137,11 @@ func describeSources(keychain, file, env bool) string {
 }
 
 func defaultCredentialsPath() (string, error) {
-	home, err := os.UserHomeDir()
+	home, err := defaultDataHome()
 	if err != nil {
-		return "", fmt.Errorf("resolve home dir: %w", err)
+		return "", err
 	}
-	return filepath.Join(home, ".astravia", "im-gateway", credentialsFilename), nil
+	return filepath.Join(home, "im-gateway", credentialsFilename), nil
 }
 
 // loadCredentialsFile returns (file, true, nil) when the file exists and was

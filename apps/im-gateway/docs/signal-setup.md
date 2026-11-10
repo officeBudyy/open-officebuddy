@@ -62,7 +62,7 @@ Do not expose that port publicly — anyone who can reach it can send as your ac
 
 ### Where the linked device lives
 
-In the desktop app, managed mode points signal-cli at `~/.astravia/desktop-app/im-signal-cli/` instead of signal-cli's default directory, so unbinding in Astravia clears only Astravia's device and leaves a signal-cli install you set up yourself untouched. Standalone managed mode uses signal-cli's own default directory and never deletes anything.
+In the desktop app, managed mode points signal-cli at `~/.officeBuddy/desktop-app/im-signal-cli/` instead of signal-cli's default directory, so unbinding in Astravia clears only Astravia's device and leaves a signal-cli install you set up yourself untouched. Standalone managed mode uses signal-cli's own default directory and never deletes anything.
 
 ## 4. Proxies
 

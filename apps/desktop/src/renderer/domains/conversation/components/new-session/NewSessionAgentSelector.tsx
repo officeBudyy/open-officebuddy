@@ -2,6 +2,7 @@ import { teamMemberAvatarUrls, useAgentAvatarResolver } from "@shared/agent-team
 import { useLocalizedAgentTeamDocument } from "@shared/agent-teams/agent-team-localization";
 import { BotAvatar } from "@shared/components/BotAvatar";
 import { type AgentTeamDocument, listLibraryAgentProfiles } from "@astravia/agent-team";
+import type { EnterpriseExpertSummary } from "@preload/api";
 import { NewSessionPicker } from "@astravia-org/theme-ui/chat/NewSessionPicker";
 import type { NewSessionPickerRootProps } from "@astravia-org/theme-ui/chat";
 import { AvatarStackView } from "@astravia-org/theme-ui/shared/AvatarStackView";
@@ -10,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { loadAgentTeamDocument } from "./agent-team-directory";
 import {
 	agentTargetKey,
+	enterpriseExpertTargetKey,
 	filterTargetOptions,
 	type NewSessionTargetKey,
 	type NewSessionTargetOption,
@@ -41,12 +43,18 @@ export function NewSessionAgentSelector({
 	const [query, setQuery] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [enterpriseExperts, setEnterpriseExperts] = useState<readonly EnterpriseExpertSummary[]>([]);
 
 	const load = useCallback(async () => {
 		setLoading(true);
 		setError(null);
 		try {
-			setDocument(await loadAgentTeamDocument());
+			const [nextDocument, nextExperts] = await Promise.all([
+				loadAgentTeamDocument(),
+				window.astravia.enterpriseExperts.list().catch(() => []),
+			]);
+			setDocument(nextDocument);
+			setEnterpriseExperts(nextExperts);
 		} catch (cause) {
 			setError(cause instanceof Error ? cause.message : String(cause));
 		} finally {
@@ -91,11 +99,22 @@ export function NewSessionAgentSelector({
 			})),
 		[document, resolveAvatar, selectedKey],
 	);
+	const enterpriseOptions = useMemo<readonly NewSessionTargetOption[]>(
+		() => enterpriseExperts.map((expert) => ({
+			targetKey: enterpriseExpertTargetKey(expert.id),
+			title: expert.name,
+			...(expert.description ? { subtitle: expert.description } : {}),
+			...(expert.avatarUrl ? { avatarUrls: [expert.avatarUrl] } : {}),
+			selected: selectedKey === enterpriseExpertTargetKey(expert.id),
+		})),
+		[enterpriseExperts, selectedKey],
+	);
 	const visibleTeams = useMemo(() => filterTargetOptions(teamOptions, query), [teamOptions, query]);
 	const visibleAgents = useMemo(() => filterTargetOptions(agentOptions, query), [agentOptions, query]);
-	const selectedOption = [...teamOptions, ...agentOptions].find((option) => option.targetKey === selectedKey);
-	const searchVisible = teamOptions.length + agentOptions.length > SEARCH_THRESHOLD;
-	const nothingVisible = visibleTeams.length === 0 && visibleAgents.length === 0;
+	const visibleEnterpriseExperts = useMemo(() => filterTargetOptions(enterpriseOptions, query), [enterpriseOptions, query]);
+	const selectedOption = [...teamOptions, ...agentOptions, ...enterpriseOptions].find((option) => option.targetKey === selectedKey);
+	const searchVisible = teamOptions.length + agentOptions.length + enterpriseOptions.length > SEARCH_THRESHOLD;
+	const nothingVisible = visibleTeams.length === 0 && visibleAgents.length === 0 && visibleEnterpriseExperts.length === 0;
 
 	const handleOpenChange: NonNullable<NewSessionPickerRootProps["onOpenChange"]> = useCallback((next) => {
 		setOpen(next);
@@ -205,6 +224,11 @@ export function NewSessionAgentSelector({
 							{visibleAgents.length > 0 && (
 								<NewSessionPicker.Group label={t("newSession.agentSelector.groupAgents")}>
 									{visibleAgents.map(renderOption)}
+								</NewSessionPicker.Group>
+							)}
+							{visibleEnterpriseExperts.length > 0 && (
+								<NewSessionPicker.Group label={t("newSession.agentSelector.groupEnterpriseExperts")}>
+									{visibleEnterpriseExperts.map(renderOption)}
 								</NewSessionPicker.Group>
 							)}
 						</>

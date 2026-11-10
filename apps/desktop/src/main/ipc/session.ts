@@ -65,6 +65,7 @@ import { listRuntimeSessionProjects, listSessionHistory } from "../conversations
 import { slimSessionEventForIpc } from "../conversations/slim-session-event-for-ipc.js";
 import { getDesktopUserQuestionBroker } from "../conversations/user-question-broker.js";
 import { type DebugRequestData, writeDebugRequest } from "../debug-writer.js";
+import { enterpriseExpertSessionRuntime } from "../enterprise-experts/enterprise-expert-session-runtime-host.js";
 import { getAppLogger } from "../logger.js";
 import { getDesktopMcpAppRegistry } from "../mcp/mcp-app-runtime.js";
 import { getDesktopMcpTaskCoordinator, getDesktopMcpTaskRegistry } from "../mcp/mcp-task-runtime.js";
@@ -967,6 +968,7 @@ export function registerSessionIpc(webContents: WebContents): () => void {
 				// 回传生效的 Agent 绑定：新建时是渲染层自己传的，恢复时是主进程读回的，
 				// 渲染层据此在消息列表上展示该 Agent 的头像与昵称。
 				...(result.agentProfileId ? { agentProfileId: result.agentProfileId } : {}),
+				...(result.enterpriseExpert ? { enterpriseExpert: result.enterpriseExpert } : {}),
 			};
 		},
 	);
@@ -1000,6 +1002,9 @@ export function registerSessionIpc(webContents: WebContents): () => void {
 			sessionId,
 			...summarizeAgentPluginRuntimeConfig(pluginAgentContributionService.buildRuntimeConfig()),
 		});
+		if (enterpriseExpertSessionRuntime.isRemote(sessionId)) {
+			return enterpriseExpertSessionRuntime.prompt(sessionId, req);
+		}
 		return conversationService.promptInteractiveSession(sessionId, req, sessionCwdMap.get(sessionId));
 	});
 
@@ -1010,6 +1015,10 @@ export function registerSessionIpc(webContents: WebContents): () => void {
 
 	ipcMain.handle(CHANNELS.ABORT, async (_event, sessionId: unknown) => {
 		assertNonEmptyString(sessionId, "sessionId");
+		if (enterpriseExpertSessionRuntime.isRemote(sessionId)) {
+			enterpriseExpertSessionRuntime.abort(sessionId);
+			return;
+		}
 		// Stopping is unconditional: the turn comes down together with the work it
 		// spawned. Subagents and background commands outlive the turn by design, so
 		// cancelling the turn alone would leave workflows running behind the button.
@@ -1019,6 +1028,7 @@ export function registerSessionIpc(webContents: WebContents): () => void {
 	// 输入队列管理（ADR-0060）：薄桥接，能力全部在 RuntimeHost。
 	ipcMain.handle(CHANNELS.QUEUE_STATE, async (_event, sessionId: unknown) => {
 		assertNonEmptyString(sessionId, "sessionId");
+		if (enterpriseExpertSessionRuntime.isRemote(sessionId)) return { paused: false, entries: [] };
 		return runtime.getQueueState(sessionId);
 	});
 	ipcMain.handle(CHANNELS.QUEUE_CONTEXT_COMPACTION, async (_event, sessionId: unknown) => {
@@ -1160,6 +1170,7 @@ export function registerSessionIpc(webContents: WebContents): () => void {
 		);
 		return {
 			...state,
+			...(enterpriseExpertSessionRuntime.isRemote(sessionId) ? { activeToolNames: [] } : {}),
 			scenario: productState.scenario,
 			...(productState.agentMode !== undefined ? { agentMode: productState.agentMode } : {}),
 		};
@@ -1657,10 +1668,13 @@ export function registerSessionIpc(webContents: WebContents): () => void {
 	ipcMain.handle(CHANNELS.SUBSCRIBE, async (_event, sessionId: unknown) => {
 		assertNonEmptyString(sessionId, "sessionId");
 		const subscriptionId = `${sessionId}:${randomUUID()}`;
-		subscriptionMap.set(
-			subscriptionId,
-			runtime.subscribe(sessionId, forwardSessionEvents(sessionId, subscriptionId)),
-		);
+		const forward = forwardSessionEvents(sessionId, subscriptionId);
+		const unsubscribeRuntime = runtime.subscribe(sessionId, forward);
+		const unsubscribeRemote = enterpriseExpertSessionRuntime.subscribe(sessionId, forward);
+		subscriptionMap.set(subscriptionId, () => {
+			unsubscribeRuntime();
+			unsubscribeRemote();
+		});
 		await replaySessionRegistries(sessionId, subscriptionId);
 		return { subscriptionId };
 	});
@@ -1672,7 +1686,14 @@ export function registerSessionIpc(webContents: WebContents): () => void {
 		assertNonEmptyString(sessionId, "sessionId");
 		const subscriptionId = `${sessionId}:${randomUUID()}`;
 		const attachment = runtime.attach(sessionId, forwardSessionEvents(sessionId, subscriptionId));
-		subscriptionMap.set(subscriptionId, attachment.unsubscribe);
+		const unsubscribeRemote = enterpriseExpertSessionRuntime.subscribe(
+			sessionId,
+			forwardSessionEvents(sessionId, subscriptionId),
+		);
+		subscriptionMap.set(subscriptionId, () => {
+			attachment.unsubscribe();
+			unsubscribeRemote();
+		});
 		const snapshot = {
 			history: attachment.history,
 			...(attachment.runningTurnId ? { runningTurnId: attachment.runningTurnId } : {}),

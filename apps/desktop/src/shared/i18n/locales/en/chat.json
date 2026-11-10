@@ -1000,6 +1000,8 @@
 			"memberCount": "{{count}} members",
 			"groupTeams": "Teams",
 			"groupAgents": "Agents",
+			"groupEnterpriseExperts": "Enterprise experts",
+			"enterpriseRemote": "Runs on the remote enterprise expert platform",
 			"pick": "Switch agent",
 			"pickTitle": "Pick a team or a single agent for this task",
 			"switchTitle": "Switch the team or agent for this session"

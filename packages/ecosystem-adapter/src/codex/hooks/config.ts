@@ -217,7 +217,7 @@ function matcherForEvent(
 
 /**
  * Whether this config path belongs to the Codex profile.
- * Matches any `.../.codex/hooks.json` (Astravia-nested `~/.astravia/.codex/...` or top-level official).
+ * Matches any `.../.codex/hooks.json` (Astravia-nested `~/.officeBuddy/.codex/...` or top-level official).
  * Claude settings and Claude plugin hooks/hooks.json are never Codex-owned.
  * Codex plugin hooks should set profileId (or an explicit owned path).
  */

@@ -61,6 +61,11 @@ export default defineConfig(({ mode }) => {
 	define[`process.env.${SPEECH_INPUT_ENABLED_ENV}`] = JSON.stringify(String(speechInputBuildConfig.enabled));
 	// 未配置时按 false（lite）内联，保证 cloud 判断能被常量折叠掉。
 	define["process.env.ASTRAVIA_CLOUD_ENABLED"] = JSON.stringify(cloudEnabled ? "true" : "false");
+	// Forks default to no updater. The packaged runtime must see the same resolved
+	// value as prepare-pack even when the variable was omitted from the shell.
+	define["process.env.ASTRAVIA_UPDATE_PROVIDER"] = JSON.stringify(
+		env.ASTRAVIA_UPDATE_PROVIDER?.trim() || "none",
+	);
 	// 固化发行配置，防止打包后意外继承启动环境；空仓库由运行时解析为 Astravia 官方源。
 	define["process.env.ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY"] = JSON.stringify(
 		env.ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY?.trim() || "",
@@ -92,7 +97,7 @@ export default defineConfig(({ mode }) => {
 		build: {
 			lib: {
 				entry: {
-					index: resolve(process.cwd(), "src/main/main.ts"),
+					index: resolve(process.cwd(), "src/main/bootstrap.ts"),
 					// uiohook 宿主 worker 线程独立入口：与 index.js 同目录输出，
 					// 运行时由 quickpanel-trigger.ts 按同目录路径拼接后交给 new Worker()。
 					"uiohook-worker": resolve(process.cwd(), "src/main/uiohook-worker.ts"),

@@ -2,7 +2,7 @@
  * 会话置顶的纯领域模型。
  *
  * 置顶按会话文件路径记录，与会话内容无关（重命名只追加 name 条目，路径不变）。
- * 主进程仓库 `~/.astravia/desktop-app/session-pins.json` 是唯一写者，侧边栏与配对的
+ * 主进程仓库 `~/.officeBuddy/desktop-app/session-pins.json` 是唯一写者，侧边栏与配对的
  * 手机都读它；这里只放不依赖 fs/electron 的纯函数，两个进程共用同一套语义。
  */
 

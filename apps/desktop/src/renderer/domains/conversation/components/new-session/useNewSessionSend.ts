@@ -31,6 +31,7 @@ interface NewSessionSendOptions {
 	 * 技能 / MCP / 插件白名单，渲染层不经手任何能力字段。
 	 */
 	readonly agentProfileId?: string;
+	readonly enterpriseExpertId?: string;
 }
 
 const MISSING_MODEL_CREDENTIALS = /no credentials configured|no api key found|requires at least one available model/i;
@@ -52,7 +53,7 @@ export function useNewSessionSend(options: NewSessionSendOptions): {
 	readonly startGoal: StartNewSessionGoal;
 } {
 	const sendingRef = useRef(false);
-	const { cwd, executionMode, prepareCwd, openSession, sendMessage, agentProfileId } = options;
+	const { cwd, executionMode, prepareCwd, openSession, sendMessage, agentProfileId, enterpriseExpertId } = options;
 
 	const send = useCallback(
 		async (overrideText?: string, context?: SendInteractionContext): Promise<void> => {
@@ -76,6 +77,7 @@ export function useNewSessionSend(options: NewSessionSendOptions): {
 				await openSession(targetCwd, undefined, executionMode, {
 					interactionId,
 					...(agentProfileId ? { agentProfileId } : {}),
+					...(enterpriseExpertId ? { enterpriseExpertId } : {}),
 					navigateBeforeCreate: true,
 					preserveMessagesBeforeCreate: true,
 					onCreateError: (error) => {
@@ -93,11 +95,12 @@ export function useNewSessionSend(options: NewSessionSendOptions): {
 				sendingRef.current = false;
 			}
 		},
-		[agentProfileId, cwd, executionMode, prepareCwd, openSession, sendMessage],
+		[agentProfileId, enterpriseExpertId, cwd, executionMode, prepareCwd, openSession, sendMessage],
 	);
 
 	const startGoal = useCallback<StartNewSessionGoal>(
 		async (objective) => {
+			if (enterpriseExpertId) return null;
 			if (sendingRef.current) return null;
 			sendingRef.current = true;
 			const interactionId = perfSendBegin("new-session-goal");
@@ -122,7 +125,7 @@ export function useNewSessionSend(options: NewSessionSendOptions): {
 				sendingRef.current = false;
 			}
 		},
-		[agentProfileId, cwd, executionMode, openSession, prepareCwd],
+		[agentProfileId, enterpriseExpertId, cwd, executionMode, openSession, prepareCwd],
 	);
 
 	return { send, startGoal };

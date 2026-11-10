@@ -13,6 +13,11 @@ export const DESKTOP_BUILD_OUTPUTS = Object.freeze([
 	{ source: "dist/ocr-runner", target: "ocr-runner" },
 ]);
 
+/** User-visible desktop product identity. Internal runtime/protocol ids remain Astravia-compatible. */
+export const DESKTOP_PRODUCT_NAME = "officeBuddy";
+export const DESKTOP_EXECUTABLE_NAME = "Astravia";
+export const DESKTOP_MAC_EXECUTABLE_NAME = DESKTOP_PRODUCT_NAME;
+
 export const ASTRAVIA_PLUGIN_FILE_ASSOCIATION = Object.freeze({
 	ext: "astraviapkg",
 	name: "Astravia Plugin Package",
@@ -22,6 +27,8 @@ export const ASTRAVIA_PLUGIN_FILE_ASSOCIATION = Object.freeze({
 });
 
 export const DESKTOP_REQUIRED_SOURCE_FILES = Object.freeze([
+	"src/main/bootstrap.ts",
+	"src/main/home-directory-migration.ts",
 	"src/main/main.ts",
 	"src/preload/index.ts",
 	"src/preload/remote-desktop.ts",

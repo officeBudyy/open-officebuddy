@@ -34,7 +34,7 @@ type Options struct {
 	// to match desktop-app's `resolveSessionDirForCwd` convention so
 	// IM-created session .jsonl files appear in the desktop sidebar
 	// under the default "对话" project. Empty → coding-agent falls back
-	// to `~/.astravia/agent/sessions/<encoded-cwd>/`.
+	// to `~/.officeBuddy/agent/sessions/<encoded-cwd>/`.
 	SessionDir string
 
 	// BinPrefixArgs are prepended to the spawned subprocess's argv

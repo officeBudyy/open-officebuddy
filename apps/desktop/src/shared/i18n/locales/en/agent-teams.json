@@ -3,6 +3,20 @@
   "error": {
     "load": "Could not load agent data: {{error}}"
   },
+  "enterprise": {
+    "section": "Enterprise experts",
+    "hint": "Provided remotely · {{count}} available",
+    "refresh": "Refresh",
+    "empty": "No enterprise experts are currently available.",
+    "authHint": "A valid token is required. Configure it in the dialog.",
+    "remoteExecution": "Tasks run on the remote enterprise expert platform",
+    "tokenTitle": "Configure enterprise expert token",
+    "tokenDescription": "The token is stored only in this device's secure credential vault and is used to list experts and start remote chats.",
+    "tokenPlaceholder": "Enter a valid token",
+    "saveToken": "Validate and save",
+    "validating": "Validating…",
+    "cancel": "Cancel"
+  },
   "library": {
     "title": "Agents",
     "subtitle": "Manage the agents and abilities available to teams.",

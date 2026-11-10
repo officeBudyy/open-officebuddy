@@ -29,6 +29,7 @@ export interface DesktopCodingAgentSessionConfig extends SessionConfig {
 	 * 与 systemPromptVolatileAddon 后再进来，渲染层无从自述能力。
 	 */
 	readonly agentProfileId?: string;
+	readonly enterpriseExpertId?: string;
 	readonly appendSystemPrompt?: string;
 	readonly systemPromptCachePrefixAddon?: string;
 	readonly systemPromptVolatileAddon?: string;
@@ -99,6 +100,7 @@ export async function resolveDesktopSessionConfig(
 		scenario: _scenario,
 		agentMode: _agentMode,
 		agentProfileId: _agentProfileId,
+		enterpriseExpertId: _enterpriseExpertId,
 		appendSystemPrompt: _appendSystemPrompt,
 		systemPromptCachePrefixAddon: _systemPromptCachePrefixAddon,
 		systemPromptVolatileAddon: _systemPromptVolatileAddon,

@@ -61,7 +61,7 @@ function resolveConfigRoot(configDirOrPath, homeDirectory) {
 export function resolveDevLaunchEnvironment(environment = process.env, homeDirectory = homedir()) {
 	const verificationEnabled = environment.ASTRAVIA_UI_VERIFICATION === "1";
 	const configDir =
-		environment.ASTRAVIA_CONFIG_DIR?.trim() || (verificationEnabled ? ".astravia-ui-verify" : ".astravia-dev");
+		environment.ASTRAVIA_CONFIG_DIR?.trim() || (verificationEnabled ? ".officeBuddy-ui-verify" : ".officeBuddy-dev");
 	// 继承来的 ASTRAVIA_CONFIG_DIR 可能是绝对路径（宿主导出的就是），直接 join 会拼出
 	// ~/Users/<name>/... 这种重复前缀的目录。
 	const configRoot = resolveConfigRoot(configDir, homeDirectory);
@@ -69,7 +69,7 @@ export function resolveDevLaunchEnvironment(environment = process.env, homeDirec
 	const userDataDir = configuredUserDataDir ? resolve(configuredUserDataDir) : join(configRoot, "electron-user-data");
 	// 数据根必须钉在这套配置目录下：getAstraviaHomePath() 里 ASTRAVIA_HOME 优先于
 	// ASTRAVIA_CONFIG_DIR，而父进程（已安装的桌面应用、agent shell）会把它导出给子进程。
-	// 只设 ASTRAVIA_CONFIG_DIR 的话，dev 实例的实际数据根仍是宿主的 ~/.astravia，
+	// 只设 ASTRAVIA_CONFIG_DIR 的话，dev 实例的实际数据根仍是宿主的 ~/.officeBuddy，
 	// 于是两边共用同一份 sessions/插件/action 端点，宿主会被连带重载。
 	const configuredHomeDir = environment.ASTRAVIA_DEV_HOME?.trim();
 	const homePath = configuredHomeDir ? resolveConfigRoot(configuredHomeDir, homeDirectory) : configRoot;

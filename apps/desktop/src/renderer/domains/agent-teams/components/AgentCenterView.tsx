@@ -7,6 +7,7 @@ import { AgentCard } from "./AgentCard";
 import { AgentCenterHero } from "./agent-center/AgentCenterHero";
 import { TeamAssemblyBar } from "./agent-center/TeamAssemblyBar";
 import { TeamCard } from "./agent-center/TeamCard";
+import { EnterpriseExpertsSection } from "./EnterpriseExpertsSection";
 
 const COLLAPSED_TEAM_COUNT = 4;
 
@@ -19,6 +20,7 @@ export interface AgentCenterViewProps {
 	/** 打开某个智能体的档案抽屉。 */
 	readonly onOpenAgent: (agentId: string) => void;
 	readonly onCreateAgent: () => void;
+	readonly onStartEnterpriseExpert: (expertId: string) => void;
 }
 
 export function AgentCenterView({
@@ -29,6 +31,7 @@ export function AgentCenterView({
 	onDeleteTeam,
 	onOpenAgent,
 	onCreateAgent,
+	onStartEnterpriseExpert,
 }: AgentCenterViewProps): JSX.Element {
 	const { t } = useTranslation("agent-teams");
 	const { actions } = model;
@@ -175,6 +178,8 @@ export function AgentCenterView({
 							</div>
 						)}
 					</section>
+
+					<EnterpriseExpertsSection onStart={onStartEnterpriseExpert} />
 
 					<section className="flex flex-col gap-3.5">
 						<div className="flex items-center justify-between gap-3">

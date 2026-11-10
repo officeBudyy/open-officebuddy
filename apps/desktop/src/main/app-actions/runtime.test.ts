@@ -101,7 +101,7 @@ describe("AppActionRuntime logging", () => {
 
 describe("development approval policy", () => {
 	it("does not invoke the approval broker for a write action in dev", async () => {
-		vi.stubEnv("ASTRAVIA_CONFIG_DIR", ".astravia-dev");
+		vi.stubEnv("ASTRAVIA_CONFIG_DIR", ".officeBuddy-dev");
 		vi.stubEnv("ASTRAVIA_DEV_AUTO_APPROVE_ACTIONS", "1");
 		const approvalRequester = { request: vi.fn(async () => ({ approved: false })) };
 		const run = vi.fn(async () => ({ status: "ok" as const }));
@@ -128,15 +128,22 @@ describe("development approval policy", () => {
 		expect(
 			shouldBypassActionApproval(
 				{ source: "local-server" },
-				{ ASTRAVIA_CONFIG_DIR: ".astravia-dev", ASTRAVIA_DEV_AUTO_APPROVE_ACTIONS: "1" },
+				{ ASTRAVIA_CONFIG_DIR: ".officeBuddy-dev", ASTRAVIA_DEV_AUTO_APPROVE_ACTIONS: "1" },
 			),
 		).toBe(true);
 		expect(
 			shouldBypassActionApproval(
 				{ source: "local-server" },
-				{ ASTRAVIA_CONFIG_DIR: ".astravia-dev", ASTRAVIA_DEV_AUTO_APPROVE_ACTIONS: "0" },
+				{ ASTRAVIA_CONFIG_DIR: ".officeBuddy-dev", ASTRAVIA_DEV_AUTO_APPROVE_ACTIONS: "0" },
 			),
 		).toBe(false);
+		// Keep old local scripts working while the development directory name migrates.
+		expect(
+			shouldBypassActionApproval(
+				{ source: "local-server" },
+				{ ASTRAVIA_CONFIG_DIR: ".astravia-dev", ASTRAVIA_DEV_AUTO_APPROVE_ACTIONS: "1" },
+			),
+		).toBe(true);
 	});
 
 	it("never bypasses approvals for production or internal callers", () => {
@@ -149,7 +156,7 @@ describe("development approval policy", () => {
 		expect(
 			shouldBypassActionApproval(
 				{ source: "internal" },
-				{ ASTRAVIA_CONFIG_DIR: ".astravia-dev", ASTRAVIA_DEV_AUTO_APPROVE_ACTIONS: "1" },
+				{ ASTRAVIA_CONFIG_DIR: ".officeBuddy-dev", ASTRAVIA_DEV_AUTO_APPROVE_ACTIONS: "1" },
 			),
 		).toBe(false);
 	});

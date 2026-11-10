@@ -1,11 +1,12 @@
 -- 修复已损坏.app 的 AppleScript 源。
 -- 由 scripts/build-mac-repair-helper.js 通过 osacompile 编译为 .app 后放入 DMG。
--- 作用：对用户安装到 /Applications 或 ~/Applications 的 Astravia.app
+-- 作用：对用户安装到 /Applications 或 ~/Applications 的 officeBuddy.app
 -- 执行 xattr -dr com.apple.quarantine，绕过 Gatekeeper 的「应用程序已损坏」拦截。
 
-on findAstraviaApp()
-	set homeApps to (POSIX path of (path to home folder)) & "Applications/Astravia.app"
-	set candidatePaths to {"/Applications/Astravia.app", homeApps}
+on findOfficeBuddyApp()
+	set homeApps to (POSIX path of (path to home folder)) & "Applications/officeBuddy.app"
+	set legacyHomeApps to (POSIX path of (path to home folder)) & "Applications/Astravia.app"
+	set candidatePaths to {"/Applications/officeBuddy.app", homeApps, "/Applications/Astravia.app", legacyHomeApps}
 	repeat with p in candidatePaths
 		set thePath to contents of p
 		try
@@ -14,22 +15,22 @@ on findAstraviaApp()
 		end try
 	end repeat
 	return missing value
-end findAstraviaApp
+end findOfficeBuddyApp
 
-set astraviaPath to findAstraviaApp()
+set officeBuddyPath to findOfficeBuddyApp()
 
-if astraviaPath is missing value then
-	display dialog "未检测到 officebuddy。请先将 DMG 中的 officebuddy 拖入 Applications 文件夹，然后再次打开「修复已损坏」。" buttons {"好"} default button "好" with icon caution with title "修复已损坏"
+if officeBuddyPath is missing value then
+	display dialog "未检测到 officeBuddy。请先将 DMG 中的 officeBuddy 拖入 Applications 文件夹，然后再次打开「修复已损坏」。" buttons {"好"} default button "好" with icon caution with title "修复已损坏"
 	return
 end if
 
 try
-	do shell script "/usr/bin/xattr -dr com.apple.quarantine " & quoted form of astraviaPath with administrator privileges
+	do shell script "/usr/bin/xattr -dr com.apple.quarantine " & quoted form of officeBuddyPath with administrator privileges
 on error errMsg number errNum
 	if errNum is -128 then return -- 用户取消密码弹窗
 	display dialog "修复失败：" & errMsg buttons {"好"} default button "好" with icon stop with title "修复已损坏"
 	return
 end try
 
-display dialog "修复完成，即将启动 officebuddy。" buttons {"启动 officebuddy"} default button "启动 officebuddy" with icon note with title "修复已损坏"
-do shell script "/usr/bin/open " & quoted form of astraviaPath
+display dialog "修复完成，即将启动 officeBuddy。" buttons {"启动 officeBuddy"} default button "启动 officeBuddy" with icon note with title "修复已损坏"
+do shell script "/usr/bin/open " & quoted form of officeBuddyPath
