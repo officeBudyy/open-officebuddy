@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.astravia.dev"><img src="https://img.shields.io/badge/官网-astravia.dev-0b7285" alt="官网"></a>
+  <a href="https://officebuddy.work/"><img src="https://img.shields.io/badge/官网-officebuddy.work-0b7285" alt="官网"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/许可-Apache--2.0-blue" alt="Apache-2.0 许可"></a>
   <img src="https://img.shields.io/badge/平台-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey" alt="macOS、Windows 与 Linux">
 </p>
@@ -41,7 +41,7 @@ officebuddy 把模型、项目文件、本机工具和可复用能力放进同�
 
 ## 从这里开始
 
-- **使用桌面应用** —— [下载 macOS、Windows 或 Linux 客户端](https://www.astravia.dev/#download)，完成应用内首次设置。
+- **使用桌面应用** —— [下载 macOS、Windows 或 Linux 客户端](https://www.officebuddy.work/#download)，完成应用内首次设置。
 - **理解产品能力** —— 阅读下面的核心能力介绍。
 - **开发扩展** —— 跳转到 [插件开发](#插件开发)。
 - **参与代码开发** —— 阅读 [`QUICKSTART.zh-CN.md`](QUICKSTART.zh-CN.md) 与 [`CONTRIBUTING.zh-CN.md`](CONTRIBUTING.zh-CN.md)。
@@ -51,15 +51,15 @@ officebuddy 把模型、项目文件、本机工具和可复用能力放进同�
 需要 **Bun 1.3+** 与 **Node.js 20+**。
 
 ```bash
-git clone git@github.com:maomaochong-ai/open-astravia.git
-cd open-astravia
+git clone git@github.com:officeBudyy/open-officebuddy.git
+cd open-officebuddy
 git switch dev
 bun install
 cd apps/desktop
 bun run dev
 ```
 
-开发应用默认使用 `~/.astravia-dev`，不会改动正式安装版位于 `~/.astravia` 的数据。仓库根目录的 `bun run dev` 只监听核心库，不会启动 Electron。完整环境准备与检查命令见 [`QUICKSTART.zh-CN.md`](QUICKSTART.zh-CN.md)。
+开发应用默认使用 `~/.officebuddy-dev`，不会改动正式安装版位于 `~/.officebuddy` 的数据。仓库根目录的 `bun run dev` 只监听核心库，不会启动 Electron。完整环境准备与检查命令见 [`QUICKSTART.zh-CN.md`](QUICKSTART.zh-CN.md)。
 
 ## 可以用它做什么
 
@@ -209,28 +209,6 @@ Pull Request 发往 **`dev`** 分支。贡献地图、测试要求与评审门�
 
 问题和早期想法请发到 GitHub Discussions。安全漏洞请通过 GitHub Security Advisories 私下报告。
 
-## 加入社群
-
-<p align="center" style="color:#656d76;font-size:14px;margin-bottom:20px;">扫码加入，交流使用经验、反馈问题、获取最新动态</p>
-
-<p align="center">
-  <table width="100%" style="border-collapse:separate;border-spacing:16px 0;">
-    <tr>
-      <td align="center" style="border:1px solid #d0d7de;border-radius:12px;padding:20px 16px;background:#f6f8fa;vertical-align:top;">
-        <div style="display:inline-block;padding:3px 10px;border-radius:20px;background:#12b7f5;color:#fff;font-size:12px;font-weight:600;margin-bottom:12px;">QQ</div><br />
-        <img src="docs/assets/community/qq-group.png" width="200" alt="QQ 群" style="border-radius:6px;" /><br />
-        <p style="margin:12px 0 0 0;font-weight:600;font-size:15px;">QQ 官方群</p>
-        <p style="margin:4px 0 0 0;color:#656d76;font-size:13px;">日常交流 · 问题反馈</p>
-      </td>
-      <td align="center" style="border:1px solid #d0d7de;border-radius:12px;padding:20px 16px;background:#f6f8fa;vertical-align:top;">
-        <div style="display:inline-block;padding:3px 10px;border-radius:20px;background:#07c160;color:#fff;font-size:12px;font-weight:600;margin-bottom:12px;">微信</div><br />
-        <img src="docs/assets/community/wechat-group.png" width="200" alt="微信群" style="border-radius:6px;" /><br />
-        <p style="margin:12px 0 0 0;font-weight:600;font-size:15px;">微信官方群</p>
-        <p style="margin:4px 0 0 0;color:#656d76;font-size:13px;">版本更新 · 内测招募</p>
-      </td>
-    </tr>
-  </table>
-</p>
 
 ## 致谢与许可
 
