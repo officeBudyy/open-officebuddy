@@ -576,12 +576,37 @@ func TestTransport_CursorPersisted(t *testing.T) {
 	h := newCaptureHandler()
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	go tr.Start(ctx, h) //nolint:errcheck
+	done := make(chan error, 1)
+	go func() { done <- tr.Start(ctx, h) }()
 	h.wait(t, 1)
 
-	// Wait one more loop iter so the post-dispatch cursor save lands.
-	time.Sleep(150 * time.Millisecond)
+	// Poll the on-disk state until the post-dispatch cursor save lands.
+	// A fixed sleep races on loaded CI runners: the loop goroutine can be
+	// descheduled past the whole window (the file already exists with an
+	// empty cursor from SetCredentials), and a late save also breaks
+	// t.TempDir cleanup with "directory not empty".
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		store, err := newStateStore(statePath)
+		if err != nil {
+			t.Fatalf("reopen: %v", err)
+		}
+		if store.Cursor() != "" {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("cursor not persisted")
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
 	cancel()
+
+	// Let Start unwind so no in-flight save races t.TempDir cleanup.
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Start did not exit after cancel")
+	}
 
 	// Reopen and confirm the cursor was persisted.
 	store, err := newStateStore(statePath)
