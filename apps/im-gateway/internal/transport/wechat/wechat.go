@@ -105,6 +105,13 @@ type Transport struct {
 	mu      sync.Mutex
 	stopped bool
 	cancel  context.CancelFunc
+
+	// loopDone is closed exactly once when the Start loop returns. Stop
+	// waits (bounded) on it so callers that clean up the state directory
+	// (tests via t.TempDir; production via `wechat logout`) never race an
+	// in-flight cursor save writing temp files into that directory.
+	loopDone      chan struct{}
+	loopCloseOnce sync.Once
 }
 
 // Compile-time interface check.
@@ -160,6 +167,7 @@ func New(opts Options) (*Transport, error) {
 		inboxDir:           opts.InboxDir,
 		pollMaxBackoff:     pollMax,
 		pollInitialBackoff: pollInit,
+		loopDone:           make(chan struct{}),
 	}, nil
 }
 
@@ -199,6 +207,7 @@ func (t *Transport) Start(ctx context.Context, handler transport.MessageHandler)
 	}
 	ctx, t.cancel = context.WithCancel(ctx)
 	t.mu.Unlock()
+	defer t.loopCloseOnce.Do(func() { close(t.loopDone) })
 
 	t.log.Info("wechat transport starting",
 		zap.String("base_url", t.client.MessagingBaseURL()),
@@ -435,16 +444,31 @@ func imageDownloadFields(img *ilink.ImageItem) (url, aesKey string) {
 	return "", ""
 }
 
-// Stop signals Start to return. Safe to call multiple times.
+// Stop signals Start to return and waits (bounded) for the loop to unwind.
+// Safe to call multiple times; only the first call cancels and waits.
 func (t *Transport) Stop() error {
 	t.mu.Lock()
-	defer t.mu.Unlock()
 	if t.stopped {
+		t.mu.Unlock()
 		return nil
 	}
 	t.stopped = true
-	if t.cancel != nil {
-		t.cancel()
+	cancel := t.cancel
+	t.mu.Unlock()
+
+	if cancel != nil {
+		cancel()
+	}
+
+	// Best-effort wait: the loop usually exits within one poll interval of
+	// cancellation. The timeout only elapses if the loop is stuck in a
+	// client call that ignores ctx, in which case callers fall back to
+	// whatever cleanup they were doing anyway.
+	if t.loopDone != nil {
+		select {
+		case <-t.loopDone:
+		case <-time.After(2 * time.Second):
+		}
 	}
 	return nil
 }
