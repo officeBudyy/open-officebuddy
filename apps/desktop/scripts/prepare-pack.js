@@ -823,7 +823,6 @@ const builderConfig = {
 	linux: {
 		target: LINUX_RELEASE_TARGETS,
 		executableName: DESKTOP_LINUX_EXECUTABLE_NAME,
-		packageName: DESKTOP_LINUX_PACKAGE_NAME,
 		category: "Utility",
 		description: `${DESKTOP_PRODUCT_NAME} AI agent desktop application`,
 		icon: "build/icon.png",
@@ -836,6 +835,15 @@ const builderConfig = {
 				Comment: `${DESKTOP_PRODUCT_NAME} AI agent desktop application`,
 			},
 		},
+	},
+	// electron-builder 26 起 packageName 不再是 linux 段的合法字段（schema 已删除，
+	// 放进去会直接被 schema 校验拒绝），deb/rpm 的包名改在顶层 per-target 段设置；
+	// FpmTarget 按目标名合并 config.deb / config.rpm。
+	deb: {
+		packageName: DESKTOP_LINUX_PACKAGE_NAME,
+	},
+	rpm: {
+		packageName: DESKTOP_LINUX_PACKAGE_NAME,
 	},
 	// Sidecar binaries are picked up from the staged ./im-gateway dir
 	// (populated above by the cross-build step).

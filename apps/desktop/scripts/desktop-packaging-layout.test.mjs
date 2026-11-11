@@ -44,7 +44,8 @@ test("packaged desktop uses officeBuddy consistently on macOS and Linux while pr
 	assert.match(preparePack, /productName:\s*DESKTOP_PRODUCT_NAME/);
 	assert.match(preparePack, /mac:\s*{\s*executableName:\s*DESKTOP_MAC_EXECUTABLE_NAME/);
 	assert.match(preparePack, /linux:\s*{[\s\S]*?executableName:\s*DESKTOP_LINUX_EXECUTABLE_NAME/);
-	assert.match(preparePack, /linux:\s*{[\s\S]*?packageName:\s*DESKTOP_LINUX_PACKAGE_NAME/);
+	assert.match(preparePack, /deb:\s*{\s*packageName:\s*DESKTOP_LINUX_PACKAGE_NAME/);
+	assert.match(preparePack, /rpm:\s*{\s*packageName:\s*DESKTOP_LINUX_PACKAGE_NAME/);
 	assert.match(preparePack, /CFBundleDisplayName:\s*DESKTOP_PRODUCT_NAME/);
 	assert.match(preparePack, /CFBundleName:\s*DESKTOP_PRODUCT_NAME/);
 	assert.match(preparePack, /title:\s*["']\$\{productName\} \$\{version\}["']/);
