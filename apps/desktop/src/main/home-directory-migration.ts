@@ -1,29 +1,11 @@
-import {
-	cpSync,
-	existsSync,
-	lstatSync,
-	mkdirSync,
-	readdirSync,
-	realpathSync,
-	renameSync,
-	symlinkSync,
-} from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, realpathSync, renameSync, symlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import {
-	ASTRAVIA_CONFIG_DIR_ENV,
-	ASTRAVIA_HOME_ENV,
-	DEFAULT_CONFIG_DIR_NAME,
-} from "@astravia/action-rpc";
+import { ASTRAVIA_CONFIG_DIR_ENV, ASTRAVIA_HOME_ENV, DEFAULT_CONFIG_DIR_NAME } from "@astravia/action-rpc";
 
 export const LEGACY_HOME_DIRECTORY_NAME = ".astravia";
 
-export type OfficeBuddyHomeMigrationStatus =
-	| "custom"
-	| "not-needed"
-	| "migrated"
-	| "merged"
-	| "legacy-fallback";
+export type OfficeBuddyHomeMigrationStatus = "custom" | "not-needed" | "migrated" | "merged" | "legacy-fallback";
 
 export interface OfficeBuddyHomeMigrationResult {
 	homePath: string;
