@@ -166,6 +166,14 @@ describe("Desktop release workflow contracts", () => {
 		expect(inputs.site_url).toBeUndefined();
 		expect(inputs.update_url).toBeUndefined();
 		expect(jobs["publish-update-metadata"].uses).toBe("./.github/workflows/desktop-publish-update-metadata.yml");
+		const r2Workflow = parse(
+			readFileSync(join(import.meta.dirname, "../../.github/workflows/upload-release-to-r2.yml"), "utf8"),
+		);
+		const websiteWorkflow = parse(
+			readFileSync(join(import.meta.dirname, "../../.github/workflows/deploy-website.yml"), "utf8"),
+		);
+		expect(r2Workflow.on.release).toBeUndefined();
+		expect(websiteWorkflow.on.release).toBeUndefined();
 	});
 
 	it("runs quality and packaging tests before the platform matrix", () => {

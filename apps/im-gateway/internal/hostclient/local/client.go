@@ -72,6 +72,15 @@ const (
 	// ~1s warm. Keep in sync with config.DefaultHandshakeTimeout.
 	defaultHandshakeTimeout = 30 * time.Second
 	defaultCloseTimeout     = 5 * time.Second
+	// A subprocess that crashes during startup can close stdin slightly before
+	// cmd.Wait publishes s.exited. Give that exit notification a chance to
+	// win so the same crash is not nondeterministically classified as a
+	// generic command failure on busy CI runners. 250ms was not enough —
+	// the Wait goroutine can be descheduled longer than that under load.
+	// 2s matches the handshake timeout and the post-failure cleanup wait;
+	// the only cost is a slower classification when a child closed stdout
+	// but is still alive, which is already a failure path.
+	startupExitObservationGrace = 2 * time.Second
 )
 
 // Client implements hostclient.HostClient by spawning coding-agent subprocesses.
@@ -224,6 +233,17 @@ func (s *session) handshake(ctx context.Context, timeout time.Duration) error {
 		}
 		if lockErr := s.detectStartupLockError(); lockErr != nil {
 			return lockErr
+		}
+		var failure hostclient.TypedFailure
+		if errors.As(err, &failure) && failure.FailureCode() == hostclient.FailureCodeProcessIOFailed {
+			select {
+			case <-s.exited:
+				if lockErr := s.detectStartupLockError(); lockErr != nil {
+					return lockErr
+				}
+				return newHostFailure(hostclient.FailureCodeProcessExited, hostclient.FailurePhaseStartup, hostclient.FailureRetrySafe, fmt.Sprintf("hostclient/local: subprocess exited during handshake: %s", s.tailStderr()), err)
+			case <-time.After(startupExitObservationGrace):
+			}
 		}
 		select {
 		case <-s.exited:

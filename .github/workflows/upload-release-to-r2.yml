@@ -1,17 +1,11 @@
 name: Upload Desktop Release to R2
 
 description: |
-  Downloads the assets of a published GitHub release and uploads them to the
-  Cloudflare R2 bucket `astravia-downloads`.  The website download page links
-  to these R2 objects.
-
-  `desktop-release` 在四个平台构建完成、GitHub Release 落地后以 workflow_call 调用它，
-  这样一次 tag 推送就能把产物送上 CDN；手机端产物复用同一个 workflow，只换
-  `prefix: client-mobile` 与 `patterns: "*.ipa,*.apk"`。也可以对任意 tag 手动 workflow_dispatch。
+  Optional/manual utility that copies selected GitHub Release assets to
+  Cloudflare R2. Publishing a GitHub Release does not trigger it automatically.
+  Mobile release workflows may still call it explicitly for IPA/APK delivery.
 
 on:
-  release:
-    types: [published]
   workflow_call:
     inputs:
       version:
