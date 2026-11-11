@@ -9,6 +9,8 @@ import {
 	ASTRAVIA_PLUGIN_FILE_ASSOCIATION,
 	DESKTOP_BUILD_OUTPUTS,
 	DESKTOP_EXECUTABLE_NAME,
+	DESKTOP_LINUX_EXECUTABLE_NAME,
+	DESKTOP_LINUX_PACKAGE_NAME,
 	DESKTOP_MAC_EXECUTABLE_NAME,
 	DESKTOP_PRODUCT_NAME,
 } from "./desktop-packaging-layout.mjs";
@@ -820,6 +822,8 @@ const builderConfig = {
 	},
 	linux: {
 		target: LINUX_RELEASE_TARGETS,
+		executableName: DESKTOP_LINUX_EXECUTABLE_NAME,
+		packageName: DESKTOP_LINUX_PACKAGE_NAME,
 		category: "Utility",
 		description: `${DESKTOP_PRODUCT_NAME} AI agent desktop application`,
 		icon: "build/icon.png",

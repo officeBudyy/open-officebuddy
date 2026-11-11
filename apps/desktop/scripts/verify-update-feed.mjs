@@ -32,7 +32,7 @@ function delay(milliseconds) {
 async function requestWithRetry(
 	url,
 	init,
-	{ fetchImpl = fetch, attempts = 4, retryDelayMs = 1000, timeoutMs = 15000, acceptedStatuses = [] } = {},
+	{ fetchImpl = fetch, attempts = 12, retryDelayMs = 5000, timeoutMs = 15000, acceptedStatuses = [] } = {},
 ) {
 	let lastError;
 	for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -47,7 +47,7 @@ async function requestWithRetry(
 		} finally {
 			clearTimeout(timeout);
 		}
-		if (attempt < attempts) await delay(retryDelayMs * attempt);
+		if (attempt < attempts) await delay(retryDelayMs);
 	}
 	throw new Error(`[verify-update-feed] request failed: ${url} (${lastError?.message ?? "unknown error"})`);
 }
@@ -87,8 +87,8 @@ export async function verifyUpdateFeed({
 	version,
 	metadataFiles = DESKTOP_UPDATE_METADATA_FILES,
 	fetchImpl = fetch,
-	attempts = 4,
-	retryDelayMs = 1000,
+	attempts = 12,
+	retryDelayMs = 5000,
 	timeoutMs = 15000,
 } = {}) {
 	const releaseVersion = requireReleaseVersion(version);

@@ -17,6 +17,8 @@ export const DESKTOP_BUILD_OUTPUTS = Object.freeze([
 export const DESKTOP_PRODUCT_NAME = "officeBuddy";
 export const DESKTOP_EXECUTABLE_NAME = "Astravia";
 export const DESKTOP_MAC_EXECUTABLE_NAME = DESKTOP_PRODUCT_NAME;
+export const DESKTOP_LINUX_EXECUTABLE_NAME = DESKTOP_PRODUCT_NAME;
+export const DESKTOP_LINUX_PACKAGE_NAME = "officebuddy";
 
 export const ASTRAVIA_PLUGIN_FILE_ASSOCIATION = Object.freeze({
 	ext: "astraviapkg",

@@ -37,16 +37,7 @@ describe("Desktop release workflow contracts", () => {
 
 	it("publishes each platform's installers as soon as it is built", () => {
 		expect(jobs.build.strategy["fail-fast"]).toBe(false);
-		expect(Object.keys(jobs)).toEqual([
-			"prepare",
-			"quality",
-			"build",
-			"publish-update-metadata",
-			"publish-r2",
-			"publish-website",
-			"deploy-website",
-			"promote",
-		]);
+		expect(Object.keys(jobs)).toEqual(["prepare", "quality", "build", "publish-update-metadata"]);
 		expect(workflow).not.toContain("release-build-");
 		expect(workflow).not.toContain("test:e2e:packaged");
 		// 单个平台构建不许等别的平台的产物；清单汇总在 publish-update-metadata 里做。
@@ -58,25 +49,21 @@ describe("Desktop release workflow contracts", () => {
 		const verify = index("Verify updater artifacts");
 		const rename = index("Name macOS update metadata per architecture");
 		const upload = index("Upload updater artifacts");
-		const r2 = index("Publish installers to R2 and stage update metadata");
 		const github = index("Add installers to GitHub Release");
 		expect(build).toBeLessThan(verify);
 		expect(verify).toBeLessThan(rename);
 		expect(rename).toBeLessThan(upload);
-		expect(upload).toBeLessThan(r2);
-		expect(r2).toBeLessThan(github);
+		expect(upload).toBeLessThan(github);
 		expect(buildSteps[upload].with.name).toBe("desktop-$" + "{{ matrix.platform }}");
 		expect(buildSteps[verify].if).toContain("runner.os != 'Windows'");
 		expect(jobs.build.permissions).toEqual({ contents: "write" });
 	});
 
-	// 构建任务只上传安装包与暂存清单；清单上线集中在 desktop-promote（r2 目标）
-	// 与 desktop-publish-update-metadata（github 目标）。
+	// 构建任务只上传安装包；清单上线集中在 desktop-publish-update-metadata。
 	it("never publishes update metadata from a platform build", () => {
 		const buildSteps = jobs.build.steps;
-		const r2 = buildSteps.find((step) => step.name === "Publish installers to R2 and stage update metadata");
-		expect(r2.if).toContain("needs.prepare.outputs.release_target == 'r2'");
-		expect(r2.run).toBe("node scripts/publish-update-artifacts-r2.mjs --stage-metadata");
+		expect(buildSteps.find((step) => step.name?.includes("R2"))).toBeUndefined();
+		expect(JSON.stringify(jobs.build)).not.toContain("publish-update-artifacts-r2");
 		expect(workflow).not.toContain("publish:updates:r2");
 		const github = buildSteps.find((step) => step.name === "Add installers to GitHub Release");
 		expect(github.run).toContain("publish-github-installers.mjs --platform desktop");
@@ -160,116 +147,25 @@ describe("Desktop release workflow contracts", () => {
 		expect(steps[verify].env.ASTRAVIA_UPDATE_PROVIDER).toBe("github");
 	});
 
-	// 上线清单会让用户开始收到新版本：全部平台成功后自动调用，也保留手动入口，
-	// 并与构建使用同一套 R2 目标解析。
-	it("promotes staged update metadata through one reusable workflow", () => {
-		const promote = parse(
-			readFileSync(join(import.meta.dirname, "../../.github/workflows/desktop-promote.yml"), "utf8"),
-		);
-		expect(Object.keys(promote.on).sort()).toEqual(["workflow_call", "workflow_dispatch"]);
-		for (const trigger of ["workflow_call", "workflow_dispatch"]) {
-			expect(promote.on[trigger].inputs.version.required).toBe(true);
-			expect(promote.on[trigger].inputs.dry_run.default).toBe(false);
-		}
-		expect(promote.jobs.promote.concurrency.group).toBe("desktop-promote-$" + "{{ inputs.channel }}");
-		const steps = promote.jobs.promote.steps;
-		const resolve = steps.find((step) => step.name === "Resolve R2 update target");
-		expect(resolve.env.INPUT_RELEASE_TARGET).toBe("r2");
-		expect(resolve.env.VAR_RELEASE_CHANNEL).toBe("$" + "{{ vars.ASTRAVIA_RELEASE_CHANNEL }}");
-		expect(resolve.run).toContain("resolve-desktop-release-config.mjs --export-env");
-		const run = steps.find((step) => step.name === "Promote staged update metadata");
-		expect(run.run).toContain("node scripts/promote-update-metadata-r2.mjs");
-		expect(run.run).toContain("--dry-run");
-		const attach = steps.find((step) => step.name === "Attach promoted metadata to GitHub Release");
-		expect(attach.if).toContain("!inputs.dry_run");
-		expect(attach.if).toContain("inputs.channel != 'test'");
-		expect(JSON.stringify(promote)).not.toContain("github.event.inputs");
-	});
-
-	// 官网下载按钮指向 R2 直链，上传、改版本号、部署必须由流水线自己按顺序完成；
-	// 任何一步重新变成人工接力，就会重新出现「页面指向上一版」或「点下去 404」。
-	it("carries a release from R2 through the website version to the deployed site", () => {
-		const r2 = jobs["publish-r2"];
-		expect(r2.needs).toEqual(["prepare", "build"]);
-		expect(r2.uses).toBe("./.github/workflows/upload-release-to-r2.yml");
-		expect(r2.with.version).toBe("$" + "{{ needs.prepare.outputs.release-version }}");
-		expect(r2.secrets).toBe("inherit");
-		// 手机端产物在 client-mobile-release 里，桌面这条链只跑自己的构建；也不在测试渠道里跑。
-		for (const name of ["publish-r2", "publish-website", "deploy-website"]) {
-			expect(jobs[name].if).toContain("needs.prepare.outputs.should-publish == 'true'");
-			expect(jobs[name].if).toContain("needs.prepare.outputs.release_target == 'github'");
-			expect(jobs[name].if).toContain("needs.prepare.outputs.channel != 'test'");
-			expect(jobs[name].if).not.toContain("always()");
-		}
-		// 同一个 Release 上还有手机端 IPA / APK，桌面只拉自己的格式；这份清单必须与
-		// publish-github-installers 的桌面白名单一致，否则新增格式会静默传不上 CDN。
-		expect(r2.with.patterns).toBe("*.AppImage,*.blockmap,*.deb,*.dmg,*.exe,*.msi,*.rpm,*.zip");
-		const installerScript = readFileSync(
-			join(import.meta.dirname, "../../scripts/release/publish-github-installers.mjs"),
-			"utf8",
-		);
-		const desktopFormats = installerScript.match(/desktop: new Set\(\[([^\]]*)\]\)/)?.[1] ?? "";
-		const extensions = desktopFormats.match(/"\.[\w.]+"/g) ?? [];
-		expect(extensions.length).toBeGreaterThan(0);
-		for (const extension of extensions) {
-			expect(r2.with.patterns).toContain(`*${extension.slice(1, -1)}`);
-		}
-		const website = jobs["publish-website"];
-		expect(website.needs).toEqual(["prepare", "publish-r2"]);
-		expect(website.permissions).toEqual({ contents: "write", "pull-requests": "write" });
-		expect(website.outputs.ref).toBe("$" + "{{ steps.publish.outputs.ref }}");
-		const bump = website.steps.find((step) => step.name?.startsWith("Bump website version"));
-		expect(bump.run).toContain("node scripts/release/bump-website-version.mjs --version");
-		expect(bump.run).toContain("git push --force origin");
-		expect(bump.run).toContain("refs/heads/");
-		expect(bump.run).toContain("gh pr create --base dev");
-		// 无人值守时不做自动合并：main 的版本号跟进必须由人看过 diff 再结合。
-		expect(bump.run).not.toContain("--auto");
-
-		// 上线内容只取 main：版本分支从 dev 派生，dev 落后时会把旧首页发到生产
-		// （0.5.77 就因此丢了知识库/定价/FAQ）。部署 ref 必须从 origin/main 派生。
-		expect(bump.env.DEPLOY_BRANCH).toBe("release/website-deploy-v$" + "{{ needs.prepare.outputs.release-version }}");
-		const deployRef = "$" + "{DEPLOY_BRANCH}";
-		const githubOutput = "$" + "{GITHUB_OUTPUT}";
-		expect(bump.run).toContain(`git switch -C "${deployRef}" origin/main`);
-		expect(bump.run).toContain(`git push --force origin "HEAD:refs/heads/${deployRef}"`);
-		expect(bump.run).toContain(`echo "ref=${deployRef}" >> "${githubOutput}"`);
-		const deploy = jobs["deploy-website"];
-		expect(deploy.needs).toEqual(["prepare", "publish-website"]);
-		expect(deploy.uses).toBe("./.github/workflows/deploy-website.yml");
-		expect(deploy.with.ref).toBe("$" + "{{ needs.publish-website.outputs.ref }}");
-		expect(deploy.secrets).toBe("inherit");
-		// workflow_call 只能降不能升：被调 workflow 声明的 scope 必须在这里先授出来，
-		// 否则运行一开始就失败。
-		expect(deploy.permissions).toEqual({ contents: "read", pages: "write", "id-token": "write" });
-	});
-
-	it("exposes the R2 and website workflows as reusable workflows", () => {
-		const r2 = parse(
-			readFileSync(join(import.meta.dirname, "../../.github/workflows/upload-release-to-r2.yml"), "utf8"),
-		);
-		expect(r2.on.workflow_call.inputs.version.required).toBe(true);
-		expect(r2.on.workflow_call.inputs.prefix.default).toBe("");
-		expect(r2.jobs.upload.steps.some((step) => step.name === "Upload assets to R2")).toBe(true);
-
-		const site = parse(readFileSync(join(import.meta.dirname, "../../.github/workflows/deploy-website.yml"), "utf8"));
-		expect(site.on.workflow_call.inputs.ref.default).toBe("");
-		const checkout = site.jobs.deploy.steps.find((step) => step.uses?.startsWith("actions/checkout"));
-		expect(checkout.with.ref).toBe("$" + "{{ inputs.ref || github.ref }}");
-	});
-	it("promotes automatically only after every platform build succeeds", () => {
-		expect(jobs.promote.needs).toEqual(["prepare", "build"]);
-		expect(jobs.promote.uses).toBe("./.github/workflows/desktop-promote.yml");
-		expect(jobs.promote.if).toContain("needs.prepare.outputs.should-publish == 'true'");
-		expect(jobs.promote.if).toContain("needs.prepare.outputs.release_target == 'r2'");
-		expect(jobs.promote.if).toContain("github.event.inputs.auto_promote != 'false'");
-		expect(jobs.promote.if).not.toContain("always()");
-		expect(jobs.promote.if).not.toContain("failure()");
-		expect(jobs.promote.with.version).toBe("$" + "{{ needs.prepare.outputs.release-version }}");
-		expect(jobs.promote.with.channel).toBe("$" + "{{ needs.prepare.outputs.channel }}");
-		expect(jobs.promote.secrets).toBe("inherit");
-		expect(jobs.promote.permissions).toEqual({ contents: "write" });
-		expect(parse(workflow).on.workflow_dispatch.inputs.auto_promote.default).toBe(true);
+	// 正式发布只保留 GitHub Release，不再复制安装包到 Cloudflare 或触发 Pages 部署。
+	it("keeps github release artifacts out of Cloudflare", () => {
+		expect(jobs["publish-r2"]).toBeUndefined();
+		expect(jobs["publish-website"]).toBeUndefined();
+		expect(jobs["deploy-website"]).toBeUndefined();
+		expect(jobs.promote).toBeUndefined();
+		expect(workflow).not.toContain("./.github/workflows/upload-release-to-r2.yml");
+		expect(workflow).not.toContain("./.github/workflows/deploy-website.yml");
+		expect(workflow).not.toContain("./.github/workflows/desktop-promote.yml");
+		expect(workflow).not.toContain("ASTRAVIA_R2_");
+		const inputs = parse(workflow).on.workflow_dispatch.inputs;
+		expect(inputs.release_target).toBeUndefined();
+		expect(inputs.r2_prefix).toBeUndefined();
+		expect(inputs.auto_promote).toBeUndefined();
+		expect(inputs.cloud_enabled).toBeUndefined();
+		expect(inputs.server_url).toBeUndefined();
+		expect(inputs.site_url).toBeUndefined();
+		expect(inputs.update_url).toBeUndefined();
+		expect(jobs["publish-update-metadata"].uses).toBe("./.github/workflows/desktop-publish-update-metadata.yml");
 	});
 
 	it("runs quality and packaging tests before the platform matrix", () => {
@@ -374,13 +270,13 @@ describe("Desktop release workflow contracts", () => {
 		expect(packagedSmokeJob).toContain("cache-dependency-path: apps/im-gateway/go.sum");
 	});
 
-	it("uses the same publish jobs for tagged stable and dispatched test/stable releases", () => {
-		expect(workflow).toContain("build_version:");
+	it("uses the same GitHub publish jobs for tagged and manually dispatched stable releases", () => {
+		const inputs = parse(workflow).on.workflow_dispatch.inputs;
+		expect(inputs.channel.options).toEqual(["default", "stable"]);
+		expect(inputs.build_version).toBeUndefined();
 		expect(workflow).toContain("should-publish: $" + "{{ steps.config.outputs.should_publish }}");
 		expect(workflow).toContain("needs.prepare.outputs.should-publish == 'true'");
-		expect(workflow).toContain("'desktop-test'");
-		expect(workflow).toContain("environment: $" + "{{");
-		expect(workflow).toContain("'desktop-production' }}");
+		expect(workflow).toContain("environment: desktop-production");
 		expect(workflow).toContain("OUTPUT_BUILD_VERSION");
 		expect(workflow).toContain("REQUIRE_RELEASE_SIGNATURE");
 		expect(workflow).toContain("needs.prepare.outputs.should-publish == 'true'");
@@ -411,12 +307,11 @@ describe("Desktop release workflow contracts", () => {
 		expect(timeout).toBeGreaterThanOrEqual(120);
 	});
 
-	// R2 是更新源，GitHub Release 是对外的下载入口和版本说明归档。早先两个发布 job
-	// 按 release_target 互斥，商业版发版在 GitHub 上什么都看不到。
-	it("publishes a GitHub Release alongside R2 for every non-test channel", () => {
+	it("publishes every stable desktop artifact only to GitHub Release", () => {
 		expect(workflow).toContain("- name: Add installers to GitHub Release");
 		expect(workflow).toContain("needs.prepare.outputs.channel != 'test'");
-		expect(workflow).not.toContain("needs.prepare.outputs.release_target != 'r2'");
+		expect(workflow).not.toContain("Publish installers to R2");
+		expect(workflow).not.toContain("ASTRAVIA_R2_");
 	});
 
 	it("uses the versioned release note as the GitHub Release body", () => {

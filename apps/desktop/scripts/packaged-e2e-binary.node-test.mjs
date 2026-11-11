@@ -113,6 +113,19 @@ test("macOS packaged E2E resolves the officeBuddy app and executable", async () 
 	}
 });
 
+test("Linux packaged E2E resolves the officeBuddy executable", async () => {
+	const packageRoot = await mkdtemp(join(tmpdir(), "officebuddy-packaged-e2e-"));
+	const binaryPath = join(packageRoot, "release", "linux-unpacked", "officeBuddy");
+	await mkdir(dirname(binaryPath), { recursive: true });
+	await writeFile(binaryPath, "electron");
+
+	try {
+		assert.equal(resolvePackagedE2eBinaryPath(packageRoot, "linux"), binaryPath);
+	} finally {
+		await rm(packageRoot, { recursive: true, force: true });
+	}
+});
+
 test("Linux packaged E2E drops the deb/rpm package-type marker so the AppImage updater is used", async () => {
 	const packageRoot = await mkdtemp(join(tmpdir(), "astravia-packaged-e2e-"));
 	const resourcesDir = join(packageRoot, "release", "linux-unpacked", "resources");

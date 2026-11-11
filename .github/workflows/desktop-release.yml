@@ -6,21 +6,8 @@ on:
       - "v*"
   workflow_dispatch:
     inputs:
-      cloud_enabled:
-        description: "Desktop edition. default = release target (GitHub=open-source, R2=commercial)."
-        type: choice
-        options: [default, "true", "false"]
-        default: default
-      server_url:
-        description: "ASTRAVIA_SERVER_URL override. Required for a commercial build."
-        type: string
-        required: false
-      site_url:
-        description: "ASTRAVIA_SITE_URL override. Empty keeps Environment / repo value."
-        type: string
-        required: false
       marketplace_repository:
-        description: "Optional GitHub marketplace source for either edition. Empty keeps Environment / repo value."
+        description: "Optional GitHub marketplace source. Empty keeps Environment / repo value."
         type: string
         required: false
       marketplace_ref:
@@ -37,35 +24,14 @@ on:
         options: [default, "true", "false"]
         default: default
       channel:
-        description: "Rewrite update URL / R2 prefix to stable or test when those path segments exist. Dedicated ASTRAVIA_*_TEST / _STABLE vars win."
+        description: "Use stable to publish installers and update metadata to GitHub Release; default only builds."
         type: choice
-        options: [default, stable, test]
-        default: default
-      build_version:
-        description: "Test channel only. Semver override for an upgrade candidate, for example 0.5.47."
-        type: string
-        required: false
-      update_url:
-        description: "ASTRAVIA_UPDATE_URL override."
-        type: string
-        required: false
-      r2_prefix:
-        description: "ASTRAVIA_R2_PREFIX override (publish job only)."
-        type: string
-        required: false
-      release_target:
-        description: "Where a matching tag or stable/test dispatch publishes. default = ASTRAVIA_RELEASE_TARGET or github."
-        type: choice
-        options: [default, r2, github]
+        options: [default, stable]
         default: default
       notes:
         description: "Shown on the run summary. Not a secret; do not paste keys."
         type: string
         required: false
-      auto_promote:
-        description: "Publish R2 update metadata automatically once every platform build succeeds. Off = run desktop-promote yourself."
-        type: boolean
-        default: true
 
 permissions:
   contents: read
@@ -75,7 +41,7 @@ jobs:
     name: resolve desktop release scope
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'test' && 'desktop-test' || 'desktop-production' }}
+    environment: desktop-production
     outputs:
       should-build: ${{ steps.scope.outputs.should-build }}
       should-publish: ${{ steps.config.outputs.should_publish }}
@@ -86,8 +52,6 @@ jobs:
       marketplace_repository: ${{ steps.config.outputs.marketplace_repository }}
       marketplace_ref: ${{ steps.config.outputs.marketplace_ref }}
       notes: ${{ steps.config.outputs.notes }}
-      r2_bucket: ${{ steps.config.outputs.r2_bucket }}
-      r2_prefix: ${{ steps.config.outputs.r2_prefix }}
       release_target: ${{ steps.config.outputs.release_target }}
       server_url: ${{ steps.config.outputs.server_url }}
       site_url: ${{ steps.config.outputs.site_url }}
@@ -125,36 +89,21 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           REF_TYPE: ${{ github.ref_type }}
-          INPUT_BUILD_VERSION: ${{ github.event.inputs.build_version }}
           INPUT_CHANNEL: ${{ github.event.inputs.channel }}
-          INPUT_CLOUD_ENABLED: ${{ github.event.inputs.cloud_enabled }}
+          INPUT_CLOUD_ENABLED: "false"
           INPUT_MARKETPLACE_REPOSITORY: ${{ github.event.inputs.marketplace_repository }}
           INPUT_MARKETPLACE_REF: ${{ github.event.inputs.marketplace_ref }}
           INPUT_NOTES: ${{ github.event.inputs.notes }}
-          INPUT_R2_PREFIX: ${{ github.event.inputs.r2_prefix }}
-          INPUT_RELEASE_TARGET: ${{ github.event.inputs.release_target }}
-          INPUT_SERVER_URL: ${{ github.event.inputs.server_url }}
-          INPUT_SITE_URL: ${{ github.event.inputs.site_url }}
+          INPUT_RELEASE_TARGET: github
           INPUT_SPEECH_INPUT: ${{ github.event.inputs.speech_input }}
           INPUT_TENANT: ${{ github.event.inputs.tenant }}
-          INPUT_UPDATE_URL: ${{ github.event.inputs.update_url }}
-          VAR_CLOUD_ENABLED: ${{ vars.ASTRAVIA_CLOUD_ENABLED }}
+          VAR_CLOUD_ENABLED: "false"
           VAR_MARKETPLACE_REPOSITORY: ${{ vars.ASTRAVIA_OPEN_MARKETPLACE_REPOSITORY }}
           VAR_MARKETPLACE_REF: ${{ vars.ASTRAVIA_OPEN_MARKETPLACE_REF }}
-          VAR_R2_BUCKET: ${{ vars.ASTRAVIA_R2_BUCKET }}
-          VAR_R2_PREFIX: ${{ vars.ASTRAVIA_R2_PREFIX }}
-          VAR_R2_PREFIX_STABLE: ${{ vars.ASTRAVIA_R2_PREFIX_STABLE }}
-          VAR_R2_PREFIX_TEST: ${{ vars.ASTRAVIA_R2_PREFIX_TEST }}
-          VAR_RELEASE_CHANNEL: ${{ vars.ASTRAVIA_RELEASE_CHANNEL }}
-          VAR_TEST_BUILD_VERSION: ${{ vars.ASTRAVIA_TEST_BUILD_VERSION }}
-          VAR_RELEASE_TARGET: ${{ vars.ASTRAVIA_RELEASE_TARGET }}
-          VAR_SERVER_URL: ${{ vars.ASTRAVIA_SERVER_URL }}
-          VAR_SITE_URL: ${{ vars.ASTRAVIA_SITE_URL }}
+          VAR_RELEASE_CHANNEL: default
+          VAR_RELEASE_TARGET: github
           VAR_SPEECH_INPUT: ${{ vars.ASTRAVIA_SPEECH_INPUT_ENABLED }}
           VAR_TENANT: ${{ vars.ASTRAVIA_TENANT }}
-          VAR_UPDATE_URL: ${{ vars.ASTRAVIA_UPDATE_URL }}
-          VAR_UPDATE_URL_STABLE: ${{ vars.ASTRAVIA_UPDATE_URL_STABLE }}
-          VAR_UPDATE_URL_TEST: ${{ vars.ASTRAVIA_UPDATE_URL_TEST }}
         run: node scripts/release/resolve-desktop-release-config.mjs --github-output >> "${GITHUB_OUTPUT}"
 
       - name: Resolve release version
@@ -174,8 +123,6 @@ jobs:
           OUTPUT_MARKETPLACE_REPOSITORY: ${{ steps.config.outputs.marketplace_repository }}
           OUTPUT_MARKETPLACE_REF: ${{ steps.config.outputs.marketplace_ref }}
           OUTPUT_NOTES: ${{ steps.config.outputs.notes }}
-          OUTPUT_R2_BUCKET: ${{ steps.config.outputs.r2_bucket }}
-          OUTPUT_R2_PREFIX: ${{ steps.config.outputs.r2_prefix }}
           OUTPUT_RELEASE_TARGET: ${{ steps.config.outputs.release_target }}
           OUTPUT_SHOULD_PUBLISH: ${{ steps.config.outputs.should_publish }}
           OUTPUT_SERVER_URL: ${{ steps.config.outputs.server_url }}
@@ -246,7 +193,7 @@ jobs:
     # macOS 发布构建要对内置 node/python 运行时和各个 sidecar 二进制逐个签名再上传
     # 公证，比未签名构建多出 10~30 分钟。
     timeout-minutes: 120
-    environment: ${{ needs.prepare.outputs.channel == 'test' && 'desktop-test' || 'desktop-production' }}
+    environment: desktop-production
     # 每个平台构建完直接把安装包追加到 GitHub Release，需要写 Release 的权限。
     permissions:
       contents: write
@@ -391,8 +338,6 @@ jobs:
           OUTPUT_MARKETPLACE_REPOSITORY: ${{ needs.prepare.outputs.marketplace_repository }}
           OUTPUT_MARKETPLACE_REF: ${{ needs.prepare.outputs.marketplace_ref }}
           OUTPUT_NOTES: ${{ needs.prepare.outputs.notes }}
-          OUTPUT_R2_BUCKET: ${{ needs.prepare.outputs.r2_bucket }}
-          OUTPUT_R2_PREFIX: ${{ needs.prepare.outputs.r2_prefix }}
           OUTPUT_RELEASE_TARGET: ${{ needs.prepare.outputs.release_target }}
           OUTPUT_SHOULD_PUBLISH: ${{ needs.prepare.outputs.should-publish }}
           OUTPUT_SERVER_URL: ${{ needs.prepare.outputs.server_url }}
@@ -444,21 +389,10 @@ jobs:
             apps/desktop/release/*.zip
             apps/desktop/release/latest*.yml
 
-      # 各平台构建完立即上传自己的安装包，不等其他平台。更新清单（latest*.yml）
-      # 只放到 <prefix>/pending/<版本>/，客户端读不到；何时上线由开发者手动决定。
-      - name: Publish installers to R2 and stage update metadata
-        if: needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.release_target == 'r2'
-        working-directory: apps/desktop
-        env:
-          ASTRAVIA_R2_ACCOUNT_ID: ${{ secrets.ASTRAVIA_R2_ACCOUNT_ID }}
-          ASTRAVIA_R2_ACCESS_KEY_ID: ${{ secrets.ASTRAVIA_R2_ACCESS_KEY_ID }}
-          ASTRAVIA_R2_SECRET_ACCESS_KEY: ${{ secrets.ASTRAVIA_R2_SECRET_ACCESS_KEY }}
-        run: node scripts/publish-update-artifacts-r2.mjs --stage-metadata
-
-      # R2 是更新源，GitHub Release 是对外的下载入口和版本说明归档，两者同时发布；
-      # test 渠道的构建不进正式 Release 列表。第一个完成的平台创建 Release，
+      # 各平台构建完立即追加到 GitHub Release，不再复制到 Cloudflare R2。
+      # 第一个完成的平台创建 Release，
       # 其余平台追加安装包。清单（latest*.yml）要等全部平台构建完、macOS 两架构合并后
-      # 才能定稿，统一由 publish-update-metadata（github 目标）或 desktop-promote（r2 目标）处理。
+      # 才能定稿，统一由 publish-update-metadata 处理。
       - name: Add installers to GitHub Release
         if: needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.channel != 'test'
         env:
@@ -468,7 +402,7 @@ jobs:
 
   # 开源版的更新源是 GitHub Release 资产，客户端直接请求 v<版本> 下的 latest*.yml；清单缺失
   # 时 electron-updater 报 ERR_UPDATER_CHANNEL_FILE_NOT_FOUND，用户点「检查更新」只会看到失败。
-  # R2 目标由 desktop-promote 从暂存目录提升清单，这条路径没有 R2 目录，所以必须单独汇总上传。
+  # 四个平台的清单必须汇总后再上传到同一个 Release。
   publish-update-metadata:
     name: publish update metadata → GitHub Release
     needs: [prepare, build]
@@ -480,138 +414,3 @@ jobs:
     uses: ./.github/workflows/desktop-publish-update-metadata.yml
     with:
       version: ${{ needs.prepare.outputs.release-version }}
-
-  # 官网下载按钮指向 R2 直链，所以产物必须先上 CDN、再改官网版本号：两个 job 的依赖顺序
-  # 就是这条约束，漏一步用户点下去就是 404。
-  publish-r2:
-    name: publish installers → R2
-    needs: [prepare, build]
-    if: needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.release_target == 'github' && needs.prepare.outputs.channel != 'test'
-    uses: ./.github/workflows/upload-release-to-r2.yml
-    with:
-      version: ${{ needs.prepare.outputs.release-version }}
-      # 同一个 tag 的 Release 上还挂着手机端 IPA / APK（由 client-mobile-release 上传）。这里限定
-      # 桌面格式，否则它们会被一并拷到 app/v<version>/，跟桌面下载目录搅在一起。
-      patterns: "*.AppImage,*.blockmap,*.deb,*.dmg,*.exe,*.msi,*.rpm,*.zip"
-    secrets: inherit
-
-  # 把官网 5 个文件的版本号推到发布分支并开 PR。分支由 CI 拥有，和 tag 一一对应，
-  # 重跑就覆盖；升版 PR 只是把版本号送回 dev，上线用的分支另从 main 派生。
-  publish-website:
-    name: prepare website release branches
-    needs: [prepare, publish-r2]
-    if: needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.release_target == 'github' && needs.prepare.outputs.channel != 'test'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-      pull-requests: write
-    outputs:
-      ref: ${{ steps.publish.outputs.ref }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: dev
-          fetch-depth: 0
-
-      - name: Bump website version, open the follow-up pull request, stage the deploy branch
-        id: publish
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.prepare.outputs.release-version }}
-          BRANCH: release/website-v${{ needs.prepare.outputs.release-version }}
-          DEPLOY_BRANCH: release/website-deploy-v${{ needs.prepare.outputs.release-version }}
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          node scripts/release/bump-website-version.mjs --version "${VERSION}"
-
-          if git diff --quiet -- website; then
-            echo "官网下载版本已是 ${VERSION}，dev 上不需要升版提交。"
-            website_changed=false
-          else
-            website_changed=true
-            git switch -C "${BRANCH}"
-            git add -- website
-            git commit -m "chore(website): 下载入口跟进 ${VERSION}"
-            # 分支由 CI 独占（release/website-v<版本>），重跑覆盖是预期行为。
-            git push --force origin "HEAD:refs/heads/${BRANCH}"
-          fi
-
-          # 上线的页面只取 main：版本分支从 dev 派生，dev 落后于 main 时会拿旧首页覆盖生产
-          # （0.5.77 就这样丢过知识库/定价/FAQ）。部署分支 = main + 版本号，不涉及 dev，
-          # 合回 main 依旧走人工的 dev→main 常规流程。
-          git switch -C "${DEPLOY_BRANCH}" origin/main
-          node scripts/release/bump-website-version.mjs --version "${VERSION}"
-          git add -- website
-          if git diff --cached --quiet; then
-            echo "main 的官网已是 ${VERSION}，直接按 main 部署。"
-          else
-            git commit -m "chore(website): 生产部署页面按 main 对齐到 ${VERSION}"
-          fi
-          git push --force origin "HEAD:refs/heads/${DEPLOY_BRANCH}"
-          echo "ref=${DEPLOY_BRANCH}" >> "${GITHUB_OUTPUT}"
-          if [ "${website_changed:-false}" = "true" ]; then
-            cat > /tmp/website-pr.md <<EOF
-          ## Why
-
-          官网下载按钮指向 \`https://dl.astravia.dev/app/v${VERSION}/\`，产物已随本次发布上传到 R2。
-          这个 PR 只把官网 5 个文件的版本号从上一版对齐到 ${VERSION}，由 `desktop-release` 自动生成。
-          （线上部署取自 main，与本分支无关，所以 dev 落后也不会再把官网发成旧版。）
-
-          ## What users will see
-
-          官网下载入口给出 ${VERSION} 的安装包；在此之前页面一直是上一版，点下载拿到的是旧版本。
-
-          ## Surface area
-
-          - [x] **None**
-
-          ## Validation
-
-          由 desktop-release 流水线运行：\`node scripts/release/bump-website-version.mjs --version ${VERSION}\`，
-          站点按 main 的页面 + 该版本号部署，并已核对线上版本号。
-          EOF
-
-            # PR 只是把版本号送回 dev 的记账；建 PR 失败不能挡住站点上线，所以降成警告。
-            pr_title="chore(website): 下载入口跟进 ${VERSION}"
-            if gh pr view "${BRANCH}" --json number > /dev/null 2>&1; then
-              gh pr edit "${BRANCH}" --title "${pr_title}" --body-file /tmp/website-pr.md
-            else
-              gh pr create --base dev --head "${BRANCH}" --title "${pr_title}" --body-file /tmp/website-pr.md \
-                || echo "::warning::跟进 PR 创建失败，站点仍会按 ${BRANCH} 部署，请手动开 PR"
-            fi
-          fi
-
-  # 站点先上线：部署分支是 main + 版本号，用户立刻能下到新版本，且不会比 main 更旧；
-  # 版本号合回 main 依旧走人工的 dev→main 常规流程。
-  deploy-website:
-    name: deploy website → Cloudflare Pages
-    needs: [prepare, publish-website]
-    if: needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.release_target == 'github' && needs.prepare.outputs.channel != 'test'
-    # 被调 workflow 自己声明了这三个 scope；workflow_call 只能降不能升，缺一项就直接报错。
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    uses: ./.github/workflows/deploy-website.yml
-    with:
-      ref: ${{ needs.publish-website.outputs.ref }}
-    secrets: inherit
-
-  # 全部平台构建成功后自动上线更新清单；任一平台失败时跳过，修好后重跑失败的平台会一并重跑本任务。
-  # 以 GitHub Release 为更新源的构建没有 R2 暂存目录，清单由 publish-update-metadata 直接附到 Release。
-  promote:
-    name: promote update metadata
-    needs: [prepare, build]
-    if: needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.release_target == 'r2' && github.event.inputs.auto_promote != 'false'
-    permissions:
-      contents: write
-    uses: ./.github/workflows/desktop-promote.yml
-    with:
-      version: ${{ needs.prepare.outputs.release-version }}
-      channel: ${{ needs.prepare.outputs.channel }}
-    secrets: inherit

@@ -79,6 +79,27 @@ test("falls back to a ranged GET when a CDN rejects HEAD", async () => {
 	assert.ok(fake.calls.some((call) => call.method === "GET"));
 });
 
+test("retries metadata while a newly uploaded release asset becomes public", async () => {
+	const fake = createFetch();
+	let metadataAttempts = 0;
+	const fetchImpl = async (url, init) => {
+		if (init.method === "GET" && new URL(url).pathname.endsWith("/latest.yml")) {
+			metadataAttempts += 1;
+			if (metadataAttempts < 3) return { ok: false, status: 404, text: async () => "" };
+		}
+		return fake.fetchImpl(url, init);
+	};
+	await verifyUpdateFeed({
+		env: { ASTRAVIA_UPDATE_PROVIDER: "github", ASTRAVIA_UPDATE_GITHUB_OWNER: "officeBudyy", ASTRAVIA_UPDATE_GITHUB_REPO: "open-officebuddy" },
+		version,
+		metadataFiles: ["latest.yml"],
+		fetchImpl,
+		attempts: 3,
+		retryDelayMs: 0,
+	});
+	assert.equal(metadataAttempts, 3);
+});
+
 test("rejects a feed that serves a different release version", async () => {
 	const fake = createFetch();
 	assert.rejects(

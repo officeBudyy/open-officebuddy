@@ -1,7 +1,11 @@
 import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
-import { DESKTOP_MAC_EXECUTABLE_NAME, DESKTOP_PRODUCT_NAME } from "./desktop-packaging-layout.mjs";
+import {
+	DESKTOP_LINUX_EXECUTABLE_NAME,
+	DESKTOP_MAC_EXECUTABLE_NAME,
+	DESKTOP_PRODUCT_NAME,
+} from "./desktop-packaging-layout.mjs";
 
 const PACKAGE_VERSION_PATTERN = /^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$/;
 
@@ -71,7 +75,7 @@ export function resolvePackagedE2eBinaryPath(packageRoot, platform = process.pla
 						join(releaseRoot, "mac-x64", `${DESKTOP_PRODUCT_NAME}.app`, "Contents", "MacOS", DESKTOP_MAC_EXECUTABLE_NAME),
 					]
 				: platform === "linux"
-					? [join(releaseRoot, "linux-unpacked", "Astravia")]
+					? [join(releaseRoot, "linux-unpacked", DESKTOP_LINUX_EXECUTABLE_NAME)]
 					: [];
 
 	const found = candidates.find((candidate) => existsSync(candidate));
