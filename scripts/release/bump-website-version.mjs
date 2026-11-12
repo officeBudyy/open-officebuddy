@@ -8,7 +8,7 @@
  * 漏改任何一行都会让官网挂出 404 的下载按钮；手工数「共 14 处」不可靠。
  */
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { desktopVersion } from "./release-notes.mjs";
@@ -51,8 +51,18 @@ function usesOfficeBuddyArtifacts(version) {
 	return major > 0 || minor >= 6;
 }
 
-/** 官网当前对外宣称的版本，取自 `src/download-links.ts` 的 `DOWNLOAD_VERSION`。 */
+/**
+ * 新版官网（React SPA）不再在仓库内存版本号副本：构建时由 vite.config.ts 从
+ * `apps/desktop/package.json` 注入 `VITE_DESKTOP_VERSION`，官网与桌面端版本天然同源。
+ * 旧布局标志文件 `website/src/download-links.ts` 不存在时，bump 机制整体 no-op。
+ */
+export function isWebsiteAutoVersioned(root = repositoryRoot) {
+	return !existsSync(join(root, "website/src/download-links.ts"));
+}
+
+/** 官网当前对外宣称的版本。旧布局取 `src/download-links.ts` 的 `DOWNLOAD_VERSION`；新布局取桌面端版本。 */
 export function readWebsiteVersion(root = repositoryRoot) {
+	if (isWebsiteAutoVersioned(root)) return desktopVersion(root);
 	const source = readFileSync(join(root, "website/src/download-links.ts"), "utf8");
 	const match = source.match(DOWNLOAD_VERSION_PATTERN);
 	if (!match) throw new Error("Could not read DOWNLOAD_VERSION from website/src/download-links.ts");
@@ -60,11 +70,13 @@ export function readWebsiteVersion(root = repositoryRoot) {
 }
 
 /**
- * 把官网 5 个文件的版本号从当前值改成 `version`，返回被改写的文件。
+ * 把官网版本号对齐到 `version`，返回被改写的文件。
  * 已经在目标版本时返回空的 `files`，重复调用安全（流水线重跑不会产生空提交）。
+ * 新版官网版本由构建注入，无需改仓库文件，恒返回 no-op。
  */
 export function bumpWebsiteVersion({ version, root = repositoryRoot }) {
 	assertVersion(version);
+	if (isWebsiteAutoVersioned(root)) return { current: version, changed: false, files: [] };
 	const current = readWebsiteVersion(root);
 	if (current === version) return { current, changed: false, files: [] };
 
