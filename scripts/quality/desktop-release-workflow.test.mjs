@@ -178,8 +178,8 @@ describe("Desktop release workflow contracts", () => {
 		expect(websiteCheckout.with.ref).toBe("$" + "{{ github.event.repository.default_branch }}");
 		const websitePublish = website.steps.find((step) => step.id === "publish");
 		expect(websitePublish.env.BASE_BRANCH).toBe("$" + "{{ github.event.repository.default_branch }}");
-		expect(websitePublish.run).toContain('"origin/${BASE_BRANCH}"');
-		expect(websitePublish.run).toContain('gh pr create --base "${BASE_BRANCH}"');
+		expect(websitePublish.run).toContain(`"origin/\${BASE_BRANCH}"`);
+		expect(websitePublish.run).toContain(`gh pr create --base "\${BASE_BRANCH}"`);
 		expect(websitePublish.run).not.toContain("--base dev");
 		expect(websitePublish.run).not.toContain("origin/main");
 		const deploy = jobs["deploy-website"];
