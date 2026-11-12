@@ -479,6 +479,30 @@ describe("affected package selection", () => {
 		]);
 	});
 
+	it("maps the capability catalog generator to its missing-docs regression test", () => {
+		const plan = createImpactTestPlan(["packages/capability-sdk/scripts/generate-catalog.ts"]);
+		expect(plan.selectionErrors).toEqual([]);
+		expect(plan.targets).toMatchObject([
+			{
+				key: "capability-sdk",
+				directTests: ["test/generate-catalog.test.ts"],
+				relatedSources: [],
+			},
+		]);
+	});
+
+	it("maps the RPC bundle helper to a real bundled-runtime contract", () => {
+		const plan = createImpactTestPlan(["apps/cli-host/test/support/agent-rpc-executable.ts"]);
+		expect(plan.selectionErrors).toEqual([]);
+		expect(plan.targets).toMatchObject([
+			{
+				key: "cli-host",
+				directTests: ["test/agent-runtime-extension-history-contract.test.ts"],
+				relatedSources: [],
+			},
+		]);
+	});
+
 	it("keeps public contracts on related tests and fails unselectable changes without a package-test fallback", () => {
 		const publicContract = createImpactTestPlan(["packages/ai/src/index.ts"]);
 		expect(publicContract.selectionErrors).toEqual([]);

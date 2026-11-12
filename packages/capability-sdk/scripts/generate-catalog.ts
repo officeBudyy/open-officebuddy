@@ -1,12 +1,10 @@
 import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { DOMAIN_CAPABILITY_CATALOG, FOUNDATION_CAPABILITY_CATALOG } from "../src/index.js";
 
-const docsDirectory = resolve(import.meta.dir, "../../../docs/capabilities");
-const jsonPath = resolve(docsDirectory, "catalog.json");
-const markdownPath = resolve(docsDirectory, "catalog.md");
-const check = process.argv.includes("--check");
+const defaultDocsDirectory = fileURLToPath(new URL("../../../docs/capabilities", import.meta.url));
 
 const jsonContent = `${JSON.stringify(
 	{
@@ -42,20 +40,40 @@ async function assertCurrent(path: string, expected: string): Promise<boolean> {
 	}
 }
 
-if (check && !existsSync(docsDirectory)) {
-	console.log("Capability Catalog documentation check skipped: docs/capabilities is not part of this branch.");
-} else if (check) {
-	const [jsonCurrent, markdownCurrent] = await Promise.all([
-		assertCurrent(jsonPath, jsonContent),
-		assertCurrent(markdownPath, markdownContent),
-	]);
-	if (!jsonCurrent || !markdownCurrent) {
-		console.error("Capability Catalog documentation is stale. Run bun run catalog:generate in packages/capability-sdk.");
-		process.exitCode = 1;
+export async function generateCapabilityCatalog(options: {
+	check: boolean;
+	docsDirectory?: string;
+}): Promise<boolean> {
+	const docsDirectory = options.docsDirectory ?? defaultDocsDirectory;
+	const jsonPath = resolve(docsDirectory, "catalog.json");
+	const markdownPath = resolve(docsDirectory, "catalog.md");
+	if (options.check && !existsSync(docsDirectory)) {
+		console.log("Capability Catalog documentation check skipped: docs/capabilities is not part of this branch.");
+		return true;
 	}
-} else {
+	if (options.check) {
+		const [jsonCurrent, markdownCurrent] = await Promise.all([
+			assertCurrent(jsonPath, jsonContent),
+			assertCurrent(markdownPath, markdownContent),
+		]);
+		if (!jsonCurrent || !markdownCurrent) {
+			console.error(
+				"Capability Catalog documentation is stale. Run bun run catalog:generate in packages/capability-sdk.",
+			);
+			return false;
+		}
+		return true;
+	}
 	await Promise.all([
 		writeFile(jsonPath, jsonContent, "utf8"),
 		writeFile(markdownPath, markdownContent, "utf8"),
 	]);
+	return true;
 }
+
+export async function main(args = process.argv.slice(2)): Promise<void> {
+	const success = await generateCapabilityCatalog({ check: args.includes("--check") });
+	if (!success) process.exitCode = 1;
+}
+
+if (import.meta.main) await main();

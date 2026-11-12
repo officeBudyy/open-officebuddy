@@ -74,6 +74,14 @@ const goalTests = {
 	],
 };
 const EXPLICIT_SOURCE_TESTS = new Map([
+	[
+		"packages/capability-sdk/scripts/generate-catalog.ts",
+		{ workspaceKey: "capability-sdk", tests: ["test/generate-catalog.test.ts"] },
+	],
+	[
+		"apps/cli-host/test/support/agent-rpc-executable.ts",
+		{ workspaceKey: "cli-host", tests: ["test/agent-runtime-extension-history-contract.test.ts"] },
+	],
 	["apps/desktop/src/renderer/remote-desktop-host.ts", desktopTests("src/renderer/remote-desktop-host.test.ts")],
 	[
 		"packages/ai/src/providers/google-stream/request.ts",

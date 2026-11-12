@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -11,15 +11,39 @@ export interface AgentRpcExecutable {
 const sourceEntryPath = fileURLToPath(new URL("../../src/agent-rpc-cli.ts", import.meta.url));
 const repositoryRoot = fileURLToPath(new URL("../../../..", import.meta.url));
 const testBundleRoot = join(repositoryRoot, "node_modules", ".cache");
+const photonNodePath = join(
+	repositoryRoot,
+	"packages",
+	"coding-agent",
+	"node_modules",
+	"@silvia-odwyer",
+	"photon-node",
+);
 
 export async function buildAgentRpcExecutable(): Promise<AgentRpcExecutable> {
 	await mkdir(testBundleRoot, { recursive: true });
 	const directory = await mkdtemp(join(testBundleRoot, "astravia-agent-rpc-"));
 	const path = join(directory, "agent-rpc.mjs");
 	try {
+		const photonNodeScope = join(directory, "node_modules", "@silvia-odwyer");
+		await mkdir(photonNodeScope, { recursive: true });
+		await symlink(photonNodePath, join(photonNodeScope, "photon-node"), "junction");
 		await runCommand(
 			"bun",
-			["build", sourceEntryPath, "--target", "bun", "--external", "@mariozechner/jiti", "--outfile", path],
+			[
+				"build",
+				sourceEntryPath,
+				"--target",
+				"bun",
+				"--external",
+				"@mariozechner/jiti",
+				// photon-node 包含 WASM glue；Bun 1.3.14 内联后会在导出初始化前引用
+				// exports_photon_rs。运行时从工作区 node_modules 加载，和 Vitest 配置一致。
+				"--external",
+				"@silvia-odwyer/photon-node",
+				"--outfile",
+				path,
+			],
 			repositoryRoot,
 		);
 		await copyFile(join(repositoryRoot, "packages", "coding-agent", "package.json"), join(directory, "package.json"));
