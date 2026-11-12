@@ -6,6 +6,7 @@ import type { EnterpriseExpertSummary } from "@preload/api";
 import { NewSessionPicker } from "@astravia-org/theme-ui/chat/NewSessionPicker";
 import type { NewSessionPickerRootProps } from "@astravia-org/theme-ui/chat";
 import { AvatarStackView } from "@astravia-org/theme-ui/shared/AvatarStackView";
+import { readEnterpriseExpertsEnabled } from "@shared/enterprise-expert-preferences";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { loadAgentTeamDocument } from "./agent-team-directory";
@@ -49,9 +50,12 @@ export function NewSessionAgentSelector({
 		setLoading(true);
 		setError(null);
 		try {
+			const enterpriseExpertsPromise = readEnterpriseExpertsEnabled()
+				? window.astravia.enterpriseExperts.list().catch(() => [])
+				: Promise.resolve([]);
 			const [nextDocument, nextExperts] = await Promise.all([
 				loadAgentTeamDocument(),
-				window.astravia.enterpriseExperts.list().catch(() => []),
+				enterpriseExpertsPromise,
 			]);
 			setDocument(nextDocument);
 			setEnterpriseExperts(nextExperts);

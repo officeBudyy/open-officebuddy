@@ -6,7 +6,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { initDownloadLinks, initDownloadPlatformHighlight } from "../src/download-links";
 
 const VERSION = "0.5.82";
-const BASE = `https://dl.astravia.dev/app/v${VERSION}`;
+const BASE = `https://dl.officebuddy.work/app/v${VERSION}`;
+const PRODUCT = VERSION.startsWith("0.5.") ? "Astravia" : "officeBuddy";
 
 /** Apple Silicon 上的 Chrome / Safari 同样上报 "Intel Mac OS X"。 */
 const MAC_UA =
@@ -50,7 +51,7 @@ describe("官网下载入口", () => {
 		const entry = downloadEntry();
 		initDownloadLinks();
 
-		expect(entry.primary.href).toBe(`${BASE}/Astravia-${VERSION}-arm64.dmg`);
+		expect(entry.primary.href).toBe(`${BASE}/${PRODUCT}-${VERSION}-arm64.dmg`);
 		// 架构探测期间也不能给 Apple 芯片用户闪一条 Intel 提示。
 		expect(entry.primaryVersion?.textContent).toBe(`v${VERSION} · DMG`);
 		await vi.waitFor(() => expect(entry.primaryText?.textContent).toBe("MAC ARM64 (APPLE SILICON)"));
@@ -64,7 +65,7 @@ describe("官网下载入口", () => {
 		const entry = downloadEntry();
 		initDownloadLinks();
 
-		await vi.waitFor(() => expect(entry.primary.href).toBe(`${BASE}/Astravia-${VERSION}.dmg`));
+		await vi.waitFor(() => expect(entry.primary.href).toBe(`${BASE}/${PRODUCT}-${VERSION}.dmg`));
 		expect(entry.primaryText?.textContent).toBe("MAC X64 (INTEL)");
 		expect(entry.nav?.href).toBe(entry.primary.href);
 		expect(entry.hero?.href).toBe(entry.primary.href);
@@ -75,7 +76,7 @@ describe("官网下载入口", () => {
 		const entry = downloadEntry();
 		initDownloadLinks();
 
-		expect(entry.primary.href).toBe(`${BASE}/Astravia-${VERSION}-arm64.dmg`);
+		expect(entry.primary.href).toBe(`${BASE}/${PRODUCT}-${VERSION}-arm64.dmg`);
 		expect(entry.primaryVersion?.textContent).toContain("Intel");
 	});
 
@@ -84,7 +85,7 @@ describe("官网下载入口", () => {
 		const entry = downloadEntry();
 		initDownloadLinks();
 
-		expect(entry.primary.href).toBe(`${BASE}/Astravia-${VERSION}-win-x64.exe`);
+		expect(entry.primary.href).toBe(`${BASE}/${PRODUCT}-${VERSION}-win-x64.exe`);
 		expect(entry.primaryText?.textContent).toBe("WINDOWS X64");
 		expect(entry.primaryVersion?.textContent).toBe(`v${VERSION} · EXE`);
 	});

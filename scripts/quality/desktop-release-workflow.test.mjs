@@ -37,7 +37,16 @@ describe("Desktop release workflow contracts", () => {
 
 	it("publishes each platform's installers as soon as it is built", () => {
 		expect(jobs.build.strategy["fail-fast"]).toBe(false);
-		expect(Object.keys(jobs)).toEqual(["prepare", "quality", "build", "publish-update-metadata"]);
+		expect(Object.keys(jobs)).toEqual([
+			"prepare",
+			"quality",
+			"build",
+			"publish-update-metadata",
+			"publish-r2",
+			"publish-website",
+			"deploy-website",
+			"prune-r2",
+		]);
 		expect(workflow).not.toContain("release-build-");
 		expect(workflow).not.toContain("test:e2e:packaged");
 		// 单个平台构建不许等别的平台的产物；清单汇总在 publish-update-metadata 里做。
@@ -147,16 +156,40 @@ describe("Desktop release workflow contracts", () => {
 		expect(steps[verify].env.ASTRAVIA_UPDATE_PROVIDER).toBe("github");
 	});
 
-	// 正式发布只保留 GitHub Release，不再复制安装包到 Cloudflare 或触发 Pages 部署。
-	it("keeps github release artifacts out of Cloudflare", () => {
-		expect(jobs["publish-r2"]).toBeUndefined();
-		expect(jobs["publish-website"]).toBeUndefined();
-		expect(jobs["deploy-website"]).toBeUndefined();
+	// GitHub Release 是历史归档；R2 只做当前桌面版本的下载镜像。官网等新镜像校验后
+	// 切换版本，再清理旧目录，避免任何一段时间把用户导向 404。
+	it("mirrors stable installers to R2, deploys the website, then prunes old versions", () => {
+		const parsedWorkflow = parse(workflow);
+		expect(parsedWorkflow.concurrency.group).toBe("desktop-release");
+		expect(parsedWorkflow.concurrency["cancel-in-progress"]).toBe(false);
+		const r2 = jobs["publish-r2"];
+		expect(r2.needs).toEqual(["prepare", "build", "publish-update-metadata"]);
+		expect(r2.uses).toBe("./.github/workflows/upload-release-to-r2.yml");
+		expect(r2.with.version).toBe("$" + "{{ needs.prepare.outputs.release-version }}");
+		expect(r2.with.patterns).toBe("*.AppImage,*.blockmap,*.deb,*.dmg,*.exe,*.msi,*.rpm,*.zip");
+		expect(r2.with.prune_previous_versions).toBeUndefined();
+		expect(r2.with.retention_group).toBe("desktop-app");
+		expect(r2.secrets).toBe("inherit");
+
+		const website = jobs["publish-website"];
+		expect(website.needs).toEqual(["prepare", "publish-r2"]);
+		expect(JSON.stringify(website)).toContain("bump-website-version.mjs");
+		const deploy = jobs["deploy-website"];
+		expect(deploy.needs).toEqual(["prepare", "publish-website"]);
+		expect(deploy.uses).toBe("./.github/workflows/deploy-website.yml");
+		expect(deploy.with.ref).toBe("$" + "{{ needs.publish-website.outputs.ref }}");
+
+		const pruneR2 = jobs["prune-r2"];
+		expect(pruneR2.needs).toEqual(["prepare", "deploy-website"]);
+		expect(pruneR2.uses).toBe("./.github/workflows/upload-release-to-r2.yml");
+		expect(pruneR2.with.version).toBe("$" + "{{ needs.prepare.outputs.release-version }}");
+		expect(pruneR2.with.upload_assets).toBe(false);
+		expect(pruneR2.with.prune_previous_versions).toBe(true);
+		expect(pruneR2.with.retention_group).toBe("desktop-app");
+		expect(pruneR2.secrets).toBe("inherit");
+
 		expect(jobs.promote).toBeUndefined();
-		expect(workflow).not.toContain("./.github/workflows/upload-release-to-r2.yml");
-		expect(workflow).not.toContain("./.github/workflows/deploy-website.yml");
 		expect(workflow).not.toContain("./.github/workflows/desktop-promote.yml");
-		expect(workflow).not.toContain("ASTRAVIA_R2_");
 		const inputs = parse(workflow).on.workflow_dispatch.inputs;
 		expect(inputs.release_target).toBeUndefined();
 		expect(inputs.r2_prefix).toBeUndefined();
@@ -174,6 +207,39 @@ describe("Desktop release workflow contracts", () => {
 		);
 		expect(r2Workflow.on.release).toBeUndefined();
 		expect(websiteWorkflow.on.release).toBeUndefined();
+		const websiteSteps = websiteWorkflow.jobs.deploy.steps;
+		const domainCheck = websiteSteps.findIndex((step) => step.name === "Verify download domain resolves");
+		const pagesDeploy = websiteSteps.findIndex((step) => step.name === "Deploy to Cloudflare Pages");
+		expect(domainCheck).toBeGreaterThanOrEqual(0);
+		expect(domainCheck).toBeLessThan(pagesDeploy);
+		expect(websiteSteps[domainCheck].run).toContain("getent ahosts dl.officebuddy.work");
+		expect(r2Workflow.on.workflow_call.inputs.prune_previous_versions.default).toBe(false);
+		expect(r2Workflow.on.workflow_call.inputs.upload_assets.default).toBe(true);
+		expect(r2Workflow.on.workflow_call.inputs.retention_group.default).toBe("");
+		expect(r2Workflow.on.workflow_call.inputs.public_base_url.default).toBe("https://dl.officebuddy.work");
+		expect(r2Workflow.concurrency.group).toContain("inputs.retention_group");
+		expect(r2Workflow.concurrency["cancel-in-progress"]).toBe(false);
+
+		const r2Steps = r2Workflow.jobs.upload.steps;
+		const position = (name) => r2Steps.findIndex((step) => step.name === name);
+		const upload = position("Upload assets to R2");
+		const verify = position("Verify uploaded assets");
+		const verifyPublic = position("Verify public download URLs");
+		const prune = position("Prune previous version directories");
+		expect(upload).toBeGreaterThanOrEqual(0);
+		expect(upload).toBeLessThan(verify);
+		expect(verify).toBeLessThan(verifyPublic);
+		expect(verifyPublic).toBeLessThan(prune);
+		expect(r2Steps[upload].run).toContain("rclone copy");
+		expect(r2Steps[upload].run).not.toContain("rclone copyto");
+		expect(r2Steps[upload].if).toBe("inputs.upload_assets != false");
+		expect(r2Steps[verify].run).toContain("rclone check");
+		expect(r2Steps[verify].if).toBe("inputs.upload_assets != false");
+		expect(r2Steps[verifyPublic].run).toContain("curl --fail");
+		expect(r2Steps[verifyPublic].env.PUBLIC_BASE_URL).toBe("$" + "{{ inputs.public_base_url }}");
+		expect(r2Steps[prune].if).toBe("inputs.prune_previous_versions == true");
+		expect(r2Steps[prune].run).toContain("r2-version-retention.mjs");
+		expect(r2Steps[prune].run).toContain("rclone purge");
 	});
 
 	it("runs quality and packaging tests before the platform matrix", () => {
@@ -315,11 +381,12 @@ describe("Desktop release workflow contracts", () => {
 		expect(timeout).toBeGreaterThanOrEqual(120);
 	});
 
-	it("publishes every stable desktop artifact only to GitHub Release", () => {
+	it("publishes stable desktop artifacts to GitHub Release before mirroring them to R2", () => {
 		expect(workflow).toContain("- name: Add installers to GitHub Release");
 		expect(workflow).toContain("needs.prepare.outputs.channel != 'test'");
-		expect(workflow).not.toContain("Publish installers to R2");
-		expect(workflow).not.toContain("ASTRAVIA_R2_");
+		expect(jobs["publish-r2"].needs).toContain("publish-update-metadata");
+		expect(jobs["prune-r2"].needs).toContain("deploy-website");
+		expect(jobs["prune-r2"].with.prune_previous_versions).toBe(true);
 	});
 
 	it("uses the versioned release note as the GitHub Release body", () => {

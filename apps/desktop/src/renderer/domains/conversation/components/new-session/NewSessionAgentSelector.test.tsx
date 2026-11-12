@@ -3,6 +3,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { type AgentProfile, createAgentTeamFixture } from "@astravia/agent-team";
+import { ENTERPRISE_EXPERTS_ENABLED_STORAGE_KEY } from "@shared/enterprise-expert-preferences";
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NewSessionAgentSelector } from "./NewSessionAgentSelector";
@@ -15,10 +16,16 @@ vi.mock("react-i18next", () => ({
 	}),
 }));
 
-afterEach(cleanup);
+afterEach(() => {
+	cleanup();
+	vi.unstubAllGlobals();
+});
 
 describe("NewSessionAgentSelector", () => {
 	const document = createAgentTeamFixture();
+	const enterpriseExpertsList = vi.fn(async () => [
+		{ id: "policy", name: "Policy Expert", description: "Remote policy support" },
+	]);
 	const team = document.teams[0];
 	const agent = document.agents.find((candidate) => candidate.name === "Researcher");
 	if (!team || !agent) throw new Error("missing Agent Team fixture");
@@ -26,11 +33,25 @@ describe("NewSessionAgentSelector", () => {
 	function mockCatalog(next = document): void {
 		Object.defineProperty(window, "astravia", {
 			configurable: true,
-			value: { agentTeams: { list: vi.fn(async () => next) } },
+			value: {
+				agentTeams: { list: vi.fn(async () => next) },
+				enterpriseExperts: { list: enterpriseExpertsList },
+			},
 		});
 	}
 
-	beforeEach(() => mockCatalog());
+	beforeEach(() => {
+		const values = new Map<string, string>();
+		vi.stubGlobal("localStorage", {
+			clear: () => values.clear(),
+			getItem: (key: string) => values.get(key) ?? null,
+			setItem: (key: string, value: string) => values.set(key, value),
+			removeItem: (key: string) => values.delete(key),
+		});
+		localStorage.clear();
+		enterpriseExpertsList.mockClear();
+		mockCatalog();
+	});
 
 	function Harness({ onSelect }: { onSelect: (key: NewSessionTargetKey | null) => void }): JSX.Element {
 		const [selectedKey, setSelectedKey] = useState<NewSessionTargetKey | null>(null);
@@ -93,6 +114,28 @@ describe("NewSessionAgentSelector", () => {
 
 		expect(await screen.findByRole("listbox", { name: "newSession.agentSelector.groupTeams" })).toBeDefined();
 		expect(screen.getByRole("listbox", { name: "newSession.agentSelector.groupAgents" })).toBeDefined();
+	});
+
+	it("does not request enterprise experts while the feature is disabled", async () => {
+		const user = userEvent.setup();
+		render(<Harness onSelect={vi.fn()} />);
+
+		await user.click(screen.getByRole("button", { name: "newSession.agentSelector.pickTitle" }));
+		await screen.findByRole("listbox", { name: "newSession.agentSelector.groupAgents" });
+
+		expect(enterpriseExpertsList).not.toHaveBeenCalled();
+		expect(screen.queryByText("Policy Expert")).toBeNull();
+	});
+
+	it("loads enterprise experts only after the feature is enabled", async () => {
+		localStorage.setItem(ENTERPRISE_EXPERTS_ENABLED_STORAGE_KEY, "1");
+		const user = userEvent.setup();
+		render(<Harness onSelect={vi.fn()} />);
+
+		await user.click(screen.getByRole("button", { name: "newSession.agentSelector.pickTitle" }));
+
+		expect(await screen.findByText("Policy Expert")).toBeDefined();
+		expect(enterpriseExpertsList).toHaveBeenCalledOnce();
 	});
 
 	it("filters both groups with one query and drops a group that matches nothing", async () => {

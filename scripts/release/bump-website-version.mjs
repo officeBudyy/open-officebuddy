@@ -46,6 +46,11 @@ function assertVersion(version) {
 	}
 }
 
+function usesOfficeBuddyArtifacts(version) {
+	const [major = 0, minor = 0] = version.split(".").map(Number);
+	return major > 0 || minor >= 6;
+}
+
 /** 官网当前对外宣称的版本，取自 `src/download-links.ts` 的 `DOWNLOAD_VERSION`。 */
 export function readWebsiteVersion(root = repositoryRoot) {
 	const source = readFileSync(join(root, "website/src/download-links.ts"), "utf8");
@@ -87,7 +92,18 @@ export function bumpWebsiteVersion({ version, root = repositoryRoot }) {
 		if (!contents.includes(current)) {
 			throw new Error(`${file} does not mention the current website version ${current}; files drifted apart`);
 		}
-		const next = contents.split(current).join(version);
+		let next = contents.split(current).join(version);
+		if (file === "website/index.html" && usesOfficeBuddyArtifacts(version)) {
+			// 0.6.0 起 productName / Linux package name 已迁移；只在发布分支升版时
+			// 改产物名，避免合并本改动到 main 后立刻把仍在线的 0.5.x 链接改成不存在的名称。
+			next = next
+				.split(`Astravia-${version}`)
+				.join(`officeBuddy-${version}`)
+				.split(`astravia_${version}`)
+				.join(`officebuddy_${version}`)
+				.split(`astravia-${version}`)
+				.join(`officebuddy-${version}`);
+		}
 		if (!next.includes(version)) throw new Error(`Could not apply ${version} to ${file}`);
 		writeFileSync(path, next);
 		files.push(file);

@@ -1,9 +1,8 @@
-name: Upload Desktop Release to R2
+name: Upload Release Assets to R2
 
 description: |
-  Optional/manual utility that copies selected GitHub Release assets to
-  Cloudflare R2. Publishing a GitHub Release does not trigger it automatically.
-  Mobile release workflows may still call it explicitly for IPA/APK delivery.
+  Copies selected GitHub Release assets to Cloudflare R2. Desktop releases use
+  it for the public download mirror; mobile releases use it for IPA/APK delivery.
 
 on:
   workflow_call:
@@ -24,6 +23,26 @@ on:
         type: string
         required: false
         default: ""
+      upload_assets:
+        description: "Download and upload release assets; set false for a prune-only call"
+        type: boolean
+        required: false
+        default: true
+      prune_previous_versions:
+        description: "After a verified upload, remove sibling v<version> directories except the current one"
+        type: boolean
+        required: false
+        default: false
+      retention_group:
+        description: "Stable concurrency key for uploads that prune the same version root"
+        type: string
+        required: false
+        default: ""
+      public_base_url:
+        description: "Public R2 custom-domain origin used to verify every uploaded asset"
+        type: string
+        required: false
+        default: "https://dl.officebuddy.work"
   workflow_dispatch:
     inputs:
       version:
@@ -44,15 +63,35 @@ on:
         type: string
         required: false
         default: ""
+      upload_assets:
+        description: "Download and upload release assets; set false for a prune-only call"
+        type: boolean
+        required: false
+        default: true
+      prune_previous_versions:
+        description: "After a verified upload, remove sibling v<version> directories except the current one"
+        type: boolean
+        required: false
+        default: false
+      retention_group:
+        description: "Stable concurrency key for uploads that prune the same version root"
+        type: string
+        required: false
+        default: ""
+      public_base_url:
+        description: "Public R2 custom-domain origin used to verify every uploaded asset"
+        type: string
+        required: false
+        default: "https://dl.officebuddy.work"
 
 permissions:
   contents: read
 
 concurrency:
-  # 桌面与手机各调一次本 workflow，前缀不同才是两条独立的上传。不带前缀会把同
-  # 一个 tag 的两次上传塞进同一个 group，cancel-in-progress 直接互相取消。
-  group: upload-r2-${{ github.ref_name }}-${{ inputs.prefix || 'all' }}
-  cancel-in-progress: true
+  # 会清历史版本的桌面上传必须跨 tag 串行，避免两个新版本同时上传后互删。手机端
+  # 没传 retention_group，仍按 prefix 分组，不会与桌面目录互相阻塞。
+  group: upload-r2-${{ inputs.retention_group || inputs.prefix || github.ref_name || 'all' }}
+  cancel-in-progress: false
 
 jobs:
   upload:
@@ -133,6 +172,7 @@ jobs:
           echo "Bucket ${BUCKET} reachable."
 
       - name: Download release assets from GitHub
+        if: inputs.upload_assets != false
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -162,13 +202,14 @@ jobs:
           ls -1
 
       - name: Upload assets to R2
+        if: inputs.upload_assets != false
         shell: bash
         env:
           BUCKET: ${{ secrets.ASTRAVIA_R2_BUCKET }}
           PREFIX: ${{ steps.resolve.outputs.prefix }}
         run: |
           echo "Uploading to r2:${BUCKET}/${PREFIX}/"
-          rclone copyto \
+          rclone copy \
             /tmp/astravia-release \
             "r2:${BUCKET}/${PREFIX}" \
             --verbose \
@@ -178,7 +219,75 @@ jobs:
           echo "Uploaded objects:"
           rclone ls "r2:${BUCKET}/${PREFIX}" | tail -30
 
+      - name: Verify uploaded assets
+        if: inputs.upload_assets != false
+        shell: bash
+        env:
+          BUCKET: ${{ secrets.ASTRAVIA_R2_BUCKET }}
+          PREFIX: ${{ steps.resolve.outputs.prefix }}
+        run: |
+          # 清理旧版本之前先逐文件核对当前版本；上传不完整时必须保留旧包兜底。
+          rclone check \
+            /tmp/astravia-release \
+            "r2:${BUCKET}/${PREFIX}" \
+            --one-way
+
+      - name: Verify public download URLs
+        if: inputs.upload_assets != false
+        shell: bash
+        env:
+          PREFIX: ${{ steps.resolve.outputs.prefix }}
+          PUBLIC_BASE_URL: ${{ inputs.public_base_url }}
+        run: |
+          set -euo pipefail
+          BASE="${PUBLIC_BASE_URL%/}/${PREFIX}"
+          while IFS= read -r asset; do
+            [[ -z "${asset}" ]] && continue
+            url="${BASE}/${asset}"
+            echo "Verifying ${url}"
+            curl --fail --silent --show-error --head \
+              --retry 6 \
+              --retry-all-errors \
+              --retry-delay 5 \
+              "${url}" > /dev/null
+          done < <(find /tmp/astravia-release -maxdepth 1 -type f -exec basename {} \; | sort)
+
+      - name: Prune previous version directories
+        if: inputs.prune_previous_versions == true
+        shell: bash
+        env:
+          BUCKET: ${{ secrets.ASTRAVIA_R2_BUCKET }}
+          PREFIX: ${{ steps.resolve.outputs.prefix }}
+          VERSION: ${{ steps.resolve.outputs.version }}
+        run: |
+          set -euo pipefail
+          ROOT="${PREFIX%/*}"
+          if [[ -z "${ROOT}" || "${ROOT}" == "${PREFIX}" ]]; then
+            echo "::error::Refusing to prune an unscoped R2 prefix: ${PREFIX}"
+            exit 1
+          fi
+
+          # 规划脚本只接受当前目录名恰好为 v${VERSION} 的前缀，并且只输出同级的
+          # v<语义版本> 目录；普通目录、手机包目录和当前版本不会进入删除列表。
+          rclone lsf "r2:${BUCKET}/${ROOT}" --dirs-only \
+            | node scripts/release/r2-version-retention.mjs \
+                --prefix "${PREFIX}" \
+                --version "${VERSION}" \
+            > /tmp/r2-prune-prefixes.txt
+
+          if [[ ! -s /tmp/r2-prune-prefixes.txt ]]; then
+            echo "No previous version directories to prune under ${ROOT}/."
+            exit 0
+          fi
+
+          while IFS= read -r old_prefix; do
+            [[ -z "${old_prefix}" ]] && continue
+            echo "Pruning r2:${BUCKET}/${old_prefix}/"
+            rclone purge "r2:${BUCKET}/${old_prefix}"
+          done < /tmp/r2-prune-prefixes.txt
+
       - name: Summarise release destination
+        if: inputs.upload_assets != false
         shell: bash
         env:
           TAG: ${{ steps.resolve.outputs.tag }}

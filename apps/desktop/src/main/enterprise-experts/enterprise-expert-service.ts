@@ -22,11 +22,11 @@ export class EnterpriseExpertService {
 
 	constructor(
 		private readonly client = new EnterpriseExpertClient(),
-		private readonly vault: Pick<CredentialVault, "get" | "put" | "remove" | "has"> = getDesktopCredentialVault(),
+		private readonly vault: Pick<CredentialVault, "get" | "put" | "remove"> = getDesktopCredentialVault(),
 	) {}
 
 	hasToken(): boolean {
-		return this.vault.has(TOKEN_REF);
+		return this.readToken() !== undefined;
 	}
 
 	async list(): Promise<readonly EnterpriseExpertSummary[]> {
@@ -66,7 +66,7 @@ export class EnterpriseExpertService {
 	}
 
 	private async withToken<T>(run: (token: string) => Promise<T>): Promise<T> {
-		const token = this.vault.get(TOKEN_REF);
+		const token = this.readToken();
 		if (!token) {
 			this.emit(this.authListeners);
 			throw new EnterpriseExpertAuthError("Please configure the enterprise expert token");
@@ -76,6 +76,18 @@ export class EnterpriseExpertService {
 		} catch (error) {
 			if (error instanceof EnterpriseExpertAuthError) this.emit(this.authListeners);
 			throw error;
+		}
+	}
+
+	/**
+	 * safeStorage 的主密钥可能因应用名或系统凭据变化而失效。文件存在不代表凭据可用，
+	 * 无法解密时按“未配置”处理，让用户能通过 Token 弹窗直接覆盖旧记录。
+	 */
+	private readToken(): string | undefined {
+		try {
+			return this.vault.get(TOKEN_REF);
+		} catch {
+			return undefined;
 		}
 	}
 

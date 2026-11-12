@@ -29,8 +29,8 @@ export interface MobileInstallTarget {
 	readonly meta: string;
 }
 
-const DEFAULT_IOS_BASE = "https://dl.astravia.dev/client-mobile";
-const DEFAULT_ANDROID_URL = "https://dl.astravia.dev/client-mobile/Astravia-arm64-v8a.apk";
+const DEFAULT_IOS_BASE = "https://dl.officebuddy.work/client-mobile";
+const DEFAULT_ANDROID_URL = "https://dl.officebuddy.work/client-mobile/Astravia-arm64-v8a.apk";
 
 export function resolveMobilePlatform(userAgent: string): MobilePlatform {
 	// iPad 的 UA 在 iPadOS 13 之后伪装成 Macintosh，只有手机端 UA 能可靠区分。

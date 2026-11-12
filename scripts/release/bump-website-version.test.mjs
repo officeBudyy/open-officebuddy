@@ -8,10 +8,10 @@ const roots = [];
 
 const fixtures = {
 	"website/index.html": [
-		'<a href="https://dl.astravia.dev/app/v0.5.65/Astravia-0.5.65-arm64.dmg" class="dl">',
+		'<a href="https://dl.officebuddy.work/app/v0.5.65/Astravia-0.5.65-arm64.dmg" class="dl">',
 		'  <span class="dl__version">v0.5.65 · DMG</span>',
 		"</a>",
-		'<a href="https://dl.astravia.dev/app/v0.5.65/astravia_0.5.65_amd64.deb">deb</a>',
+		'<a href="https://dl.officebuddy.work/app/v0.5.65/astravia_0.5.65_amd64.deb">deb</a>',
 		"",
 	].join("\n"),
 	"website/src/download-links.ts": 'export const DOWNLOAD_VERSION = "0.5.65";\n',
@@ -54,7 +54,7 @@ describe("website download version", () => {
 		}
 		// 下载链接的目录和产物名都要跟着改，否则按钮指向不存在的对象。
 		expect(read(root, "website/index.html")).toContain(
-			"https://dl.astravia.dev/app/v0.5.66/Astravia-0.5.66-arm64.dmg",
+			"https://dl.officebuddy.work/app/v0.5.66/Astravia-0.5.66-arm64.dmg",
 		);
 		expect(readWebsiteVersion(root)).toBe("0.5.66");
 	});
@@ -72,6 +72,16 @@ describe("website download version", () => {
 		expect(WEBSITE_VERSION_FILES.map((file) => read(root, file))).toEqual(before);
 	});
 
+	it("migrates desktop artifact names when the website advances to OfficeBuddy", () => {
+		const root = fixtureRoot();
+		bumpWebsiteVersion({ version: "0.6.0", root });
+
+		const page = read(root, "website/index.html");
+		expect(page).toContain("/app/v0.6.0/officeBuddy-0.6.0-arm64.dmg");
+		expect(page).toContain("/app/v0.6.0/officebuddy_0.6.0_amd64.deb");
+		expect(page).not.toContain("Astravia-0.6.0");
+	});
+
 	it("rejects a version that is not a release version", () => {
 		const root = fixtureRoot();
 		for (const version of ["v0.5.66", "0.5", "latest", ""]) {
@@ -86,7 +96,7 @@ describe("website download version", () => {
 			"website/package.json": '{\n\t"version": "0.5.64"\n}\n',
 			"website/test/download-target.test.ts": 'const VERSION = "0.5.64";\nexport { VERSION };\n',
 			"website/test/download-entry.test.ts": 'const VERSION = "0.5.64";\nexport { VERSION };\n',
-			"website/index.html": '<a href="https://dl.astravia.dev/app/v0.5.64-4/a.dmg">dmg</a>\n',
+			"website/index.html": '<a href="https://dl.officebuddy.work/app/v0.5.64-4/a.dmg">dmg</a>\n',
 		});
 		expect(() => bumpWebsiteVersion({ version: "0.5.66", root })).toThrow(
 			/website\/index\.html references other versions \(0\.5\.64-4\)/,

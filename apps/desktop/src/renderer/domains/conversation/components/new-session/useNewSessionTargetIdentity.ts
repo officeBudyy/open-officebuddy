@@ -1,6 +1,7 @@
 import type { NewSessionHeroIdentity } from "@astravia-org/theme-ui";
 import type { EnterpriseExpertSummary } from "@preload/api";
 import { useAgentAvatarResolver } from "@shared/agent-teams/agent-avatar";
+import { readEnterpriseExpertsEnabled } from "@shared/enterprise-expert-preferences";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAgentTeamDirectoryDocument } from "./agent-team-directory";
@@ -20,7 +21,7 @@ export function useNewSessionTargetIdentity(targetKey: NewSessionTargetKey | nul
 	const enterpriseExpertId = parseEnterpriseExpertTargetKey(targetKey);
 	const [enterpriseExpert, setEnterpriseExpert] = useState<EnterpriseExpertSummary>();
 	useEffect(() => {
-		if (!enterpriseExpertId) {
+		if (!enterpriseExpertId || !readEnterpriseExpertsEnabled()) {
 			setEnterpriseExpert(undefined);
 			return;
 		}

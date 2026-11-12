@@ -13,7 +13,7 @@ import { isDesktopReleaseVersion } from "./release-version.mjs";
 const execFileAsync = promisify(execFile);
 const packageDir = resolve(import.meta.dirname, "..");
 const defaultReleaseDir = join(packageDir, "release");
-const expectedBundleIdentifier = "com.astravia.desktop";
+const expectedBundleIdentifier = "com.officebuddy.desktop";
 
 function getArtifactFileName(value) {
 	if (typeof value !== "string" || value.length === 0) {

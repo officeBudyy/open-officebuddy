@@ -16,7 +16,6 @@ import { SchedulerExecutionApproval } from "../shared/action-approval/scheduler/
 import { SchedulerToggleApproval } from "../shared/action-approval/scheduler/SchedulerToggleApproval";
 import { SchedulerUpdateApproval } from "../shared/action-approval/scheduler/SchedulerUpdateApproval";
 import { UpdateRestartDialog } from "../shared/components/UpdateRestartDialog";
-import { EnterpriseExpertTokenDialog } from "../shared/components/EnterpriseExpertTokenDialog";
 import { Toaster } from "../shared/components/ui/Toaster";
 import { ConfirmDialog } from "../shared/components/ui/confirm-dialog";
 import { useThemeComponent } from "@astravia-org/theme-sdk";
@@ -54,7 +53,6 @@ export function RootOverlayViews(): JSX.Element {
 			<ThemedConfirmDialog />
 			<ThemedFilePreviewDialog />
 			<ThemedUpdateRestartDialog />
-			<EnterpriseExpertTokenDialog />
 			<ThemedGenericActionApproval />
 			<DomainManageApprovals />
 			<ThemedAppearancePickerApproval />

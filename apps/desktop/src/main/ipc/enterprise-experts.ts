@@ -1,4 +1,6 @@
 import { ipcMain, webContents } from "electron";
+import { ENTERPRISE_EXPERT_AUTH_ERROR_MARKER } from "../../shared/enterprise-experts.js";
+import { EnterpriseExpertAuthError } from "../enterprise-experts/enterprise-expert-client.js";
 import {
 	type EnterpriseExpertService,
 	enterpriseExpertService,
@@ -21,7 +23,15 @@ export function registerEnterpriseExpertsIpc(service: EnterpriseExpertService = 
 	};
 	const unsubscribeAuth = service.onAuthRequired(() => broadcast(CHANNELS.AUTH_REQUIRED));
 	const unsubscribeChanged = service.onChanged(() => broadcast(CHANNELS.CHANGED));
-	ipcMain.handle(CHANNELS.LIST, () => service.list());
+	// 鉴权错误跨 IPC 后只剩纯文本，改写成带稳定标记的消息，渲染层据此唤起 Token 弹窗
+	ipcMain.handle(CHANNELS.LIST, async () => {
+		try {
+			return await service.list();
+		} catch (error) {
+			if (error instanceof EnterpriseExpertAuthError) throw new Error(ENTERPRISE_EXPERT_AUTH_ERROR_MARKER);
+			throw error;
+		}
+	});
 	ipcMain.handle(CHANNELS.HAS_TOKEN, () => service.hasToken());
 	ipcMain.handle(CHANNELS.SET_TOKEN, (_event, token: unknown) => {
 		if (typeof token !== "string") throw new Error("Token must be a string");

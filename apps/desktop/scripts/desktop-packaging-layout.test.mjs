@@ -44,8 +44,16 @@ test("packaged desktop uses officeBuddy consistently on macOS and Linux while pr
 	assert.match(preparePack, /productName:\s*DESKTOP_PRODUCT_NAME/);
 	assert.match(preparePack, /mac:\s*{\s*executableName:\s*DESKTOP_MAC_EXECUTABLE_NAME/);
 	assert.match(preparePack, /linux:\s*{[\s\S]*?executableName:\s*DESKTOP_LINUX_EXECUTABLE_NAME/);
-	assert.match(preparePack, /deb:\s*{\s*packageName:\s*DESKTOP_LINUX_PACKAGE_NAME/);
-	assert.match(preparePack, /rpm:\s*{\s*packageName:\s*DESKTOP_LINUX_PACKAGE_NAME/);
+	// deb/rpm 文件名与包内元数据都来自 staged package.json 的 name
+	// （electron-builder 的 ${name} 宏只认 appInfo.name），必须引用常量。
+	assert.match(preparePack, /name:\s*DESKTOP_LINUX_PACKAGE_NAME/);
+	assert.doesNotMatch(preparePack, /name:\s*["']astravia["']/);
+	// electron-builder 26 的 linux 段不接受 packageName（schema 已删除），
+	// 顶层 deb/rpm per-target 段也已移除，统一走 staged name 回退。
+	assert.doesNotMatch(preparePack, /^\tdeb:\s*{/m);
+	assert.doesNotMatch(preparePack, /^\trpm:\s*{/m);
+	assert.match(preparePack, /appId:\s*["']com\.officebuddy\.desktop["']/);
+	assert.doesNotMatch(preparePack, /com\.astravia\.desktop/);
 	assert.match(preparePack, /CFBundleDisplayName:\s*DESKTOP_PRODUCT_NAME/);
 	assert.match(preparePack, /CFBundleName:\s*DESKTOP_PRODUCT_NAME/);
 	assert.match(preparePack, /title:\s*["']\$\{productName\} \$\{version\}["']/);

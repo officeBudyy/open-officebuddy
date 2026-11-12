@@ -24,7 +24,7 @@ OUT_DIR="build/ios"
 ARCHIVE="$OUT_DIR/Astravia.xcarchive"
 TEAM_ID="${TEAM_ID:-}"
 PROFILE_UUID="${PROFILE_UUID:-}"
-OTA_BASE="${OTA_BASE:-https://dl.astravia.dev/client-mobile}"
+OTA_BASE="${OTA_BASE:-https://dl.officebuddy.work/client-mobile}"
 
 # project.yml 里的值带引号，直接用 awk 取第二列会把引号带进文件名。
 version=$(sed -nE 's/^[[:space:]]*MARKETING_VERSION:[[:space:]]*"?([^"[:space:]]+)"?.*/\1/p' project.yml | head -1)

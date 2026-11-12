@@ -56,6 +56,13 @@ jobs:
           bun install --frozen-lockfile
           bun run build
 
+      - name: Verify download domain resolves
+        shell: bash
+        run: |
+          # 官网已经改用新的 R2 自定义域；DNS 尚未绑定时停止部署，保留线上旧页面，
+          # 避免一次普通 main push 直接把所有下载按钮切成不可访问的地址。
+          getent ahosts dl.officebuddy.work > /dev/null
+
       - name: Ensure Pages project exists
         shell: bash
         env:

@@ -36,6 +36,12 @@ on:
 permissions:
   contents: read
 
+# 一次稳定版发布包含 R2 镜像、官网切换和旧版清理，整条链路必须跨 tag 串行；否则较新
+# 版本可能在较旧版本部署官网前把它的目录删除，最终官网会指向已经不存在的包。
+concurrency:
+  group: desktop-release
+  cancel-in-progress: false
+
 jobs:
   prepare:
     name: resolve desktop release scope
@@ -389,10 +395,9 @@ jobs:
             apps/desktop/release/*.zip
             apps/desktop/release/latest*.yml
 
-      # 各平台构建完立即追加到 GitHub Release，不再复制到 Cloudflare R2。
-      # 第一个完成的平台创建 Release，
+      # 各平台构建完立即追加到 GitHub Release。第一个完成的平台创建 Release，
       # 其余平台追加安装包。清单（latest*.yml）要等全部平台构建完、macOS 两架构合并后
-      # 才能定稿，统一由 publish-update-metadata 处理。
+      # 才能定稿，统一由 publish-update-metadata 处理；R2 镜像要等 Release 完整后再同步。
       - name: Add installers to GitHub Release
         if: needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.channel != 'test'
         env:
@@ -414,3 +419,134 @@ jobs:
     uses: ./.github/workflows/desktop-publish-update-metadata.yml
     with:
       version: ${{ needs.prepare.outputs.release-version }}
+
+  # 官网下载按钮指向 R2 直链。GitHub Release 完整发布并校验更新清单后，再把桌面安装包
+  # 镜像到版本目录；旧目录要等官网切换成功后再删。
+  publish-r2:
+    name: publish installers → R2
+    needs: [prepare, build, publish-update-metadata]
+    if: needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.release_target == 'github' && needs.prepare.outputs.channel != 'test'
+    uses: ./.github/workflows/upload-release-to-r2.yml
+    with:
+      version: ${{ needs.prepare.outputs.release-version }}
+      # 同一个 tag 的 Release 上还可能挂着手机端 IPA / APK。这里只同步桌面格式，
+      # 避免把手机安装包复制进 app/v<version>/。
+      patterns: "*.AppImage,*.blockmap,*.deb,*.dmg,*.exe,*.msi,*.rpm,*.zip"
+      retention_group: desktop-app
+    secrets: inherit
+
+  # 把官网 5 个版本字段推到发布分支并开 PR。分支由 CI 拥有，和 tag 一一对应，
+  # 重跑就覆盖；升版 PR 只把版本号送回 dev，上线分支另从 main 派生。
+  publish-website:
+    name: prepare website release branches
+    needs: [prepare, publish-r2]
+    if: needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.release_target == 'github' && needs.prepare.outputs.channel != 'test'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      ref: ${{ steps.publish.outputs.ref }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Bump website version, open the follow-up pull request, stage the deploy branch
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.prepare.outputs.release-version }}
+          BRANCH: release/website-v${{ needs.prepare.outputs.release-version }}
+          DEPLOY_BRANCH: release/website-deploy-v${{ needs.prepare.outputs.release-version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          node scripts/release/bump-website-version.mjs --version "${VERSION}"
+
+          if git diff --quiet -- website; then
+            echo "官网下载版本已是 ${VERSION}，dev 上不需要升版提交。"
+            website_changed=false
+          else
+            website_changed=true
+            git switch -C "${BRANCH}"
+            git add -- website
+            git commit -m "chore(website): 下载入口跟进 ${VERSION}"
+            # 分支由 CI 独占（release/website-v<版本>），重跑覆盖是预期行为。
+            git push --force origin "HEAD:refs/heads/${BRANCH}"
+          fi
+
+          # 上线页面取 main + 新版本号，不从可能落后的 dev 直接部署。
+          git switch -C "${DEPLOY_BRANCH}" origin/main
+          node scripts/release/bump-website-version.mjs --version "${VERSION}"
+          git add -- website
+          if git diff --cached --quiet; then
+            echo "main 的官网已是 ${VERSION}，直接按 main 部署。"
+          else
+            git commit -m "chore(website): 生产部署页面按 main 对齐到 ${VERSION}"
+          fi
+          git push --force origin "HEAD:refs/heads/${DEPLOY_BRANCH}"
+          echo "ref=${DEPLOY_BRANCH}" >> "${GITHUB_OUTPUT}"
+
+          if [ "${website_changed:-false}" = "true" ]; then
+            cat > /tmp/website-pr.md <<EOF
+          ## Why
+
+          官网下载按钮指向 \`https://dl.officebuddy.work/app/v${VERSION}/\`，产物已随本次发布上传到 R2。
+          这个 PR 只把官网 5 个版本字段对齐到 ${VERSION}，由 \`desktop-release\` 自动生成。
+
+          ## What users will see
+
+          官网下载入口给出 ${VERSION} 的安装包。
+
+          ## Surface area
+
+          - [x] **None**
+
+          ## Validation
+
+          由 desktop-release 流水线运行：\`node scripts/release/bump-website-version.mjs --version ${VERSION}\`，
+          站点按 main 的页面 + 该版本号部署。
+          EOF
+
+            pr_title="chore(website): 下载入口跟进 ${VERSION}"
+            if gh pr view "${BRANCH}" --json number > /dev/null 2>&1; then
+              gh pr edit "${BRANCH}" --title "${pr_title}" --body-file /tmp/website-pr.md
+            else
+              gh pr create --base dev --head "${BRANCH}" --title "${pr_title}" --body-file /tmp/website-pr.md \
+                || echo "::warning::跟进 PR 创建失败，站点仍会按 ${DEPLOY_BRANCH} 部署，请手动开 PR"
+            fi
+          fi
+
+  # 新版本在 R2 上传并校验成功后才更新官网，避免用户点到尚未就绪的下载地址。
+  deploy-website:
+    name: deploy website → Cloudflare Pages
+    needs: [prepare, publish-website]
+    if: needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.release_target == 'github' && needs.prepare.outputs.channel != 'test'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy-website.yml
+    with:
+      ref: ${{ needs.publish-website.outputs.ref }}
+    secrets: inherit
+
+  # 官网已经指向新版本后，再清理 app/ 下其余 v<版本> 目录。复用同一工作流的
+  # prune-only 模式，不重复下载或上传安装包。
+  prune-r2:
+    name: prune previous desktop versions from R2
+    needs: [prepare, deploy-website]
+    if: needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.release_target == 'github' && needs.prepare.outputs.channel != 'test'
+    uses: ./.github/workflows/upload-release-to-r2.yml
+    with:
+      version: ${{ needs.prepare.outputs.release-version }}
+      upload_assets: false
+      prune_previous_versions: true
+      retention_group: desktop-app
+    secrets: inherit

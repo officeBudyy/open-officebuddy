@@ -2,6 +2,11 @@ import { Button, Input } from "@astravia-org/ui";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@astravia-org/ui/dialog";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+	consumeEnterpriseExpertTokenDialogOpenRequest,
+	ENTERPRISE_EXPERT_TOKEN_DIALOG_OPEN_EVENT,
+} from "../enterprise-expert-events";
+import { readEnterpriseExpertsEnabled } from "../enterprise-expert-preferences";
 
 export function EnterpriseExpertTokenDialog(): JSX.Element {
 	const { t } = useTranslation("agent-teams");
@@ -10,7 +15,23 @@ export function EnterpriseExpertTokenDialog(): JSX.Element {
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState<string>();
 
-	useEffect(() => window.astravia?.enterpriseExperts?.onAuthRequired(() => setOpen(true)), []);
+	useEffect(
+		() =>
+			window.astravia?.enterpriseExperts?.onAuthRequired(() => {
+				if (readEnterpriseExpertsEnabled()) setOpen(true);
+			}),
+		[],
+	);
+	useEffect(() => {
+		const handleOpen = (): void => {
+			consumeEnterpriseExpertTokenDialogOpenRequest();
+			setOpen(true);
+		};
+		window.addEventListener(ENTERPRISE_EXPERT_TOKEN_DIALOG_OPEN_EVENT, handleOpen);
+		// 保留早到请求的补偿，覆盖渲染器初始挂载的极短窗口。
+		if (consumeEnterpriseExpertTokenDialogOpenRequest()) setOpen(true);
+		return () => window.removeEventListener(ENTERPRISE_EXPERT_TOKEN_DIALOG_OPEN_EVENT, handleOpen);
+	}, []);
 
 	async function save(): Promise<void> {
 		if (!token.trim() || saving) return;

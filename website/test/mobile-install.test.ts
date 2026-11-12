@@ -42,12 +42,12 @@ describe("resolveMobilePlatform", () => {
 describe("resolveMobileInstall", () => {
 	it("iOS 指向固定的 IPA 文件名，并在说明里写清需要自己签名", () => {
 		const target = resolveMobileInstall("ios");
-		expect(target.href).toBe("https://dl.astravia.dev/client-mobile/Astravia-ios.ipa");
+		expect(target.href).toBe("https://dl.officebuddy.work/client-mobile/Astravia-ios.ipa");
 		expect(target.meta).toContain("签名");
 	});
 	it("Android 与 iOS 共用一个 R2 目录，文件名不带版本号", () => {
 		const target = resolveMobileInstall("android");
-		expect(target.href).toBe("https://dl.astravia.dev/client-mobile/Astravia-arm64-v8a.apk");
+		expect(target.href).toBe("https://dl.officebuddy.work/client-mobile/Astravia-arm64-v8a.apk");
 	});
 });
 
@@ -62,7 +62,7 @@ describe("页面上真的存在这两个入口", () => {
 
 		const ios = document.getElementById("mobIosHref") as HTMLAnchorElement;
 		const android = document.getElementById("mobAndroidHref") as HTMLAnchorElement;
-		expect(ios.getAttribute("href")).toBe("https://dl.astravia.dev/client-mobile/Astravia-ios.ipa");
+		expect(ios.getAttribute("href")).toBe("https://dl.officebuddy.work/client-mobile/Astravia-ios.ipa");
 		expect(android.getAttribute("href")).toContain("Astravia-arm64-v8a.apk");
 		expect(document.querySelector('[data-mob="ios"]')?.classList.contains("is-detected")).toBe(true);
 		expect(document.querySelector('[data-mob="android"]')?.classList.contains("is-detected")).toBe(false);

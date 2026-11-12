@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import { resolveDownloadOs, resolveDownloadTarget } from "../src/download-target";
 
 const VERSION = "0.5.82";
-const BASE = `https://dl.astravia.dev/app/v${VERSION}`;
+const BASE = `https://dl.officebuddy.work/app/v${VERSION}`;
+const PRODUCT = VERSION.startsWith("0.5.") ? "Astravia" : "officeBuddy";
 
 /** Apple Silicon 上的 Chrome / Safari 同样上报 "Intel Mac OS X"，这是 issue #5 的根因。 */
 const MAC_UA =
@@ -43,7 +44,7 @@ describe("resolveDownloadTarget", () => {
 	it("Apple 芯片的 Mac 拿 arm64 安装包", () => {
 		const target = resolveDownloadTarget({ userAgent: MAC_UA, architectureHint: "arm" }, { version: VERSION });
 		expect(target.architecture).toBe("arm64");
-		expect(target.href).toBe(`${BASE}/Astravia-${VERSION}-arm64.dmg`);
+		expect(target.href).toBe(`${BASE}/${PRODUCT}-${VERSION}-arm64.dmg`);
 		expect(target.label).toBe("MAC ARM64 (APPLE SILICON)");
 		expect(target.versionLabel).toBe(`v${VERSION} · DMG`);
 	});
@@ -51,25 +52,25 @@ describe("resolveDownloadTarget", () => {
 	it("Intel Mac 按架构提示拿无后缀的 x64 安装包并标注 Intel", () => {
 		const target = resolveDownloadTarget({ userAgent: MAC_UA, architectureHint: "x86" }, { version: VERSION });
 		expect(target.architecture).toBe("x64");
-		expect(target.href).toBe(`${BASE}/Astravia-${VERSION}.dmg`);
+		expect(target.href).toBe(`${BASE}/${PRODUCT}-${VERSION}.dmg`);
 		expect(target.label).toBe("MAC X64 (INTEL)");
 	});
 
 	it("拿不到架构提示时（Safari）默认 arm64，并在版本标签里指路 Intel 版", () => {
 		const target = resolveDownloadTarget({ userAgent: MAC_SAFARI_UA }, { version: VERSION });
 		expect(target.architecture).toBe("unknown");
-		expect(target.href).toBe(`${BASE}/Astravia-${VERSION}-arm64.dmg`);
+		expect(target.href).toBe(`${BASE}/${PRODUCT}-${VERSION}-arm64.dmg`);
 		expect(target.versionLabel).toContain("Intel");
 	});
 
 	it("Windows 与 Linux 走各自的无架构歧义安装包", () => {
 		const windows = resolveDownloadTarget({ userAgent: WINDOWS_UA }, { version: VERSION });
-		expect(windows.href).toBe(`${BASE}/Astravia-${VERSION}-win-x64.exe`);
+		expect(windows.href).toBe(`${BASE}/${PRODUCT}-${VERSION}-win-x64.exe`);
 		expect(windows.label).toBe("WINDOWS X64");
 		expect(windows.versionLabel).not.toContain("Intel");
 
 		const linux = resolveDownloadTarget({ userAgent: LINUX_UA }, { version: VERSION });
-		expect(linux.href).toBe(`${BASE}/Astravia-${VERSION}.AppImage`);
+		expect(linux.href).toBe(`${BASE}/${PRODUCT}-${VERSION}.AppImage`);
 		expect(linux.label).toBe("LINUX X64");
 	});
 
@@ -78,6 +79,20 @@ describe("resolveDownloadTarget", () => {
 			{ userAgent: MAC_UA, architectureHint: "arm" },
 			{ version: VERSION, base: "https://example.test/app" },
 		);
-		expect(target.href).toBe(`https://example.test/app/Astravia-${VERSION}-arm64.dmg`);
+		expect(target.href).toBe(`https://example.test/app/${PRODUCT}-${VERSION}-arm64.dmg`);
+	});
+
+	it("OfficeBuddy 版本使用当前构建产物名", () => {
+		const version = "0.6.0";
+		const base = `https://dl.officebuddy.work/app/v${version}`;
+		expect(resolveDownloadTarget({ userAgent: MAC_UA, architectureHint: "arm" }, { version }).href).toBe(
+			`${base}/officeBuddy-${version}-arm64.dmg`,
+		);
+		expect(resolveDownloadTarget({ userAgent: WINDOWS_UA }, { version }).href).toBe(
+			`${base}/officeBuddy-${version}-win-x64.exe`,
+		);
+		expect(resolveDownloadTarget({ userAgent: LINUX_UA }, { version }).href).toBe(
+			`${base}/officeBuddy-${version}.AppImage`,
+		);
 	});
 });

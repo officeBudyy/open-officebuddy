@@ -288,7 +288,10 @@ if (preparedSpeechModel) {
 // externalized runtime deps must be declared here even though we copy them
 // manually below.
 const appPkg = {
-	name: "astravia",
+	// deb/rpm 产物文件名的 ${name} 宏、以及 appInfo.linuxPackageName 的回退值
+	// 都取自这里的 name（electron-builder 不从 per-target 配置读文件名），必须
+	// 与 DESKTOP_LINUX_PACKAGE_NAME 保持一致。
+	name: DESKTOP_LINUX_PACKAGE_NAME,
 	version: appVersion,
 	description: `${DESKTOP_PRODUCT_NAME} Desktop App`,
 	author: LINUX_PACKAGE_METADATA.author,
@@ -731,7 +734,7 @@ const extraResources = resolveExtraResources();
 
 // Write electron-builder config
 const builderConfig = {
-	appId: "com.astravia.desktop",
+	appId: "com.officebuddy.desktop",
 	productName: DESKTOP_PRODUCT_NAME,
 	executableName: DESKTOP_EXECUTABLE_NAME,
 	afterPack: join(projectRoot, "scripts", "windows-version-layout.mjs"),
@@ -836,15 +839,11 @@ const builderConfig = {
 			},
 		},
 	},
-	// electron-builder 26 起 packageName 不再是 linux 段的合法字段（schema 已删除，
-	// 放进去会直接被 schema 校验拒绝），deb/rpm 的包名改在顶层 per-target 段设置；
-	// FpmTarget 按目标名合并 config.deb / config.rpm。
-	deb: {
-		packageName: DESKTOP_LINUX_PACKAGE_NAME,
-	},
-	rpm: {
-		packageName: DESKTOP_LINUX_PACKAGE_NAME,
-	},
+	// deb/rpm 的包名不在这里设置：staged package.json 的 name 已经是
+	// DESKTOP_LINUX_PACKAGE_NAME，FpmTarget 的 options.packageName 为空时
+	// 回退到 appInfo.linuxPackageName（即 staged name），文件名与包内元数据
+	// 自然一致。注意 electron-builder 26 的 linux 段不支持 packageName 字段
+	// （schema 已删除，写入会被校验拒绝）。
 	// Sidecar binaries are picked up from the staged ./im-gateway dir
 	// (populated above by the cross-build step).
 	extraResources,

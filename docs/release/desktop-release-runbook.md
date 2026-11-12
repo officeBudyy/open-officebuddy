@@ -182,7 +182,7 @@ GitHub target 的手动发布会以当前 workflow SHA 创建对应版本 Releas
 
 两个必须记住的约束：
 
-- **顺序不能换**。官网下载按钮指向 `https://dl.astravia.dev/app/v<version>/`，先改版本号再传产物就会出现 404 窗口。
+- **顺序不能换**。官网下载按钮指向 `https://dl.officebuddy.work/app/v<version>/`，先改版本号再传产物就会出现 404 窗口。
 - **PR 需要人工合并**。`dev` 和 `main` 都要求 6 项 required check，而 workflow 用 `GITHUB_TOKEN` 推的分支不会再触发 `pull_request` 事件，check 永远不上报。可以由人看过 diff 后 bypass 合并，或关掉再重开 PR 让 check 重跑。站点不依赖这次合并，已经在第 3 步上线了。
 
 `release_target=r2`（商业版）和 `channel=test` 不走这些步骤：前者的产物不进 GitHub 下载目录（清单由 `desktop-promote` 从 R2 暂存目录提升后另行附到 Release），后者不该动官网。

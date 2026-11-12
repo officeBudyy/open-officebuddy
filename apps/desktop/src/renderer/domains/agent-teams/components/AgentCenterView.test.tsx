@@ -22,6 +22,8 @@ vi.mock("@astravia-org/ui", () => ({
 		</button>
 	),
 	Input: (props: Record<string, unknown>) => <input {...props} />,
+	// EnterpriseExpertsSection 引用了 Switch，这里给个可渲染的桩
+	Switch: (props: Record<string, unknown>) => <div data-testid="switch-stub" {...props} />,
 	cn: (...values: readonly unknown[]) => values.filter(Boolean).join(" "),
 }));
 vi.mock("./AgentProfileSheet", () => ({ AgentProfileSheet: () => <div>sheet</div> }));

@@ -39,6 +39,11 @@ export interface DownloadTarget {
 const ARM_TOKEN = /arm64|aarch64|armv8|(?:^|[^a-z])arm(?:$|[^a-z])/i;
 const X86_TOKEN = /x86|i[3-6]86|amd64|x64|intel/i;
 
+function desktopArtifactProduct(version: string): "Astravia" | "officeBuddy" {
+	const [major = 0, minor = 0] = version.split(".").map(Number);
+	return major > 0 || minor >= 6 ? "officeBuddy" : "Astravia";
+}
+
 export function resolveDownloadOs(userAgent: string): DownloadOs {
 	// 手机/平板装不了桌面包，得先单独归类：iPhone 的 UA 带 "Mac OS X"，不拦就拿到 dmg；
 	// Android 的 UA 带 "Linux"，不拦就拿到 AppImage。
@@ -60,9 +65,10 @@ export function resolveMacArchitecture(signals: DownloadSignals): DownloadArchit
 
 export function resolveDownloadTarget(
 	signals: DownloadSignals,
-	{ version, base = `https://dl.astravia.dev/app/v${version}`, intelHint = true }: DownloadTargetOptions,
+	{ version, base = `https://dl.officebuddy.work/app/v${version}`, intelHint = true }: DownloadTargetOptions,
 ): DownloadTarget {
 	const os = resolveDownloadOs(signals.userAgent);
+	const product = desktopArtifactProduct(version);
 
 	if (os === "mobile") {
 		// 手机上的主按钮不下载安装包，只把用户带到本页的手机端安装说明。
@@ -79,7 +85,7 @@ export function resolveDownloadTarget(
 		return {
 			os,
 			architecture: "x64",
-			href: `${base}/Astravia-${version}-win-x64.exe`,
+			href: `${base}/${product}-${version}-win-x64.exe`,
 			label: "WINDOWS X64",
 			versionLabel: `v${version} · EXE`,
 		};
@@ -89,7 +95,7 @@ export function resolveDownloadTarget(
 		return {
 			os,
 			architecture: "x64",
-			href: `${base}/Astravia-${version}.AppImage`,
+			href: `${base}/${product}-${version}.AppImage`,
 			label: "LINUX X64",
 			versionLabel: `v${version} · AppImage`,
 		};
@@ -100,7 +106,7 @@ export function resolveDownloadTarget(
 		return {
 			os,
 			architecture,
-			href: `${base}/Astravia-${version}.dmg`,
+			href: `${base}/${product}-${version}.dmg`,
 			label: "MAC X64 (INTEL)",
 			versionLabel: `v${version} · DMG`,
 		};
@@ -109,7 +115,7 @@ export function resolveDownloadTarget(
 	return {
 		os,
 		architecture,
-		href: `${base}/Astravia-${version}-arm64.dmg`,
+		href: `${base}/${product}-${version}-arm64.dmg`,
 		label: "MAC ARM64 (APPLE SILICON)",
 		versionLabel:
 			architecture === "unknown" && intelHint ? `v${version} · DMG · Intel 芯片请选「其他版本」` : `v${version} · DMG`,
