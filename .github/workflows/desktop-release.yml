@@ -436,7 +436,7 @@ jobs:
     secrets: inherit
 
   # 把官网 5 个版本字段推到发布分支并开 PR。分支由 CI 拥有，和 tag 一一对应，
-  # 重跑就覆盖；升版 PR 只把版本号送回 dev，上线分支另从 main 派生。
+  # 重跑就覆盖；PR 与上线分支都以仓库默认分支为基线，不假设存在 dev。
   publish-website:
     name: prepare website release branches
     needs: [prepare, publish-r2]
@@ -452,7 +452,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
 
       - name: Bump website version, open the follow-up pull request, stage the deploy branch
@@ -462,6 +462,7 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.release-version }}
           BRANCH: release/website-v${{ needs.prepare.outputs.release-version }}
           DEPLOY_BRANCH: release/website-deploy-v${{ needs.prepare.outputs.release-version }}
+          BASE_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -470,7 +471,7 @@ jobs:
           node scripts/release/bump-website-version.mjs --version "${VERSION}"
 
           if git diff --quiet -- website; then
-            echo "官网下载版本已是 ${VERSION}，dev 上不需要升版提交。"
+            echo "官网下载版本已是 ${VERSION}，${BASE_BRANCH} 上不需要升版提交。"
             website_changed=false
           else
             website_changed=true
@@ -481,12 +482,12 @@ jobs:
             git push --force origin "HEAD:refs/heads/${BRANCH}"
           fi
 
-          # 上线页面取 main + 新版本号，不从可能落后的 dev 直接部署。
-          git switch -C "${DEPLOY_BRANCH}" origin/main
+          # 上线页面取默认分支 + 新版本号，避免依赖不存在或落后的固定分支。
+          git switch -C "${DEPLOY_BRANCH}" "origin/${BASE_BRANCH}"
           node scripts/release/bump-website-version.mjs --version "${VERSION}"
           git add -- website
           if git diff --cached --quiet; then
-            echo "main 的官网已是 ${VERSION}，直接按 main 部署。"
+            echo "${BASE_BRANCH} 的官网已是 ${VERSION}，直接按默认分支部署。"
           else
             git commit -m "chore(website): 生产部署页面按 main 对齐到 ${VERSION}"
           fi
@@ -511,27 +512,25 @@ jobs:
           ## Validation
 
           由 desktop-release 流水线运行：\`node scripts/release/bump-website-version.mjs --version ${VERSION}\`，
-          站点按 main 的页面 + 该版本号部署。
+          站点按仓库默认分支的页面 + 该版本号部署。
           EOF
 
             pr_title="chore(website): 下载入口跟进 ${VERSION}"
             if gh pr view "${BRANCH}" --json number > /dev/null 2>&1; then
               gh pr edit "${BRANCH}" --title "${pr_title}" --body-file /tmp/website-pr.md
             else
-              gh pr create --base dev --head "${BRANCH}" --title "${pr_title}" --body-file /tmp/website-pr.md \
+              gh pr create --base "${BASE_BRANCH}" --head "${BRANCH}" --title "${pr_title}" --body-file /tmp/website-pr.md \
                 || echo "::warning::跟进 PR 创建失败，站点仍会按 ${DEPLOY_BRANCH} 部署，请手动开 PR"
             fi
           fi
 
   # 新版本在 R2 上传并校验成功后才更新官网，避免用户点到尚未就绪的下载地址。
   deploy-website:
-    name: deploy website → Cloudflare Pages
+    name: deploy website → Aliyun
     needs: [prepare, publish-website]
     if: needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.release_target == 'github' && needs.prepare.outputs.channel != 'test'
     permissions:
       contents: read
-      pages: write
-      id-token: write
     uses: ./.github/workflows/deploy-website.yml
     with:
       ref: ${{ needs.publish-website.outputs.ref }}

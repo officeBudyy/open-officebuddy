@@ -174,10 +174,19 @@ describe("Desktop release workflow contracts", () => {
 		const website = jobs["publish-website"];
 		expect(website.needs).toEqual(["prepare", "publish-r2"]);
 		expect(JSON.stringify(website)).toContain("bump-website-version.mjs");
+		const websiteCheckout = website.steps.find((step) => step.uses === "actions/checkout@v4");
+		expect(websiteCheckout.with.ref).toBe("$" + "{{ github.event.repository.default_branch }}");
+		const websitePublish = website.steps.find((step) => step.id === "publish");
+		expect(websitePublish.env.BASE_BRANCH).toBe("$" + "{{ github.event.repository.default_branch }}");
+		expect(websitePublish.run).toContain('"origin/${BASE_BRANCH}"');
+		expect(websitePublish.run).toContain('gh pr create --base "${BASE_BRANCH}"');
+		expect(websitePublish.run).not.toContain("--base dev");
+		expect(websitePublish.run).not.toContain("origin/main");
 		const deploy = jobs["deploy-website"];
 		expect(deploy.needs).toEqual(["prepare", "publish-website"]);
 		expect(deploy.uses).toBe("./.github/workflows/deploy-website.yml");
 		expect(deploy.with.ref).toBe("$" + "{{ needs.publish-website.outputs.ref }}");
+		expect(deploy.permissions).toEqual({ contents: "read" });
 
 		const pruneR2 = jobs["prune-r2"];
 		expect(pruneR2.needs).toEqual(["prepare", "deploy-website"]);
@@ -209,10 +218,11 @@ describe("Desktop release workflow contracts", () => {
 		expect(websiteWorkflow.on.release).toBeUndefined();
 		const websiteSteps = websiteWorkflow.jobs.deploy.steps;
 		const domainCheck = websiteSteps.findIndex((step) => step.name === "Verify download domain resolves");
-		const pagesDeploy = websiteSteps.findIndex((step) => step.name === "Deploy to Cloudflare Pages");
+		const websiteDeploy = websiteSteps.findIndex((step) => step.name === "Deploy to Aliyun server");
 		expect(domainCheck).toBeGreaterThanOrEqual(0);
-		expect(domainCheck).toBeLessThan(pagesDeploy);
+		expect(domainCheck).toBeLessThan(websiteDeploy);
 		expect(websiteSteps[domainCheck].run).toContain("getent ahosts dl.officebuddy.work");
+		expect(websiteWorkflow.on.push.branches).toEqual(["wayne"]);
 		expect(r2Workflow.on.workflow_call.inputs.prune_previous_versions.default).toBe(false);
 		expect(r2Workflow.on.workflow_call.inputs.upload_assets.default).toBe(true);
 		expect(r2Workflow.on.workflow_call.inputs.retention_group.default).toBe("");

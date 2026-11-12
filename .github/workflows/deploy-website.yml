@@ -3,7 +3,7 @@ name: Deploy Website to Aliyun Server
 description: |
   构建官网（Vite + TypeScript 静态站），通过 rsync 部署到阿里云服务器（Caddy 静态托管）。
   触发时机：
-  1. push 到 main 分支（任何 main 变更都重建官网）
+  1. push 到 wayne 分支（官网相关变更会重建官网）
   2. workflow_dispatch 手动触发
   3. 其他工作流显式通过 workflow_call 调用
 
@@ -11,7 +11,7 @@ description: |
 
 on:
   push:
-    branches: [main]
+    branches: [wayne]
     paths:
       - "website/**"
       - ".github/workflows/deploy-website.yml"
