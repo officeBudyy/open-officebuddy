@@ -1,7 +1,9 @@
 import { Link } from "react-router";
 import { Logo } from "./Logo";
 
-const groups = [
+type FooterItem = { to: string; label: string } | { href: string; label: string };
+
+const groups: { title: string; items: FooterItem[] }[] = [
 	{
 		title: "产品",
 		items: [
@@ -15,7 +17,7 @@ const groups = [
 		title: "资源",
 		items: [
 			{ label: "下载", to: "/download" },
-			{ label: "使用文档", to: "/download" },
+			{ label: "使用文档", href: "https://doc.officebuddy.work/" },
 			{ label: "更新日志", to: "/download" },
 		],
 	},
@@ -46,9 +48,20 @@ export function Footer() {
 							<ul className="mt-3 space-y-2">
 								{group.items.map((item) => (
 									<li key={item.label}>
-										<Link to={item.to} className="hover:text-surface-foreground">
-											{item.label}
-										</Link>
+										{"href" in item ? (
+											<a
+												href={item.href}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="hover:text-surface-foreground"
+											>
+												{item.label}
+											</a>
+										) : (
+											<Link to={item.to} className="hover:text-surface-foreground">
+												{item.label}
+											</Link>
+										)}
 									</li>
 								))}
 							</ul>

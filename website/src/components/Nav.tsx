@@ -1,11 +1,15 @@
 import { Link, useLocation } from "react-router";
 import { Logo } from "./Logo";
 
-const links = [
+// to 为站内路由；href 为外部链接（新标签页打开）。
+type NavItem = { to: string; label: string } | { href: string; label: string };
+
+const links: NavItem[] = [
 	{ to: "/capabilities", label: "能力" },
 	{ to: "/models", label: "模型" },
 	{ to: "/ecosystem", label: "生态" },
 	{ to: "/pricing", label: "定价" },
+	{ href: "https://doc.officebuddy.work/", label: "文档" },
 	{ to: "/download", label: "下载" },
 ];
 
@@ -18,19 +22,31 @@ export function Nav() {
 					<Logo size={22} />
 				</Link>
 				<nav className="flex flex-1 items-center gap-7">
-					{links.map((item) => (
-						<Link
-							key={item.to}
-							to={item.to}
-							className={`text-[12px] transition-colors ${
-								pathname === item.to
-									? "text-surface-foreground"
-									: "text-muted hover:text-surface-foreground"
-							}`}
-						>
-							{item.label}
-						</Link>
-					))}
+					{links.map((item) =>
+						"href" in item ? (
+							<a
+								key={item.href}
+								href={item.href}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-[12px] text-muted transition-colors hover:text-surface-foreground"
+							>
+								{item.label}
+							</a>
+						) : (
+							<Link
+								key={item.to}
+								to={item.to}
+								className={`text-[12px] transition-colors ${
+									pathname === item.to
+										? "text-surface-foreground"
+										: "text-muted hover:text-surface-foreground"
+								}`}
+							>
+								{item.label}
+							</Link>
+						),
+					)}
 				</nav>
 				<Link
 					to="/download"

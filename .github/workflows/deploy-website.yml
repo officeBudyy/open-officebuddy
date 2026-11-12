@@ -82,6 +82,19 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "${ALIYUN_WEBSITE_HOST}" >> ~/.ssh/known_hosts 2>/dev/null
 
+      - name: Check remote prerequisites
+        shell: bash
+        run: |
+          # 目标机必须装有 rsync（--delete 增量同步依赖它）；缺失时给出可直接执行的安装命令。
+          ssh -o StrictHostKeyChecking=accept-new \
+            "${ALIYUN_WEBSITE_USER}@${ALIYUN_WEBSITE_HOST}" \
+            'command -v rsync >/dev/null 2>&1 || {
+              echo "服务器未安装 rsync。请登录服务器执行其一："
+              echo "  yum install -y rsync    (Alibaba Cloud Linux / CentOS)"
+              echo "  apt-get install -y rsync (Ubuntu / Debian)"
+              exit 127;
+            }'
+
       - name: Deploy to Aliyun server
         shell: bash
         run: |
