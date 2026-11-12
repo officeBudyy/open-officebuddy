@@ -1,7 +1,7 @@
-name: Deploy Website to Cloudflare Pages
+name: Deploy Website to Aliyun Server
 
 description: |
-  构建官网（Vite + TypeScript 静态站），用 wrangler 部署到 Cloudflare Pages。
+  构建官网（Vite + TypeScript 静态站），通过 rsync 部署到阿里云服务器（Caddy 静态托管）。
   触发时机：
   1. push 到 main 分支（任何 main 变更都重建官网）
   2. workflow_dispatch 手动触发
@@ -26,8 +26,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: deploy-website
@@ -35,9 +33,16 @@ concurrency:
 
 jobs:
   deploy:
-    name: build & deploy → Cloudflare Pages
+    name: build & deploy → Aliyun (Caddy)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
+    env:
+      # 服务器连接信息：默认值即现有阿里云主机；如需变更优先用仓库 Secrets 覆盖。
+      ALIYUN_WEBSITE_HOST: ${{ secrets.ALIYUN_WEBSITE_HOST || '47.237.68.50' }}
+      ALIYUN_WEBSITE_USER: ${{ secrets.ALIYUN_WEBSITE_USER || 'root' }}
+      # Caddy file_server 的 root 目录，与服务器上的 Caddyfile 保持一致
+      ALIYUN_WEBSITE_TARGET_DIR: ${{ secrets.ALIYUN_WEBSITE_TARGET_DIR || '/var/www/officebuddy' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -59,60 +64,42 @@ jobs:
       - name: Verify download domain resolves
         shell: bash
         run: |
-          # 官网已经改用新的 R2 自定义域；DNS 尚未绑定时停止部署，保留线上旧页面，
+          # 官网下载链接指向 dl.officebuddy.work；DNS 未解析时停止部署，保留线上旧页面，
           # 避免一次普通 main push 直接把所有下载按钮切成不可访问的地址。
           getent ahosts dl.officebuddy.work > /dev/null
 
-      - name: Ensure Pages project exists
+      - name: Set up SSH key
         shell: bash
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SSH_KEY: ${{ secrets.ALIYUN_WEBSITE_SSH_KEY }}
         run: |
-          npx wrangler pages project create astravia-website \
-            --production-branch main \
-            || echo "Project may already exist, continuing..."
+          if [[ -z "${SSH_KEY}" ]]; then
+            echo "::error::Missing secret ALIYUN_WEBSITE_SSH_KEY (私钥 PEM 内容，对应服务器 ~/.ssh/authorized_keys 中的公钥)"
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "${SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${ALIYUN_WEBSITE_HOST}" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy to Aliyun server
         shell: bash
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          # 这个作业经常从发布分支或 tag 检出，wrangler 会把检出点当成分支名，于是只生成
-          # 预览部署，生产域名和 pages.dev 继续挂着上一版。站点内容与分支无关，统一钉到
-          # 生产分支上，否则发版成功但用户下到的还是旧包。
-          npx wrangler pages deploy website/dist \
-            --project-name=astravia-website \
-            --branch main
-
-      - name: Bind custom domains via Cloudflare API
-        shell: bash
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          PROJECT="astravia-website"
-          API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJECT/domains"
-
-          for domain in "www.astravia.dev" "astravia.dev"; do
-            echo ">>> Binding $domain ..."
-            RESP=$(curl -sS -X POST "$API" \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-              -d "{\"name\": \"$domain\"}")
-            echo "$RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print('✅ Added!' if d.get('success') else f'⚠️  {d.get(\"errors\",[{\"message\":\"unknown\"}])[0].get(\"message\",\"\")}')"
-            # 不让 "已存在" 阻塞 workflow
-            true
-          done
+          # --delete 保证远端与构建产物完全一致，不残留旧构建的散件；
+          # 静态文件替换即时生效，无需 reload Caddy。
+          rsync -az --delete \
+            -e "ssh -o StrictHostKeyChecking=accept-new" \
+            website/dist/ \
+            "${ALIYUN_WEBSITE_USER}@${ALIYUN_WEBSITE_HOST}:${ALIYUN_WEBSITE_TARGET_DIR}/"
+          echo "Deployed website/dist → ${ALIYUN_WEBSITE_USER}@${ALIYUN_WEBSITE_HOST}:${ALIYUN_WEBSITE_TARGET_DIR}/"
 
       - name: Verify website responds
         shell: bash
         run: |
-          sleep 20
-          for url in "https://astravia-website.pages.dev" "https://www.astravia.dev" "https://astravia.dev"; do
-            status=$(curl -sI "$url" | head -1 || echo "FETCH_FAILED")
+          sleep 5
+          for url in "http://officebuddy.work" "http://www.officebuddy.work"; do
+            status=$(curl -sI -m 10 "$url" | head -1 || echo "FETCH_FAILED")
             echo "$url → $status"
           done
-          # exit 0 兜底：DNS 传播需要时间，不阻塞 workflow
+          # exit 0 兜底：DNS/证书传播需要时间，不阻塞 workflow
           exit 0

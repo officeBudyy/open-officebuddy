@@ -1,0 +1,50 @@
+/* Tailwind v4 + officeBuddy 设计令牌（来自设计画布 theme.css） */
+@import "tailwindcss";
+/* 自动加载 node_modules 里的 @iconify-json/lucide 与 @iconify-json/simple-icons，
+   提供 icon-[lucide--x] / icon-[simple-icons--x] 语法（与设计画布一致） */
+@plugin "@iconify/tailwind4";
+
+@theme {
+	--color-primary: #0071e3;
+	--color-primary-foreground: #ffffff;
+	--color-surface: #f5f5f7;
+	--color-surface-raised: #ffffff;
+	--color-surface-foreground: #1d1d1f;
+	--color-muted: #6e6e73;
+	--color-accent: #34c759;
+	--color-danger: #ff3b30;
+	--color-border: #d2d2d7;
+
+	/* Dark stage for the privacy / closing modules */
+	--color-dark: #0b0b0d;
+	--color-dark-raised: #18181b;
+	--color-on-dark: #f5f5f7;
+	--color-on-dark-muted: #86868b;
+
+	/* Product-art tints (app mockups only, never page backgrounds) */
+	--color-tint-blue: #e8f1fd;
+	--color-tint-warm: #f6f4f1;
+
+	--font-sans:
+		-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif;
+	--font-display:
+		-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif;
+
+	--radius-sm: 8px;
+	--radius-md: 12px;
+	--radius-lg: 18px;
+	--radius-xl: 24px;
+	--radius-2xl: 32px;
+
+	--shadow-sm: 0 2px 8px rgb(0 0 0 / 0.04);
+	--shadow-md: 0 8px 24px rgb(0 0 0 / 0.08);
+	--shadow-lg: 0 24px 64px rgb(0 0 0 / 0.12);
+}
+
+html {
+	scroll-behavior: smooth;
+}
+
+body {
+	margin: 0;
+}

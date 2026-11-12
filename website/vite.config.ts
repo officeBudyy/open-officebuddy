@@ -1,18 +1,29 @@
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
 import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
-// 星轨官网：纯 TypeScript 静态站。
-// 构建产物输出到 website/dist（仓库根 .gitignore 已忽略 dist/）。
+// officeBuddy 官网：Vite + React + Tailwind v4 多路由静态站。
+// 构建产物输出到 dist/，可直接部署到任意静态托管。
+
+// 版本号与桌面端发布版本保持唯一事实源（apps/desktop/package.json），
+// 官网下载链接会拼接到 https://dl.officebuddy.work/app/v<version>/。
+const desktopPackageJson = JSON.parse(
+	readFileSync(join(dirname(new URL(import.meta.url).pathname), "..", "apps", "desktop", "package.json"), "utf8"),
+) as { version?: string };
+
+const desktopVersion = desktopPackageJson.version?.trim() || "0.0.0";
+
 export default defineConfig({
-	// 相对资源路径：产物可直接放在任意子路径或本地 file:// 打开
 	base: "./",
+	plugins: [react(), tailwindcss()],
+	define: {
+		"import.meta.env.VITE_DESKTOP_VERSION": JSON.stringify(desktopVersion),
+	},
 	build: {
 		outDir: "dist",
 		emptyOutDir: true,
-		rollupOptions: {
-			input: {
-				main: "index.html",
-			},
-		},
 	},
 	preview: {
 		port: 4173,
