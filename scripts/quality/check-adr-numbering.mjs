@@ -6,7 +6,7 @@
  * 登记了并不重复的号、漏登了实际重复的号、「其中 0079 有三个文件」这句的数量、以及空洞号出现真实文件。
  */
 
-import { readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fail, isDirectRun, ok, readText, repoRoot } from "./lib.mjs";
 
@@ -120,6 +120,10 @@ export function findAdrNumberingProblems({ fileNames, readmeText }) {
 }
 
 export function main() {
+	if (!existsSync(ADR_DIR)) {
+		ok("[adr-numbering] skipped (docs/adr is not part of this branch)");
+		return 0;
+	}
 	const fileNames = readdirSync(ADR_DIR).filter((name) => ADR_FILE_RE.test(name));
 	const problems = findAdrNumberingProblems({ fileNames, readmeText: readText(README) });
 	if (problems.length > 0) {

@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { findAdrNumberingProblems } from "./check-adr-numbering.mjs";
@@ -39,7 +39,7 @@ function find(entries, readmeText = README) {
 }
 
 describe("ADR numbering guard", () => {
-	it("accepts the committed README and the real docs/adr tree", () => {
+	it.skipIf(!existsSync(ADR_DIR))("accepts the committed README and the real docs/adr tree", () => {
 		const fileNames = readdirSync(ADR_DIR).filter((name) => /^\d{4}-.+\.md$/u.test(name));
 		const readmeText = readFileSync(join(ADR_DIR, "README.md"), "utf8");
 		expect(fileNames.length).toBeGreaterThan(100);
