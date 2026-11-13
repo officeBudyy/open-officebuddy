@@ -235,19 +235,22 @@ func (s *session) handshake(ctx context.Context, timeout time.Duration) error {
 			return lockErr
 		}
 		var failure hostclient.TypedFailure
-		if errors.As(err, &failure) && failure.FailureCode() == hostclient.FailureCodeProcessIOFailed {
-			select {
-			case <-s.exited:
-				if lockErr := s.detectStartupLockError(); lockErr != nil {
-					return lockErr
-				}
+			if errors.As(err, &failure) && failure.FailureCode() == hostclient.FailureCodeProcessIOFailed {
+				select {
+				case <-s.exited:
+					if lockErr := s.waitForStartupLockError(); lockErr != nil {
+						return lockErr
+					}
 				return newHostFailure(hostclient.FailureCodeProcessExited, hostclient.FailurePhaseStartup, hostclient.FailureRetrySafe, fmt.Sprintf("hostclient/local: subprocess exited during handshake: %s", s.tailStderr()), err)
 			case <-time.After(startupExitObservationGrace):
 			}
-		}
-		select {
-		case <-s.exited:
-			return newHostFailure(hostclient.FailureCodeProcessExited, hostclient.FailurePhaseStartup, hostclient.FailureRetrySafe, fmt.Sprintf("hostclient/local: subprocess exited during handshake: %s", s.tailStderr()), err)
+			}
+			select {
+			case <-s.exited:
+				if lockErr := s.waitForStartupLockError(); lockErr != nil {
+					return lockErr
+				}
+				return newHostFailure(hostclient.FailureCodeProcessExited, hostclient.FailurePhaseStartup, hostclient.FailureRetrySafe, fmt.Sprintf("hostclient/local: subprocess exited during handshake: %s", s.tailStderr()), err)
 		default:
 		}
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -304,6 +307,29 @@ func (s *session) detectStartupLockError() *hostclient.ErrSessionLocked {
 			}
 		default:
 			return nil
+		}
+	}
+}
+
+// waitForStartupLockError waits for readerLoop to finish routing stdout before
+// inspecting startup events. cmd.Wait can publish process exit before the
+// stdout reader has consumed the final line, so a non-blocking scan here can
+// otherwise miss the lock error emitted immediately before exit.
+func (s *session) waitForStartupLockError() *hostclient.ErrSessionLocked {
+	timer := time.NewTimer(startupExitObservationGrace)
+	defer timer.Stop()
+	for {
+		select {
+		case ev, ok := <-s.events:
+			if !ok {
+				return nil
+			}
+			if lockErr := parseStartupLockError(ev); lockErr != nil {
+				lockErr.SessionPath = s.sessionPath
+				return lockErr
+			}
+		case <-timer.C:
+			return s.detectStartupLockError()
 		}
 	}
 }
