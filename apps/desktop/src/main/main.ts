@@ -6,7 +6,7 @@ import { URL } from "node:url";
 import { getAstraviaHomePath } from "@astravia/action-rpc";
 import { app, type BrowserWindow, dialog, ipcMain, nativeImage, nativeTheme, protocol, session, shell } from "electron";
 import type { ExternalApplicationKind } from "../preload/api-types/system.js";
-import { APP_RUNTIME_NAME } from "../shared/app-identity.js";
+import { APP_RUNTIME_NAME, APP_USER_MODEL_ID } from "../shared/app-identity.js";
 import { isCloudBuildEnabled } from "../shared/feature-flags.js";
 import { stopAllOpenMarketplaceMcpRuntimes } from "./abilities/open-marketplace/open-marketplace-mcp-runtime-host.js";
 import { ActionApprovalBroker } from "./app-actions/approval-broker.js";
@@ -249,6 +249,7 @@ if (isCliMode) {
 // safeStorage 按 app 名字定位主密钥，名字分叉会让两侧各持一把密钥，
 // 共享 ~/officeBuddy 时表现为凭据"丢失"并互相覆盖（见 shared/app-identity.ts）。
 app.name = APP_RUNTIME_NAME;
+app.setAppUserModelId(APP_USER_MODEL_ID);
 
 let ipcTeardown: IpcTeardown | undefined;
 let teardownSchedulerIpc: (() => void) | undefined;

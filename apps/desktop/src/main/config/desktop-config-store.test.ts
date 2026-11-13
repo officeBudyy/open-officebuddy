@@ -1,5 +1,5 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { ASTRAVIA_HOME_ENV } from "@astravia/action-rpc";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -62,10 +62,10 @@ describe("defaultAgentMode 兼容旧字段名", () => {
 });
 
 describe("desktop config schema migration", () => {
-	it("migrates an unversioned config to v2 and writes the new preferences back", async () => {
+	it("migrates an unversioned config to v3 and writes the new preferences back", async () => {
 		const store = await loadStoreWithConfig({ projects: [], fieldFromNewerVersion: { keep: true } });
 		const config = await store.readDesktopConfig();
-		expect(config.schemaVersion).toBe(2);
+		expect(config.schemaVersion).toBe(3);
 		expect(config.notificationPreferences).toEqual({
 			soundEnabled: true,
 			systemScope: "away-from-session",
@@ -78,8 +78,29 @@ describe("desktop config schema migration", () => {
 			},
 		});
 		expect(await store.readDisk()).toMatchObject({
-			schemaVersion: 2,
+			schemaVersion: 3,
 			fieldFromNewerVersion: { keep: true },
+		});
+	});
+
+	it.each(["~/.officeBuddy/workspace", join(homedir(), ".officeBuddy", "workspace")])(
+		"moves the legacy default workspace %s to ~/officeBuddy/workspace",
+		async (workspacePath) => {
+			const store = await loadStoreWithConfig({ schemaVersion: 2, workspacePath });
+			expect((await store.readDesktopConfig()).workspacePath).toBe(join(homedir(), "officeBuddy", "workspace"));
+			expect(await store.readDisk()).toMatchObject({
+				schemaVersion: 3,
+				workspacePath: "~/officeBuddy/workspace",
+			});
+		},
+	);
+
+	it("keeps a custom workspace unchanged", async () => {
+		const store = await loadStoreWithConfig({ schemaVersion: 2, workspacePath: "~/company/workspace" });
+		expect((await store.readDesktopConfig()).workspacePath).toBe(join(homedir(), "company", "workspace"));
+		expect(await store.readDisk()).toMatchObject({
+			schemaVersion: 3,
+			workspacePath: "~/company/workspace",
 		});
 	});
 

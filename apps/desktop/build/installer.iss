@@ -67,8 +67,8 @@ Source: "{#SourceDir}\versions\{#AppVersion}\*"; DestDir: "{code:GetUpdateVersio
 Source: "{#SourceDir}\versions\{#AppVersion}\resources\app.asar"; DestDir: "{code:GetUpdateVersionDirectory}\resources"; Flags: ignoreversion nocompression; Check: IsBackgroundUpdate
 
 [Icons]
-Name: "{group}\officeBuddy"; Filename: "{app}\Astravia.exe"; Check: IsNotBackgroundUpdate
-Name: "{autodesktop}\officeBuddy"; Filename: "{app}\Astravia.exe"; Tasks: desktopicon; Check: IsNotBackgroundUpdate
+Name: "{group}\officeBuddy"; Filename: "{app}\Astravia.exe"; AppUserModelID: "com.officebuddy.desktop"; Check: IsNotBackgroundUpdate
+Name: "{autodesktop}\officeBuddy"; Filename: "{app}\Astravia.exe"; AppUserModelID: "com.officebuddy.desktop"; Tasks: desktopicon; Check: IsNotBackgroundUpdate
 
 [Registry]
 Root: HKCU; Subkey: "Software\Classes\astravia"; ValueType: string; ValueName: ""; ValueData: "URL:officeBuddy Protocol"; Flags: uninsdeletekey; Check: IsNotBackgroundUpdate

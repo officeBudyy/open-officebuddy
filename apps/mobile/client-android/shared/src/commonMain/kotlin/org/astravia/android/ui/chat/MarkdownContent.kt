@@ -31,11 +31,15 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.MarkdownCodeBlock
 import com.mikepenz.markdown.compose.elements.MarkdownCodeFence
+import com.mikepenz.markdown.compose.elements.MarkdownTable
+import com.mikepenz.markdown.compose.elements.MarkdownTableHeader
+import com.mikepenz.markdown.compose.elements.MarkdownTableRow
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.m3.markdownTypography
@@ -72,6 +76,33 @@ fun MarkdownContent(
                 MarkdownCodeBlock(model.content, model.node, style = model.typography.code) { code, language, _ ->
                     CodeBlockChrome(language = language, code = code)
                 }
+            },
+            table = { model ->
+                MarkdownTable(
+                    content = model.content,
+                    node = model.node,
+                    style = model.typography.table,
+                    headerBlock = { content, header, tableWidth, style ->
+                        MarkdownTableHeader(
+                            content = content,
+                            header = header,
+                            tableWidth = tableWidth,
+                            style = style,
+                            maxLines = Int.MAX_VALUE,
+                            overflow = TextOverflow.Clip,
+                        )
+                    },
+                    rowBlock = { content, row, tableWidth, style ->
+                        MarkdownTableRow(
+                            content = content,
+                            header = row,
+                            tableWidth = tableWidth,
+                            style = style,
+                            maxLines = Int.MAX_VALUE,
+                            overflow = TextOverflow.Clip,
+                        )
+                    },
+                )
             },
         )
     }
