@@ -4,7 +4,7 @@ import { getAstraviaHomePath } from "@astravia/action-rpc";
 
 /**
  * Sensitive IM credentials. Persisted under
- *   ~/.officeBuddy/desktop-app/im-credentials.json
+ *   ~/officeBuddy/desktop-app/im-credentials.json
  *
  * Stored as plain JSON with chmod 0600. We deliberately do NOT encrypt
  * via Electron safeStorage: the user explicitly requested "save it,

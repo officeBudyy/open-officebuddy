@@ -130,7 +130,7 @@ export function useGeneralSettingsModel(): GeneralSettingsModel {
 	}, [setWorkspacePath]);
 
 	const resetWorkspace = useCallback(async () => {
-		const defaultPath = "~/.officeBuddy/workspace";
+		const defaultPath = "~/officeBuddy/workspace";
 		setWorkspacePath(defaultPath);
 		localStorage.setItem("astravia-workspace-path", defaultPath);
 		await window.astravia.config.set({ workspacePath: defaultPath });

@@ -95,7 +95,7 @@ export function prepareAndroidRelease(env, config = readAndroidReleaseConfig()) 
 	writeFileSync(keystorePath, keystore, { mode: 0o600 });
 	return {
 		ASTRAVIA_ANDROID_KEYSTORE_PATH: keystorePath,
-		ASTRAVIA_ANDROID_APK_PATH: join(env.RUNNER_TEMP, "android-release", `Astravia-${config.abi}.apk`),
+		ASTRAVIA_ANDROID_APK_PATH: join(env.RUNNER_TEMP, "android-release", `officeBuddy-${config.abi}.apk`),
 	};
 }
 
@@ -122,7 +122,7 @@ export function stageAndroidApk(directory, env, config = readAndroidReleaseConfi
 	) {
 		throw new Error("Android APK metadata does not match the Android version or architecture configuration.");
 	}
-	const destination = join(env.RUNNER_TEMP, "android-release", `Astravia-${abi}.apk`);
+	const destination = join(env.RUNNER_TEMP, "android-release", `officeBuddy-${abi}.apk`);
 	if (env.ASTRAVIA_ANDROID_APK_PATH !== destination) throw new Error("Unexpected Android release APK destination.");
 	const source = join(directory, element.outputFile);
 	if (!lstatSync(source).isFile()) throw new Error("Android release APK is not a regular file.");

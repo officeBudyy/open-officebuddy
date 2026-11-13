@@ -10,9 +10,10 @@ export const ASTRAVIA_CONFIG_DIR_ENV = "ASTRAVIA_CONFIG_DIR";
 /**
  * 默认用户数据目录名（即品牌名）。按环境隔离（如 dev）仍可用
  * ASTRAVIA_CONFIG_DIR 覆盖。项目内已有的 `.astravia/` 元数据目录属于兼容格式，
- * 不跟随用户数据根目录改名。
+ * 不跟随用户数据根目录改名。历史带点根目录（.astravia / .officeBuddy）由
+ * desktop 启动时的 home-directory-migration 自动迁移并保留别名。
  */
-export const DEFAULT_CONFIG_DIR_NAME = ".officeBuddy";
+export const DEFAULT_CONFIG_DIR_NAME = "officeBuddy";
 
 function expandTilde(p: string): string {
 	if (p === "~") return homedir();

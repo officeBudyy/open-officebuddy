@@ -13,7 +13,7 @@ import {
 } from "../../shared/session-pins.js";
 
 /**
- * 会话置顶仓库：~/.officeBuddy/desktop-app/session-pins.json 的单一写者。
+ * 会话置顶仓库：~/officeBuddy/desktop-app/session-pins.json 的单一写者。
  *
  * 侧边栏和配对的手机都经由这里读写，所以两边看到同一份置顶。启动读一次进
  * 内存，之后所有变更改内存再原子落盘；写入同步、中间没有 await，「读-改-写」

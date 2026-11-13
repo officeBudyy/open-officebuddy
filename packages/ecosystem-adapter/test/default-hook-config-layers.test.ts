@@ -65,8 +65,8 @@ describe("buildDefaultHookConfigLayers", () => {
 
 		const paths = layers.flatMap((layer) => (layer.sources ?? []).map((s) => s.path.replace(/\\/g, "/")));
 		expect(paths).toEqual([
-			"C:/fake-home/.officeBuddy/.codex/hooks.json",
-			"C:/fake-home/.officeBuddy/.claude/settings.json",
+			"C:/fake-home/officeBuddy/.codex/hooks.json",
+			"C:/fake-home/officeBuddy/.claude/settings.json",
 			"C:/projects/demo/.astravia/.codex/hooks.json",
 			"C:/projects/demo/.astravia/.claude/settings.json",
 			"C:/projects/demo/.astravia/.claude/settings.local.json",
@@ -87,7 +87,7 @@ describe("buildDefaultHookConfigLayers", () => {
 		).toBe(true);
 
 		// Never top-level official homes
-		expect(paths.some((p) => p.includes("/fake-home/.codex/") && !p.includes("/.officeBuddy/"))).toBe(false);
+		expect(paths.some((p) => p.includes("/fake-home/.codex/") && !p.includes("/officeBuddy/"))).toBe(false);
 		expect(paths.some((p) => p.includes("/fake-home/.claude/") && !p.includes("/.astravia/"))).toBe(false);
 		expect(paths.some((p) => p.includes("/demo/.codex/") && !p.includes("/.astravia/"))).toBe(false);
 		expect(paths.some((p) => p.includes("/demo/.claude/") && !p.includes("/.astravia/"))).toBe(false);
@@ -155,6 +155,7 @@ describe("astravia-nested path discovery", () => {
 		const layers = buildDefaultHookConfigLayers({
 			cwd: project,
 			homeDir: home,
+			astraviaHome,
 			env: {},
 		});
 		const result = await discoverCodexHookHandlers(layers);
@@ -199,6 +200,7 @@ describe("astravia-nested path discovery", () => {
 		const layers = buildDefaultHookConfigLayers({
 			cwd: project,
 			homeDir: home,
+			astraviaHome,
 			env: {},
 		});
 		const result = await discoverClaudeHookHandlers(layers, { projectDir: project });

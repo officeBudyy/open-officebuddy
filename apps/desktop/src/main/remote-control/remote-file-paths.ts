@@ -174,7 +174,7 @@ const HOME_SECRETS = [
 
 /** Under officeBuddy's current or legacy home only these hold things the phone should see. */
 const ASTRAVIA_READABLE = new Set(["conversation", "workspace", "im-gateway", "knowledges", "remote-uploads"]);
-const ASTRAVIA_HOME_DIRECTORY_NAMES = new Set([".officeBuddy", ".astravia"]);
+const ASTRAVIA_HOME_DIRECTORY_NAMES = new Set(["officeBuddy", ".officeBuddy", ".astravia"]);
 
 function segments(value: string): string[] {
 	return value.split(/[\\/]+/).filter(Boolean);

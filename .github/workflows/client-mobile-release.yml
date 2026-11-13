@@ -217,7 +217,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ipa
-          path: apps/mobile/client-apple/build/ios/Astravia-ios.ipa
+          path: apps/mobile/client-apple/build/ios/officeBuddy-ios.ipa
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
@@ -229,7 +229,7 @@ jobs:
           RELEASE_VERSION: ${{ needs.prepare.outputs.release-version }}
         run: node scripts/release/publish-github-installers.mjs --platform ios --directory apps/mobile/client-apple/build/ios
 
-  # 官网按钮指向 R2 的 client-mobile/ 直链，文件名不带版本号（Astravia-ios.ipa /
+  # 官网按钮指向 R2 的 client-mobile/ 直链，文件名不带版本号（officeBuddy-ios.ipa /
   # Astravia-arm64-v8a.apk）：href 固定，发新版本不用改页面。
   # android 可能因为没配签名凭据整条跳过，所以只要两边至少有一个成功就上传。
   publish-r2:

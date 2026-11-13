@@ -15,8 +15,8 @@ import { ABILITY_LEDGER_SCHEMA_VERSION, migrateAbilityLedgerConfig } from "./abi
  * 能力安装台账（ADR-0049）。
  *
  * 只记录「装了哪些能力、什么版本」，**不改变任何物理安装位置**：
- * skill → `~/.officeBuddy/skills/<slug>`、scene → `~/.officeBuddy/scene/<slug>`、
- * plugin → `~/.officeBuddy/plugins/<slug>`、mcp → `~/.officeBuddy/agent/mcp.json` 的一个 key。
+ * skill → `~/officeBuddy/skills/<slug>`、scene → `~/officeBuddy/scene/<slug>`、
+ * plugin → `~/officeBuddy/plugins/<slug>`、mcp → `~/officeBuddy/agent/mcp.json` 的一个 key。
  * bundle 不进台账（状态由成员派生）。
  *
  * 并发：所有读改写都在**一个同步 tick** 内完成（主进程 JS 单线程 → 不会与其它

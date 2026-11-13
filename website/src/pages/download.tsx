@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { PLATFORMS, primaryDownload, primaryLabel, VERSION } from "../lib/download";
+import { MOBILE_DOWNLOADS, PLATFORMS, primaryDownload, primaryLabel, VERSION } from "../lib/download";
 
 const requirements = [
 	{ label: "系统", value: "macOS 12+ · Windows 10+ · Linux glibc 2.31+" },
@@ -81,32 +81,31 @@ export default function Download() {
 						</p>
 					</div>
 					<div className="space-y-2.5">
-						<div className="flex items-center justify-between rounded-xl bg-surface px-5 py-4">
-							<div className="flex items-center gap-3">
-								<span className="icon-[simple-icons--apple] size-4 text-surface-foreground" />
-								<div>
-									<div className="text-[13.5px] text-surface-foreground">iPhone / iPad</div>
-									<div className="mt-0.5 text-[11px] text-muted">iOS 26 或更高 · 内测中</div>
+						{MOBILE_DOWNLOADS.map((item) => (
+							<a
+								key={item.id}
+								href={item.href}
+								className="flex items-center justify-between rounded-xl bg-surface px-5 py-4 transition-colors hover:bg-border/30"
+							>
+								<div className="flex items-center gap-3">
+									<span
+										className={`size-4 text-surface-foreground ${
+											item.id === "ios" ? "icon-[simple-icons--apple]" : "icon-[simple-icons--android]"
+										}`}
+									/>
+									<div>
+										<div className="text-[13.5px] text-surface-foreground">{item.label}</div>
+										<div className="mt-0.5 text-[11px] text-muted">{item.note}</div>
+									</div>
 								</div>
-							</div>
-							<span className="rounded-full bg-surface-raised px-3 py-1 text-[11px] text-muted">
-								等待名单
-							</span>
-						</div>
-						<div className="flex items-center justify-between rounded-xl bg-surface px-5 py-4">
-							<div className="flex items-center gap-3">
-								<span className="icon-[simple-icons--android] size-4 text-surface-foreground" />
-								<div>
-									<div className="text-[13.5px] text-surface-foreground">Android</div>
-									<div className="mt-0.5 text-[11px] text-muted">arm64-v8a · 内测中</div>
-								</div>
-							</div>
-							<span className="rounded-full bg-surface-raised px-3 py-1 text-[11px] text-muted">
-								等待名单
-							</span>
-						</div>
+								<span className="flex items-center gap-1.5 rounded-full bg-surface-raised px-3 py-1 text-[11px] text-muted">
+									<span className="icon-[lucide--download] size-3" />
+									下载
+								</span>
+							</a>
+						))}
 						<p className="pt-2 text-[11px] leading-relaxed text-muted">
-							内测版本与桌面版走同一套配对协议，会话在局域网内直连，不经过中转服务器。
+							内测版本与桌面版走同一套配对协议，会话在局域网内直连，不经过中转服务器。iOS 未签名 IPA 需自行用 Apple ID 签名安装。
 						</p>
 					</div>
 				</div>

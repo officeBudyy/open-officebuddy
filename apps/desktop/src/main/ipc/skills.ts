@@ -70,7 +70,7 @@ export function registerSkillsIpc(): () => void {
 
 	ipcMain.handle("astravia:skills:list", async (_event, cwd: unknown) => {
 		const resolvedCwd = typeof cwd === "string" && cwd.trim().length > 0 ? cwd : undefined;
-		// Plugin skill packages live under system-plugins / ~/.officeBuddy/plugins; allow
+		// Plugin skill packages live under system-plugins / ~/officeBuddy/plugins; allow
 		// roots so slash/detail previews can read SKILL.md via fs IPC if needed.
 		const pluginSkillPaths =
 			pluginAgentContributionService.buildRuntimeConfig()?.skillPathContributions?.flatMap((c) => c.paths) ?? [];
@@ -186,7 +186,7 @@ export function registerSkillsIpc(): () => void {
 				throw new Error("name 仅允许小写字母、数字、连字符（1–64 字符）");
 			}
 
-			// 类型口径与 agent 侧一致：只认 frontmatter 的 metadata.type，scene 装进 ~/.officeBuddy/scene/。
+			// 类型口径与 agent 侧一致：只认 frontmatter 的 metadata.type，scene 装进 ~/officeBuddy/scene/。
 			// 装错目录不只是分类不对——agent 是按目录判定场景的，装进 skills/ 就拿不到
 			// tasks.json 锁定 todo 等场景语义。
 			const importType: InstalledSkillType = fm.type === "scene" ? "scene" : "skill";

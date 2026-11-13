@@ -144,7 +144,7 @@ plugin and theme manifests, then starts the renderer, theme server, and Electron
 
 Normal development is isolated from packaged application data: it defaults to
 `ASTRAVIA_CONFIG_DIR=.officeBuddy-dev` and stores the Chromium profile under
-`~/.officeBuddy-dev/electron-user-data`. Packaged builds continue to use `~/.officeBuddy`. Set
+`~/.officeBuddy-dev/electron-user-data`. Packaged builds continue to use `~/officeBuddy`. Set
 `ASTRAVIA_CONFIG_DIR` and `ASTRAVIA_DESKTOP_USER_DATA_DIR` together when a custom isolated development
 environment is required.
 

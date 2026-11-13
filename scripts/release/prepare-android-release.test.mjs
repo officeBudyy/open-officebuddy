@@ -69,7 +69,7 @@ describe("Android desktop release flow", () => {
 		writeFileSync(join(secrets.RUNNER_TEMP, "output-metadata.json"), JSON.stringify(apkMetadata("1.0", 1)));
 		writeApk(secrets.RUNNER_TEMP);
 		const staged = stageAndroidApk(secrets.RUNNER_TEMP, { ...secrets, ...build }, config);
-		expect(staged).toBe(join(secrets.RUNNER_TEMP, "android-release", "Astravia-arm64-v8a.apk"));
+		expect(staged).toBe(join(secrets.RUNNER_TEMP, "android-release", "officeBuddy-arm64-v8a.apk"));
 		expect(readFileSync(staged, "utf8")).toBe(`built ${abi} APK`);
 		const uploaded = [];
 		publishGithubInstallers({

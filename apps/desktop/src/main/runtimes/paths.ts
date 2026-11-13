@@ -42,17 +42,17 @@ export function runtimeVersion(type: RuntimeType): string {
 	return RUNTIME_MANIFEST[type].version;
 }
 
-/** ~/.officeBuddy —— 与 coding-agent 的 agent 目录同根，尊重 ASTRAVIA_CODING_AGENT_DIR 覆盖。 */
+/** ~/officeBuddy —— 与 coding-agent 的 agent 目录同根，尊重 ASTRAVIA_CODING_AGENT_DIR 覆盖。 */
 export function astraviaRootDir(): string {
 	return dirname(getAgentDir());
 }
 
-/** ~/.officeBuddy/runtimes —— [[托管运行时]] 落地根目录。 */
+/** ~/officeBuddy/runtimes —— [[托管运行时]] 落地根目录。 */
 export function runtimesDir(): string {
 	return join(astraviaRootDir(), "runtimes");
 }
 
-/** 某运行时某版本的安装目录：~/.officeBuddy/runtimes/<type>/<version>/ */
+/** 某运行时某版本的安装目录：~/officeBuddy/runtimes/<type>/<version>/ */
 export function installDir(type: RuntimeType, version: string = runtimeVersion(type)): string {
 	return join(runtimesDir(), type, version);
 }
@@ -98,7 +98,7 @@ export function pipCacheDir(): string {
 	return join(runtimesDir(), ".pip-cache");
 }
 
-/** 本地安装登记表路径：~/.officeBuddy/runtimes/.cache/registry.json */
+/** 本地安装登记表路径：~/officeBuddy/runtimes/.cache/registry.json */
 export function registryPath(): string {
 	return join(runtimesDir(), ".cache", "registry.json");
 }
@@ -134,7 +134,7 @@ export function gitPlatformEntry(): GitPlatformEntry | undefined {
 	return RUNTIME_MANIFEST.git.platforms[currentPlatformTag()];
 }
 
-/** 托管 Git 安装目录：~/.officeBuddy/runtimes/git/<version>/ */
+/** 托管 Git 安装目录：~/officeBuddy/runtimes/git/<version>/ */
 export function gitInstallDir(version: string = RUNTIME_MANIFEST.git.version): string {
 	return join(runtimesDir(), "git", version);
 }

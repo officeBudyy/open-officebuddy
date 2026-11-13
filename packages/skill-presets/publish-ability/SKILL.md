@@ -95,7 +95,7 @@ the built-in `astravia` MCP server. It is always available and needs no setup.
   `astravia.json` that was skipped. Relay them to the user; do not treat the run as clean.
 - Input may also arrive on stdin (`cat payload.json | node .../publish.mjs`) if that is more
   convenient than a temp file.
-- The script reads the login token from `~/.officeBuddy/auth.json` itself. If it reports "未登录", tell
+- The script reads the login token from `~/officeBuddy/auth.json` itself. If it reports "未登录", tell
   the user to log in through the Astravia client — do not attempt to pass credentials yourself.
 
 ## Review

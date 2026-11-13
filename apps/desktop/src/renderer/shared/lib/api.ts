@@ -312,7 +312,7 @@ export interface AbilityMember {
 
 /** raw.config：客户端运行时读，按 type 取不同字段。 */
 export interface AbilityConfig {
-	/** type=mcp：原样写入 `~/.officeBuddy/agent/mcp.json` 的配置块。 */
+	/** type=mcp：原样写入 `~/officeBuddy/agent/mcp.json` 的配置块。 */
 	mcp?: Record<string, unknown>;
 	/** type=plugin：以 zip 内 plugin.json 为准，admin 不可改。 */
 	api_version?: string;

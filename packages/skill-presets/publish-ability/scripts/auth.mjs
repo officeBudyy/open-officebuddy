@@ -28,7 +28,7 @@ export function apiUrl(baseUrl, path) {
 /**
  * 读取登录态。
  *
- * `~/.officeBuddy/auth.json` 是客户端为外部进程下沉的凭据契约，登录、刷新、登出都会同步
+ * `~/officeBuddy/auth.json` 是客户端为外部进程下沉的凭据契约，登录、刷新、登出都会同步
  * 它。每次执行都重读，所以 token 轮换后脚本天然拿到新的。
  */
 export function loadCredentials() {
@@ -38,7 +38,7 @@ export function loadCredentials() {
 		return { baseUrl: normalizeBaseUrl(envBase), token: envToken };
 	}
 
-	const home = process.env.ASTRAVIA_HOME?.trim() || join(homedir(), ".officeBuddy");
+	const home = process.env.ASTRAVIA_HOME?.trim() || join(homedir(), "officeBuddy");
 	let parsed;
 	try {
 		parsed = JSON.parse(readFileSync(join(home, "auth.json"), "utf8"));

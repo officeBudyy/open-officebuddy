@@ -1,5 +1,5 @@
 /**
- * 把登录凭据下沉到 `~/.officeBuddy/auth.json`，供**客户端进程之外**的消费者读取。
+ * 把登录凭据下沉到 `~/officeBuddy/auth.json`，供**客户端进程之外**的消费者读取。
  *
  * 起因：登录态原本只活在 renderer 的 localStorage 与主进程内存里，而 agent-rpc 子
  * 进程、skill 内置脚本（publish-ability）都读不到。让它们去翻 settings.json 又会把

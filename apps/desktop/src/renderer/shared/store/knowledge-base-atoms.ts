@@ -17,7 +17,7 @@ const KNOWLEDGE_VIEW_MODE_STORAGE_KEY = "astravia-knowledge-view-mode";
 export type KnowledgeViewMode = "grid" | "list";
 
 /**
- * 知识库列表：磁盘 ~/.officeBuddy/knowledges/raws/ 是唯一真相源。
+ * 知识库列表：磁盘 ~/officeBuddy/knowledges/raws/ 是唯一真相源。
  * list 仅根层；子目录由 ensureKnowledgeDirLoadedAtom 按层合并进 nodes。
  */
 export const knowledgeBasesAtom = atom<KnowledgeBase[]>([]);

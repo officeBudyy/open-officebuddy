@@ -27,7 +27,7 @@ async function main() {
 
 	const credentials = loadCredentials();
 	if (!credentials) {
-		fail("未登录：读不到 ~/.officeBuddy/auth.json。请先在 officeBuddy 客户端登录后重试。");
+		fail("未登录：读不到 ~/officeBuddy/auth.json。请先在 officeBuddy 客户端登录后重试。");
 	}
 
 	let response;

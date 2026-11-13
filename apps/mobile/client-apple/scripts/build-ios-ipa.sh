@@ -13,8 +13,8 @@
 #   TEAM_ID=ABCDE12345 PROFILE_UUID=xxxx-... ./scripts/build-ios-ipa.sh
 #                                               # 已签名 IPA + manifest.plist（需付费账号）
 #
-# 产物落在 build/ios/：Astravia-ios.ipa，签名模式下多一个 manifest.plist。文件名不带版本号，
-# 因为官网和 R2 的链接都是固定的（client-mobile/Astravia-ios.ipa），发新版本不用改页面。
+# 产物落在 build/ios/：officeBuddy-ios.ipa，签名模式下多一个 manifest.plist。文件名不带版本号，
+# 因为官网和 R2 的链接都是固定的（client-mobile/officeBuddy-ios.ipa），发新版本不用改页面。
 
 set -euo pipefail
 
@@ -70,9 +70,9 @@ if [[ ! -f "$app/Frameworks/WebRTC.framework/WebRTC" ]]; then
 	exit 1
 fi
 
-# 文件名必须与官网 mobile-install.ts 的链接和 R2 对象名完全一致，否则点下载是 404。
+# 文件名必须与官网 website/src/lib/download.ts 的链接和 R2 对象名完全一致，否则点下载是 404。
 # 不嵌版本号是故意的：iOS 应用版本（1.0.0）与桌面版本（0.5.x）无关，嵌进去就得手工同步。
-ipa="$OUT_DIR/Astravia-ios.ipa"
+ipa="$OUT_DIR/officeBuddy-ios.ipa"
 rm -f "$ipa"
 staging="$OUT_DIR/Payload"
 rm -rf "$staging"
@@ -101,7 +101,7 @@ if [[ -n "$TEAM_ID" && -n "$PROFILE_UUID" ]]; then
 					<key>kind</key>
 					<string>software-package</string>
 					<key>url</key>
-					<string>$OTA_BASE/Astravia-ios.ipa</string>
+					<string>$OTA_BASE/officeBuddy-ios.ipa</string>
 				</dict>
 			</array>
 			<key>metadata</key>
@@ -128,6 +128,6 @@ fi
 cat <<EOF
 
 接下来把产物上传到 R2 的 client-mobile/，页面上的链接才会生效：
-    $ipa  →  $OTA_BASE/Astravia-ios.ipa
+    $ipa  →  $OTA_BASE/officeBuddy-ios.ipa
 （`client-mobile-release` 流水线的 publish-r2 job 会自动完成这一步）
 EOF

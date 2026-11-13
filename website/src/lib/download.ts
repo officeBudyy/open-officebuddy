@@ -58,6 +58,32 @@ export const PLATFORMS: readonly PlatformDownloads[] = [
 	},
 ];
 
+// 手机端直链：R2 client-mobile/ 前缀下的固定文件名（不带版本号），
+// 与 client-mobile-release.yml 的 publish-r2 步骤约定一致，发新版本不用改页面。
+const MOBILE_BASE = "https://dl.officebuddy.work/client-mobile";
+
+export interface MobileDownload {
+	readonly id: "ios" | "android";
+	readonly label: string;
+	readonly note: string;
+	readonly href: string;
+}
+
+export const MOBILE_DOWNLOADS: readonly MobileDownload[] = [
+	{
+		id: "ios",
+		label: "iPhone / iPad",
+		note: "iOS 26 或更高 · 未签名 IPA",
+		href: `${MOBILE_BASE}/officeBuddy-ios.ipa`,
+	},
+	{
+		id: "android",
+		label: "Android",
+		note: "arm64-v8a · APK",
+		href: `${MOBILE_BASE}/officeBuddy-arm64-v8a.apk`,
+	},
+];
+
 /** 首选下载项：按 UA 匹配平台；Mac/Win 不细分架构（浏览器 UA 不可靠），统一推荐主流包。 */
 export function primaryDownload(ua: string = navigator.userAgent): DownloadItem {
 	if (/Windows/i.test(ua)) return PLATFORMS[1].items[0];

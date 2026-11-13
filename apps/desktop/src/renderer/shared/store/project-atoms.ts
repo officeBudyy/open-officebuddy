@@ -36,7 +36,7 @@ export const defaultConversationCwdAtom = atom<string>("");
 export const defaultImConversationCwdAtom = atom<string>("");
 
 /**
- * 知识库加工特殊项目 cwd（~/.officeBuddy/knowledges/processing_records）。
+ * 知识库加工特殊项目 cwd（~/officeBuddy/knowledges/processing_records）。
  * 用于判定一条 session 是否是知识库加工 session：session.path 落在该 cwd 的 sessions 目录下。
  */
 export const knowledgeProcessingCwdAtom = atom<string>("");
@@ -254,7 +254,7 @@ export const defaultConversationFilterAtom = atom(
 // Always start expanded on app launch — collapse state is per-session only.
 export const sidebarCollapsedAtom = atom<boolean>(false);
 
-const DEFAULT_WORKSPACE = "~/.officeBuddy/workspace";
+const DEFAULT_WORKSPACE = "~/officeBuddy/workspace";
 export const workspacePathAtom = atom<string>(localStorage.getItem("astravia-workspace-path") || DEFAULT_WORKSPACE);
 
 export const sessionContextMenuAtom = atom<{

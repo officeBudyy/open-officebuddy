@@ -1,5 +1,5 @@
 // Appshot 捕获主流程：手势触发 → 权限检查 → spawn Swift helper 抓前台窗口
-// （截图 PNG + AX 结构化文本 + 源文件路径）→ 落盘 ~/.officeBuddy/image-cache/appshot/
+// （截图 PNG + AX 结构化文本 + 源文件路径）→ 落盘 ~/officeBuddy/image-cache/appshot/
 // → 唤起主窗并推送 CAPTURED。文本层只用辅助功能（AX）；抓不到就只带截图，
 // 由 agent 自行用视觉/OCR 能力理解，不在捕获阶段做 OCR。日志走 getAppLogger("appshot")。
 
@@ -58,7 +58,7 @@ interface AppshotMeta {
 	capturedAt: number;
 }
 
-/** 落盘目录：~/.officeBuddy/image-cache/appshot/（复用 dialog.ts 的 7 天 TTL 目录清理）。 */
+/** 落盘目录：~/officeBuddy/image-cache/appshot/（复用 dialog.ts 的 7 天 TTL 目录清理）。 */
 function appshotCacheDir(): string {
 	return join(getAstraviaHomePath(), "image-cache", "appshot");
 }

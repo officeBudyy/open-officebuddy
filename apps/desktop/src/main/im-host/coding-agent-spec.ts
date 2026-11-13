@@ -74,7 +74,7 @@ export function buildCodingAgentSpec(opts: BuildCodingAgentSpecOptions = {}): Co
 
 	// Inject the host's compile-time server URL into the subprocess env.
 	// coding-agent's main.ts reads `process.env.ASTRAVIA_SERVER_URL` ahead of
-	// `~/.officeBuddy/agent/settings.json`, which avoids the prod failure where a
+	// `~/officeBuddy/agent/settings.json`, which avoids the prod failure where a
 	// stale `serverUrl` (e.g. left over from a dev/LAN login) causes
 	// `loadRemoteModels` to 401 against the wrong gateway — remote providers
 	// (astravia-go et al.) disappear and the agent exits with

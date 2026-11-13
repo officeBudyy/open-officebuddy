@@ -102,7 +102,7 @@ export class RuntimeManager {
 		delete this.data.systemDetection[type];
 	}
 
-	/** 内置 vendor → ~/.officeBuddy/runtimes 首启安装。返回是否完成 seed。 */
+	/** 内置 vendor → ~/officeBuddy/runtimes 首启安装。返回是否完成 seed。 */
 	private async seedFromVendor(type: RuntimeType): Promise<boolean> {
 		const entry = platformEntry(type);
 		if (!entry) return false;

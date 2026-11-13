@@ -1,5 +1,5 @@
 {
-	"appName": "Astravia",
+	"appName": "officeBuddy",
 	"actions": {
 		"cancel": "Cancel",
 		"confirm": "Confirm",
@@ -21,7 +21,7 @@
 	},
 	"updateRestart": {
 		"title": "Update Ready",
-		"message": "Version {{latestVersion}} has been downloaded (current {{currentVersion}}). Restart Astravia now to apply the update, or choose \"Later\" to be reminded next launch.",
+		"message": "Version {{latestVersion}} has been downloaded (current {{currentVersion}}). Restart officeBuddy now to apply the update, or choose \"Later\" to be reminded next launch.",
 		"later": "Later",
 		"install": "Restart Now"
 	},
@@ -442,8 +442,8 @@
 			"experimentalSectionTitle": "Experimental features",
 			"experimentalSectionDescription": "Same toggles as Settings → Agent. You can adjust them before confirming.",
 			"experimentalFields": {
-				"astraviaCli": "Astravia CLI",
-				"astraviaCliDesc": "Allow calling local capabilities from the terminal via Astravia CLI",
+				"astraviaCli": "officeBuddy CLI",
+				"astraviaCliDesc": "Allow calling local capabilities from the terminal via officeBuddy CLI",
 				"promptPrediction": "Input prediction",
 				"promptPredictionDesc": "Suggest possible follow-up text while typing; may use a little quota",
 				"agentSkills": "Agent skill extensions",
@@ -991,7 +991,7 @@
 			"title": "Grant permissions",
 			"subtitle": "Enable screenshots, automation, and system notifications. You can finish this later in Settings",
 			"systemSection": "System permissions",
-			"computerUseTitle": "Astravia Computer Use",
+			"computerUseTitle": "officeBuddy Computer Use",
 			"computerUseDesc": "A separate helper captures the frontmost window and needs its own Accessibility and Screen Recording grants",
 			"optionalHint": "All permissions are optional. Adjust anytime in Settings → Permissions",
 			"macOnlyHint": "System permissions and App Snapshot are macOS only. You can skip this step on your current platform."
@@ -1012,7 +1012,7 @@
 			"signedInFallback": "User"
 		},
 		"welcome": {
-			"title": "Welcome to Astravia",
+			"title": "Welcome to officeBuddy",
 			"subtitle": "Your desktop AI coding assistant is ready. Start with a conversation",
 			"highlights": {
 				"chat": {

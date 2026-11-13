@@ -22,7 +22,7 @@ Use the run configurations provided by the run widget in your IDE's toolbar. You
 ### Release APK
 
 正式桌面发版时，GitHub CI 从同一提交自动构建固定密钥签名的 Android APK，
-只提供 arm64-v8a 架构，并上传到对应 GitHub Release 的 `Astravia-arm64-v8a.apk`；
+只提供 arm64-v8a 架构，并上传到对应 GitHub Release 的 `officeBuddy-arm64-v8a.apk`；
 文件名不附桌面版本或 `android`。应用自己的版本独立维护在 `gradle.properties` 的
 `astraviaAndroidVersionName` 与 `astraviaAndroidVersionCode` 中，不跟随桌面版本。签名配置与失败重跑见
 [桌面发版说明](../../../docs/desktop/release-ci.md#同期-android-apk)。

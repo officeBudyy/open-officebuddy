@@ -193,7 +193,7 @@ export function createDesktopRuntimeComposition(): DesktopRuntimeComposition {
 				tracing: { captureContent: false, detail: "standard" },
 				agentRuntime: { runtime: agentRuntime },
 				modelRegistry: modelRuntime,
-				// 同一会话文件只允许一个 Runtime 持有：多个实例共享 ~/.officeBuddy 时，
+				// 同一会话文件只允许一个 Runtime 持有：多个实例共享 ~/officeBuddy 时，
 				// 第二个写入者必须拿到明确的冲突错误，而不是把对方正在跑的 Turn 写成中断。
 				conversationOwnershipManager: new FileConversationOwnershipManager(),
 				// 摘要卡是摆在界面上给人读的，所以摘要语言取界面语言，而不是会话语言。

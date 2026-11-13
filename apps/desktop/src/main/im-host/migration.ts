@@ -5,15 +5,15 @@ import { getAstraviaHomePath } from "@astravia/action-rpc";
 /**
  * Detect and import legacy im-gateway configuration written by older
  * versions of the standalone CLI. The new desktop-app embeds im-gateway
- * as a sidecar and stores everything under ~/.officeBuddy/desktop-app/, so
+ * as a sidecar and stores everything under ~/officeBuddy/desktop-app/, so
  * we walk the legacy paths once on first launch and surface them to the
  * UI as a one-shot import wizard.
  *
  * Legacy paths:
- *   ~/.officeBuddy/im-gateway/config.yaml         (transport selection, paths)
- *   ~/.officeBuddy/im-gateway/credentials.yaml    (feishu app id / secret)
- *   ~/.officeBuddy/im-gateway/state.json          (routing table)
- *   ~/.officeBuddy/desktop-config.json (.imGateway field — historical)
+ *   ~/officeBuddy/im-gateway/config.yaml         (transport selection, paths)
+ *   ~/officeBuddy/im-gateway/credentials.yaml    (feishu app id / secret)
+ *   ~/officeBuddy/im-gateway/state.json          (routing table)
+ *   ~/officeBuddy/desktop-config.json (.imGateway field — historical)
  *
  * After successful import the yaml files are renamed with .bak suffix
  * so the prompt does not re-fire.

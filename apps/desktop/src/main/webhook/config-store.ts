@@ -6,7 +6,7 @@ import { WEBHOOK_KINDS, type WebhookEndpointPublic, type WebhookKind } from "./t
 
 /**
  * Non-secret webhook endpoint metadata. Stored in plaintext under
- *   ~/.officeBuddy/desktop-app/webhook-config.json
+ *   ~/officeBuddy/desktop-app/webhook-config.json
  *
  * Sensitive fields (raw webhook URL, sign secret) live in credential-store.ts;
  * this file only carries identifiers, names, enabled flags, and per-kind

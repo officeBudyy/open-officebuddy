@@ -1,5 +1,5 @@
 import { existsSync, realpathSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_CONFIG_DIR_NAME } from "@astravia/action-rpc";
@@ -20,24 +20,45 @@ afterEach(async () => {
 
 describe("officeBuddy user-data home migration", () => {
 	it("uses the officeBuddy-branded directory by default", () => {
-		expect(DEFAULT_CONFIG_DIR_NAME).toBe(".officeBuddy");
+		expect(DEFAULT_CONFIG_DIR_NAME).toBe("officeBuddy");
 	});
 
-	it("atomically moves an existing Astravia home and preserves user data", async () => {
+	it("atomically moves a dotted .officeBuddy home and leaves an alias", async () => {
 		const homeDirectory = await createHome();
-		const legacyPath = join(homeDirectory, ".astravia");
+		const legacyPath = join(homeDirectory, ".officeBuddy");
 		await mkdir(join(legacyPath, "agent"), { recursive: true });
 		await writeFile(join(legacyPath, "agent", "models.json"), "user-models", "utf8");
 
 		const result = prepareOfficeBuddyHomeDirectory({ env: {}, homeDirectory });
 
 		expect(result).toMatchObject({
-			homePath: join(homeDirectory, ".officeBuddy"),
+			homePath: join(homeDirectory, "officeBuddy"),
 			legacyPath,
 			status: "migrated",
 		});
+		// 旧根保留为别名，历史绝对路径仍然可用。
 		expect(realpathSync(legacyPath)).toBe(realpathSync(result.homePath));
 		expect(await readFile(join(result.homePath, "agent", "models.json"), "utf8")).toBe("user-models");
+		expect(readFile(join(legacyPath, "agent", "models.json"), "utf8")).resolves.toBe("user-models");
+		expect(prepareOfficeBuddyHomeDirectory({ env: {}, homeDirectory }).status).toBe("not-needed");
+	});
+
+	it("chains through a legacy .astravia alias when migrating from the first branded root", async () => {
+		const homeDirectory = await createHome();
+		// 旧版本迁移留下的形态：.astravia 是指向 .officeBuddy 的别名。
+		const legacyPath = join(homeDirectory, ".officeBuddy");
+		await mkdir(join(legacyPath, "agent"), { recursive: true });
+		await writeFile(join(legacyPath, "agent", "models.json"), "user-models", "utf8");
+		await symlink(legacyPath, join(homeDirectory, ".astravia"), "dir");
+
+		const result = prepareOfficeBuddyHomeDirectory({ env: {}, homeDirectory });
+
+		expect(result.status).toBe("migrated");
+		expect(result.homePath).toBe(join(homeDirectory, "officeBuddy"));
+		expect(await readFile(join(result.homePath, "agent", "models.json"), "utf8")).toBe("user-models");
+		// 两个历史名字都应指到新根。
+		expect(realpathSync(join(homeDirectory, ".officeBuddy"))).toBe(realpathSync(result.homePath));
+		expect(realpathSync(join(homeDirectory, ".astravia"))).toBe(realpathSync(result.homePath));
 		expect(prepareOfficeBuddyHomeDirectory({ env: {}, homeDirectory }).status).toBe("not-needed");
 	});
 
@@ -54,8 +75,9 @@ describe("officeBuddy user-data home migration", () => {
 		const result = prepareOfficeBuddyHomeDirectory({ env: {}, homeDirectory });
 
 		expect(result.status).toBe("merged");
-		expect(await readFile(join(homePath, "agent", "models.json"), "utf8")).toBe("current");
-		expect(await readFile(join(homePath, "desktop-config.json"), "utf8")).toBe("legacy-config");
+		expect(result.homePath).toBe(join(homeDirectory, "officeBuddy"));
+		expect(await readFile(join(result.homePath, "agent", "models.json"), "utf8")).toBe("current");
+		expect(await readFile(join(result.homePath, "desktop-config.json"), "utf8")).toBe("legacy-config");
 		expect(existsSync(legacyPath)).toBe(true);
 	});
 

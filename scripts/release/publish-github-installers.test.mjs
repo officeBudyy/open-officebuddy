@@ -21,7 +21,7 @@ function releaseFixture(files = []) {
 
 describe("publish GitHub installers", () => {
 	it("creates the desktop release then appends the matching Android APK to the same tag", () => {
-		const fixture = releaseFixture(["Astravia-0.5.62.exe", "Astravia-arm64-v8a.apk", "latest.yml"]);
+		const fixture = releaseFixture(["Astravia-0.5.62.exe", "officeBuddy-arm64-v8a.apk", "latest.yml"]);
 		const releases = new Map();
 		const github = ([, operation, tag, ...args]) => {
 			if (operation === "view") return releases.has(tag);
@@ -37,12 +37,12 @@ describe("publish GitHub installers", () => {
 		publishGithubInstallers({ ...fixture, platform: "desktop", github });
 		publishGithubInstallers({ ...fixture, platform: "android", github });
 		expect([...releases]).toEqual([
-			["v0.5.62", [join(fixture.directory, "Astravia-0.5.62.exe"), join(fixture.directory, "Astravia-arm64-v8a.apk")]],
+			["v0.5.62", [join(fixture.directory, "Astravia-0.5.62.exe"), join(fixture.directory, "officeBuddy-arm64-v8a.apk")]],
 		]);
 	});
 	// iOS 包与 Android 同属「手机端产物」：不附桌面版本号，进同一个 v<版本> Release。
 	it("appends the IPA to the same tag and ignores non-installer files", () => {
-		const fixture = releaseFixture(["Astravia-ios.ipa", "manifest.plist", "Astravia.xcarchive"]);
+		const fixture = releaseFixture(["officeBuddy-ios.ipa", "manifest.plist", "Astravia.xcarchive"]);
 		const releases = new Map();
 		const github = ([, operation, tag, ...args]) => {
 			if (operation === "view") return releases.has(tag);
@@ -54,19 +54,19 @@ describe("publish GitHub installers", () => {
 			return true;
 		};
 		expect(publishGithubInstallers({ ...fixture, platform: "ios", github })).toEqual([
-			join(fixture.directory, "Astravia-ios.ipa"),
+			join(fixture.directory, "officeBuddy-ios.ipa"),
 		]);
 	});
 
 	it("rejects an unknown installer platform instead of publishing nothing", () => {
-		const fixture = releaseFixture(["Astravia-ios.ipa"]);
+		const fixture = releaseFixture(["officeBuddy-ios.ipa"]);
 		expect(() => publishGithubInstallers({ ...fixture, platform: "watchos", github: () => true })).toThrow(
 			"desktop, android or ios",
 		);
 	});
 
 	it("recovers when another platform creates the release concurrently", () => {
-		const fixture = releaseFixture(["Astravia-arm64-v8a.apk"]);
+		const fixture = releaseFixture(["officeBuddy-arm64-v8a.apk"]);
 		let created = false;
 		const github = ([, operation]) => {
 			if (operation === "view") return created;
@@ -77,7 +77,7 @@ describe("publish GitHub installers", () => {
 			return true;
 		};
 		expect(publishGithubInstallers({ ...fixture, platform: "android", github })).toEqual([
-			join(fixture.directory, "Astravia-arm64-v8a.apk"),
+			join(fixture.directory, "officeBuddy-arm64-v8a.apk"),
 		]);
 	});
 	it("fails clearly when GitHub cannot create or upload the release", () => {

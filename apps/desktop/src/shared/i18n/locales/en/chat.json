@@ -327,7 +327,7 @@
 		"close": "Close"
 	},
 	"appshot": {
-		"errorSelfCapture": "Appshot skipped: the frontmost window is Astravia itself",
+		"errorSelfCapture": "Appshot skipped: the frontmost window is officeBuddy itself",
 		"errorNoPermission": "Appshot capture failed: Screen Recording and Accessibility permissions are missing. Grant them in Settings › Permissions",
 		"errorHelperFailed": "Appshot capture failed, please try again"
 	},
@@ -338,7 +338,7 @@
 	"mcpElicitation": {
 		"title": "MCP information request",
 		"source": "From {{server}}",
-		"urlNotice": "Astravia opens this address in your system browser only after you confirm.",
+		"urlNotice": "officeBuddy opens this address in your system browser only after you confirm.",
 		"decline": "Decline",
 		"openAndContinue": "Open and continue",
 		"submit": "Submit",
@@ -430,10 +430,10 @@
 		"write": "Write"
 	},
 	"chatExport": {
-		"defaultSessionName": "Astravia Session"
+		"defaultSessionName": "officeBuddy Session"
 	},
 	"chatView": {
-		"defaultSessionTitle": "Astravia Session",
+		"defaultSessionTitle": "officeBuddy Session",
 		"bottomPanelButton": {
 			"closed": "Open bottom panel",
 			"open": "Close bottom panel"
@@ -549,7 +549,7 @@
 	"guideBadgeSwiper": {
 		"dismissTooltip": "Don't show again",
 		"petFeatureText": "New desktop pet feature — click to enable in settings",
-		"quickPanelText": "Astravia now has a Quick Panel — click to set it up"
+		"quickPanelText": "officeBuddy now has a Quick Panel — click to set it up"
 	},
 	"imagePreview": {
 		"altText": "Loaded image",
@@ -608,13 +608,13 @@
 		},
 		"placeholder": {
 			"defaults": [
-				"Ask Astravia, use / for skills, @ to reference files",
+				"Ask officeBuddy, use / for skills, @ to reference files",
 				"Describe the task, press ⏎ to send",
 				"Paste a screenshot or @ a file to get started"
 			],
 			"noSession": "Select or create a session to start",
 			"suggestion": "↵ {{suggestion}}",
-			"thinking": "Astravia is thinking…"
+			"thinking": "officeBuddy is thinking…"
 		},
 		"mention": {
 			"trigger": "Mention members",
@@ -709,7 +709,7 @@
 			}
 		},
 		"assistantMessage": {
-			"predicting": "Astravia is predicting…",
+			"predicting": "officeBuddy is predicting…",
 			"processing": "Processing…",
 			"waiting": "Waiting for model response",
 			"preparing": "Preparing request",
@@ -827,9 +827,9 @@
 		"retryIndicator": "Reconnecting ({{attempt}}/{{maxAttempts}})",
 		"retryReason": "Last request failed: {{reason}}",
 		"streamingPhrases": [
-			"Astravia is replying…",
+			"officeBuddy is replying…",
 			"Please hold on…",
-			"Astravia is working hard…"
+			"officeBuddy is working hard…"
 		],
 		"copyButton": {
 			"copied": "Copied",
@@ -1030,7 +1030,7 @@
 			"sendFeedback": "Send feedback",
 			"sendFeedbackWithComments": "Send feedback ({{count}})",
 			"stepCommentPlaceholder": "How should this step change…",
-			"subtitle": "Astravia starts working from this plan once you approve it. Nothing is changed before that.",
+			"subtitle": "officeBuddy starts working from this plan once you approve it. Nothing is changed before that.",
 			"title": "A plan is waiting for your approval"
 		},
 		"switchFailed": "Couldn't switch plan mode",
@@ -1076,7 +1076,7 @@
 		"nextButton": "Next",
 		"questionTabLabel": "Question {{number}}",
 		"submitButton": "Submit",
-		"title": "Astravia needs your choice"
+		"title": "officeBuddy needs your choice"
 	},
 	"sandboxGrantsBadge": {
 		"revoke": "Revoke",
@@ -1118,7 +1118,7 @@
 			"loadPrefix": "Failed to load: "
 		},
 		"export": {
-			"defaultTitle": "Astravia Session"
+			"defaultTitle": "officeBuddy Session"
 		},
 		"exportButton": {
 			"title": "Export full session as HTML"
@@ -1235,7 +1235,7 @@
 	},
 	"mcpApp": {
 		"externalAccess": "This MCP App declares access to {{count}} external domain(s)",
-		"permissionsDenied": "This MCP App requested device permissions; Astravia has not granted them",
+		"permissionsDenied": "This MCP App requested device permissions; officeBuddy has not granted them",
 		"title": "MCP App"
 	},
 	"usageBar": {
