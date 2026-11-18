@@ -11,6 +11,10 @@ export const loadAbilitiesPage = async () => ({
 	default: (await import("./domains/abilities/components/AbilitiesPage")).AbilitiesPage,
 });
 
+export const loadSkillHubPage = async () => ({
+	default: (await import("./domains/abilities/components/SkillHubPage")).SkillHubPage,
+});
+
 export const loadAgentCenterPage = async () => ({
 	default: (await import("./domains/agent-teams/components/AgentCenterPage")).AgentCenterPage,
 });

@@ -365,4 +365,42 @@ describe("ModelSettingsService", () => {
 		expect(refreshRegistry).not.toHaveBeenCalled();
 		expect(credentials.values).toEqual(new Map());
 	});
+
+	it("writes context window overrides into modelOverrides and clears them on null", async () => {
+		let config = createConfig();
+		const refreshRegistry = vi.fn<() => Promise<void>>(async () => {});
+		const service = new ModelSettingsService({
+			readConfig: async () => config,
+			writeConfig: async (next) => {
+				config = next;
+			},
+			refreshRegistry,
+			credentials: createCredentialStore({ "openai-credential": "sk-test" }),
+		});
+
+		await service.setModelOverride("openai", "gpt-5", { contextWindow: 600_000 });
+
+		// 覆盖值落在 modelOverrides；凭据引用原样保留，不被这次写入带走。
+		expect(config.providers.openai?.modelOverrides).toEqual({ "gpt-5": { contextWindow: 600_000 } });
+		expect(config.providers.openai?.credentialRef).toBe("openai-credential");
+		expect(refreshRegistry).toHaveBeenCalledTimes(1);
+
+		await service.setModelOverride("openai", "gpt-5", null);
+
+		// 清空后不留空壳，避免下游把 {} 当成“有覆盖”。
+		expect(config.providers.openai?.modelOverrides).toBeUndefined();
+	});
+
+	it("rejects overrides for models the provider does not declare", async () => {
+		const service = new ModelSettingsService({
+			readConfig: async () => createConfig(),
+			writeConfig: async () => {},
+			refreshRegistry: async () => {},
+			credentials: createCredentialStore(),
+		});
+
+		await expect(service.setModelOverride("openai", "gpt-missing", { contextWindow: 300_000 })).rejects.toThrow(
+			/set-model-override/,
+		);
+	});
 });

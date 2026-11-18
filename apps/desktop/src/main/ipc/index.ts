@@ -38,6 +38,7 @@ import { registerRuntimesIpc } from "./runtimes.js";
 import { registerSessionIpc } from "./session.js";
 import { registerSessionPinsIpc } from "./session-pins.js";
 import { registerSettingsIpc } from "./settings.js";
+import { registerSkillhubIpc } from "./skillhub.js";
 import { registerSkillsIpc } from "./skills.js";
 import { registerSpeechInputIpc } from "./speech-input.js";
 import { registerSshIpc } from "./ssh.js";
@@ -58,6 +59,7 @@ interface IpcTeardown {
 	teardownSettings: () => void;
 	teardownUpdater: () => void;
 	teardownSkills: () => void;
+	teardownSkillhub: () => void;
 	teardownSpeechInput: () => void;
 	teardownThemes: () => void;
 	teardownDialog: () => void;
@@ -112,6 +114,7 @@ export function registerAllIpc(
 		teardownSettings: registerSettingsIpc(),
 		teardownUpdater: registerUpdaterIpc(),
 		teardownSkills: registerSkillsIpc(),
+		teardownSkillhub: registerSkillhubIpc(),
 		teardownSpeechInput: registerSpeechInputIpc(webContents),
 		teardownThemes: registerThemesIpc(),
 		teardownDialog: registerDialogIpc(),
@@ -159,6 +162,7 @@ export function teardownAllIpc(teardown: IpcTeardown): void {
 	teardown.teardownSettings();
 	teardown.teardownUpdater();
 	teardown.teardownSkills();
+	teardown.teardownSkillhub();
 	teardown.teardownSpeechInput();
 	teardown.teardownThemes();
 	teardown.teardownDialog();

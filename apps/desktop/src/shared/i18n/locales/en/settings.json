@@ -1970,7 +1970,6 @@
   "imbProcessing": "Processing…",
   "imbRemove": "Remove",
   "updated": "Updated",
-  "vision": "Vision",
   "creditsPerMTok": "Credits/MTok",
   "unlimitedQuota": "Unlimited · Enjoy unlimited quota",
   "upgradePlan": "Upgrade",
@@ -2352,5 +2351,14 @@
   "sshPromptReject": "Cancel connection",
   "section_remote-devices": "Paired phones",
   "section_remote-cloud": "Away from home",
-  "onboardingResetPermissions": "Already granted in System Settings but still shows unauthorized? Reset the permission records, then drag the icon below in again"
+  "onboardingResetPermissions": "Already granted in System Settings but still shows unauthorized? Reset the permission records, then drag the icon below in again",
+  "contextWindowOverride": {
+    "title": "Context window override",
+    "hint": "Preset provider model lists are overwritten by periodic sync; context windows corrected here are stored as modelOverrides, survive sync, and take effect on the next request without a restart.",
+    "pickModel": "Pick a model",
+    "model": "Model",
+    "value": "Context window (tokens)",
+    "apply": "Apply",
+    "remove": "Remove this override"
+  }
 }

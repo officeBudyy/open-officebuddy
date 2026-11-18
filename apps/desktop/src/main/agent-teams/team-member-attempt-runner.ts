@@ -26,6 +26,11 @@ import type { TeamMemberTurnRequest } from "./team-member-turn-request.js";
 import { TeamNotificationJournal, undeliveredTeamNotifications } from "./team-notification-journal.js";
 import { publicAssistantMessage } from "./team-public-message.js";
 import type { TeamPublicationWorkflow } from "./team-publication-workflow.js";
+import {
+	appendTeamMemberProgress,
+	type TeamProgressEntryState,
+	writeTeamProgressSummary,
+} from "./team-progress-journal.js";
 import type { TeamRuntimeManager } from "./team-runtime-manager.js";
 import type { TeamSessionEventHub } from "./team-session-event-hub.js";
 import type { TeamSessionStateRepository } from "./team-session-state-repository.js";
@@ -99,8 +104,9 @@ export class TeamMemberAttemptRunner {
 			attemptId: collaboration.attempt.id,
 			mode,
 		});
+		await this.recordProgress(configuredSession, memberId, "started", { objective: promptText, mode });
 		try {
-			return await this.executeMemberAttempt(configuredSession, input, collaboration);
+			return await this.executeMemberAttempt(configuredSession, input, collaboration, document);
 		} catch (error) {
 			// Projection/admission/persistence can fail outside the model call. Never leave
 			// an attempt running after its execution lane has actually been released.
@@ -119,6 +125,12 @@ export class TeamMemberAttemptRunner {
 						cancelled,
 						...(failure ? { issue: classifyTeamExecutionIssue(failure) } : {}),
 					}),
+				);
+				await this.recordProgress(
+					configuredSession,
+					memberId,
+					cancelled ? "cancelled" : "failed",
+					{ detail: errorMessage(error), mode },
 				);
 			}
 			// A user stop is a normal terminal outcome. The cancellation has already
@@ -173,6 +185,7 @@ export class TeamMemberAttemptRunner {
 		session: TeamSessionDocument,
 		input: TeamMemberTurnRequest,
 		collaboration: { readonly workItem: TeamWorkItem; readonly attempt: TeamMemberTurnAttempt },
+		document: AgentTeamDocument,
 	): Promise<TeamSessionDocument> {
 		const {
 			memberId,
@@ -376,6 +389,12 @@ export class TeamMemberAttemptRunner {
 				terminal,
 				cancelled ? partialMessageId : undefined,
 			);
+			await this.recordProgress(
+				configuredSession,
+				memberId,
+				cancelled ? "cancelled" : recoverable ? "waiting" : "failed",
+				{ detail: errorMessage(error), mode },
+			);
 			if (partialMessageId && (cancelled || !recoverable)) {
 				await this.publishTerminalPartial({
 					session: configuredSession,
@@ -463,6 +482,16 @@ export class TeamMemberAttemptRunner {
 				collaboration.attempt,
 				terminal,
 			);
+			await this.recordProgress(
+				configuredSession,
+				memberId,
+				this.isCancelled(configuredSession, collaboration.workItem.id, signal)
+					? "cancelled"
+					: waitingRetry
+						? "waiting"
+						: "failed",
+				{ detail: promptFailureMessage, mode },
+			);
 			if (partialMessageId && !waitingRetry) {
 				await this.publishTerminalPartial({
 					session: configuredSession,
@@ -520,13 +549,14 @@ export class TeamMemberAttemptRunner {
 			this.options.eventHub.discard(activeTurn, "waiting");
 			return this.options.sessionState.get(configuredSession.id) ?? configuredSession;
 		}
+		const publicAssistant = publicAttemptAssistantMessage(attemptHistory, previousEntryIds, assistant);
 		await this.options.publicationWorkflow.publishAttempt({
 			session: configuredSession,
 			item: collaboration.workItem,
 			attempt: collaboration.attempt,
 			sourceTurnId,
 			sourceMessageEntryId: attemptResult.entryId,
-			assistant: publicAttemptAssistantMessage(attemptHistory, previousEntryIds, assistant),
+			assistant: publicAssistant,
 			completeWorkItem: async (messageId) => {
 				await this.options.settleAttempt(
 					configuredSession,
@@ -536,6 +566,14 @@ export class TeamMemberAttemptRunner {
 					messageId,
 				);
 			},
+		});
+		await this.recordProgress(configuredSession, memberId, "completed", {
+			detail: publicAssistant.content
+				.filter((part) => part.type === "text")
+				.map((part) => part.text)
+				.join("\n")
+				.trim(),
+			mode,
 		});
 		const next = await this.options.sessionState.coordinateLoaded(configuredSession.id, async (current) => {
 			const updated = markTeamMemberContextDelivered({
@@ -549,6 +587,18 @@ export class TeamMemberAttemptRunner {
 			return updated;
 		});
 		this.options.eventHub.discard(activeTurn, "completed");
+		// 工作项已收尾时刷新汇总文件：把各成员进展收进 summary.md，便于事后复盘。
+		const settledCollaboration = this.options.collaborationStore.read(next);
+		const settledItem = settledCollaboration.workItems.find((item) => item.id === collaboration.workItem.id);
+		if (settledItem?.state === "completed") {
+			const memberNames = Object.fromEntries(
+				Object.entries(next.memberRuntime).map(([memberId, runtime]) => {
+					const profile = document.agents.find((candidate) => candidate.id === runtime.agentProfileId);
+					return [memberId, profile?.name ?? next.memberHandles[memberId] ?? memberId];
+				}),
+			);
+			await writeTeamProgressSummary(next, settledCollaboration.workItems, memberNames);
+		}
 		log.info("team member turn completed", {
 			teamSessionId: next.id,
 			memberId,
@@ -609,6 +659,35 @@ export class TeamMemberAttemptRunner {
 				error: errorMessage(error),
 			});
 			return undefined;
+		}
+	}
+
+	/** 追加一条成员进展；进展文件是观测产物，任何失败都不能影响团队主流程。 */
+	private async recordProgress(
+		session: TeamSessionDocument,
+		memberId: string,
+		state: TeamProgressEntryState,
+		extra: { readonly objective?: string; readonly detail?: string; readonly mode?: string } = {},
+	): Promise<void> {
+		try {
+			const document = await this.options.readDocument();
+			const team = document.teams.find((candidate) => candidate.id === session.teamId);
+			const responsibility = team?.members.find((member) => member.id === memberId)?.assignment?.responsibility;
+			const profileId = session.memberRuntime[memberId]?.agentProfileId;
+			const profile = profileId ? document.agents.find((candidate) => candidate.id === profileId) : undefined;
+			await appendTeamMemberProgress(session, {
+				memberId,
+				memberName: profile?.name ?? session.memberHandles[memberId] ?? memberId,
+				...(responsibility ? { memberRole: responsibility } : {}),
+				state,
+				...extra,
+			});
+		} catch (error) {
+			log.warn("team member progress record failed", {
+				teamSessionId: session.id,
+				memberId,
+				error: error instanceof Error ? error.message : String(error),
+			});
 		}
 	}
 

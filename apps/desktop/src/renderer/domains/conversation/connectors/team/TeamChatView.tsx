@@ -58,10 +58,19 @@ const TeamTimelinePane = memo(function TeamTimelinePane({
 
 const TeamRoster = memo(function TeamRoster({
 	model,
+	actions,
 	onOpenMember,
 	onBackToTeam,
 	onOpenSettings,
-}: Pick<TeamChatViewProps, "model" | "onOpenMember" | "onBackToTeam" | "onOpenSettings">): JSX.Element {
+}: Pick<TeamChatViewProps, "model" | "actions" | "onOpenMember" | "onBackToTeam" | "onOpenSettings">): JSX.Element {
+	// 工作目录只在团队主视图出现；成员视图胶囊条保持纯导航。
+	const workspaceProps =
+		model.memberViewId || !actions.createSessionWithWorkspace
+			? {}
+			: {
+					workspacePath: model.workspacePath ?? null,
+					onSelectWorkspace: actions.createSessionWithWorkspace,
+				};
 	return (
 		<TeamMemberRoster
 			members={model.members}
@@ -72,6 +81,7 @@ const TeamRoster = memo(function TeamRoster({
 			onOpenMember={onOpenMember}
 			onBackToTeam={onBackToTeam}
 			onOpenSettings={onOpenSettings}
+			{...workspaceProps}
 		/>
 	);
 }, (previous, next) =>
@@ -80,6 +90,8 @@ const TeamRoster = memo(function TeamRoster({
 	previous.model.labels.leaderRoute === next.model.labels.leaderRoute &&
 	previous.model.memberRuntimeIds === next.model.memberRuntimeIds &&
 	previous.model.memberViewId === next.model.memberViewId &&
+	previous.model.workspacePath === next.model.workspacePath &&
+	previous.actions.createSessionWithWorkspace === next.actions.createSessionWithWorkspace &&
 	previous.onOpenMember === next.onOpenMember &&
 	previous.onBackToTeam === next.onBackToTeam &&
 	previous.onOpenSettings === next.onOpenSettings,
@@ -180,6 +192,7 @@ export function TeamChatView({
 			subHeader={
 				<TeamRoster
 					model={model}
+					actions={actions}
 					onOpenMember={onOpenMember}
 					onBackToTeam={onBackToTeam}
 					onOpenSettings={onOpenSettings}

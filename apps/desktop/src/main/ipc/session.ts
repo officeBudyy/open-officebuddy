@@ -70,6 +70,7 @@ import { getAppLogger } from "../logger.js";
 import { getDesktopMcpAppRegistry } from "../mcp/mcp-app-runtime.js";
 import { getDesktopMcpTaskCoordinator, getDesktopMcpTaskRegistry } from "../mcp/mcp-task-runtime.js";
 import { forgetMessageAnnotations } from "../message-annotations/host.js";
+import { getDesktopModelSettingsService } from "../models/model-settings-host.js";
 import { notify } from "../notifications/index.js";
 import { SessionTurnNotificationController } from "../notifications/session-turn-notification-controller.js";
 import { PetSessionPresentationController } from "../pet/pet-session-presentation-controller.js";
@@ -180,6 +181,7 @@ const CHANNELS = {
 	SET_GLOBAL_AGENT_MODE: "astravia:session:set-global-agent-mode",
 	/** 默认工作模式已变更；仅用于各窗口新会话页 toggle 的显示同步，不改变任何活跃会话的行为。 */
 	AGENT_MODE_CHANGED: "astravia:session:agent-mode-changed",
+	SET_CONTEXT_WINDOW: "astravia:session:set-context-window",
 	GET_STATE: "astravia:session:get-state",
 	GET_MESSAGES: "astravia:session:get-messages",
 	DELETE: "astravia:session:delete",
@@ -261,6 +263,9 @@ const CHANNELS = {
 	PLUGIN_SYSTEM_PROMPT_REQUEST: PLUGIN_CONTRIBUTION_CHANNELS.SYSTEM_PROMPT_REQUEST,
 	PLUGIN_SYSTEM_PROMPT_RESPONSE: PLUGIN_CONTRIBUTION_CHANNELS.SYSTEM_PROMPT_RESPONSE,
 } as const;
+
+/** 上下文长度只开放这三档：够用、可预期，也不会让人填出无法压缩的窗口。 */
+const CONTEXT_WINDOW_TIERS: readonly number[] = [300_000, 600_000, 1_000_000];
 
 /** 向所有存活窗口（含独立的快捷面板窗口）广播一个事件。 */
 function broadcastToAllWindows(channel: string, payload: unknown): void {
@@ -1069,6 +1074,19 @@ export function registerSessionIpc(webContents: WebContents): () => void {
 	ipcMain.handle(CHANNELS.UPDATE_SETTINGS, async (_event, sessionId: unknown, partialSettings: SettingsPatch) => {
 		assertNonEmptyString(sessionId, "sessionId");
 		await runtime.updateSettings(sessionId, partialSettings);
+	});
+	// 上下文环里的长度选择：写入 modelOverrides 后重新绑定同一模型，本会话下一轮就用新窗口。
+	ipcMain.handle(CHANNELS.SET_CONTEXT_WINDOW, async (_event, sessionId: unknown, tokens: unknown) => {
+		assertNonEmptyString(sessionId, "sessionId");
+		if (typeof tokens !== "number" || !CONTEXT_WINDOW_TIERS.includes(tokens)) {
+			throw new Error(`Invalid context window: ${String(tokens)}`);
+		}
+		const model = runtime.getState(sessionId).model;
+		if (!model?.provider || !model.id) throw new Error("Session has no bound model");
+		await getDesktopModelSettingsService().setModelOverride(model.provider, model.id, { contextWindow: tokens });
+		// 目录已重建，重新选一次同一模型可拿到新 contextWindow 的模型对象（selectModel 为 always 策略）。
+		await runtime.updateSettings(sessionId, { modelKey: `${model.provider}/${model.id}` });
+		return tokens;
 	});
 	ipcMain.handle(CHANNELS.SET_EXECUTION_MODE, async (_event, sessionId: unknown, mode: unknown) => {
 		assertNonEmptyString(sessionId, "sessionId");

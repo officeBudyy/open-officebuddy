@@ -2,6 +2,7 @@ import { isTeamWorkItem, type TeamSessionDocument, type TeamWorkItem } from "@as
 import type { ConversationDocument } from "@astravia/runtime-core";
 import type { SessionContextRecord } from "@astravia/runtime-core/kernel";
 import type { TeamCollaborationStore } from "./team-collaboration-store.js";
+import { teamProgressSummaryPath } from "./team-progress-journal.js";
 import { createTeamTaskCompletionNotification } from "./team-task-notification.js";
 
 const NOTIFICATION_TYPE = "agent-team.task-notification.v1";
@@ -97,6 +98,7 @@ export class TeamNotificationJournal {
 								requestTurnId: item.requestTurnId,
 								resultMessageId: item.resultMessageId,
 								resultText,
+								progressSummaryPath: teamProgressSummaryPath(session),
 								timestamp: item.updatedAt,
 							})
 						: statusContext(item);

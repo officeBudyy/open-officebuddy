@@ -48,6 +48,9 @@ export function projectConversationAgentMessage(input: {
 		phase,
 		text: message.content.flatMap((part) => (part.type === "text" ? [part.text] : [])).join(""),
 		blocks: projectAssistantMessageBlocks(message, messageId, toolStatus),
+		// 持久化的协调会话记录携带每次模型调用的 usage；不透传会让团队聚合时间线
+		// 丢失逐消息 token 统计（live 流与成员视图都已带 usage，只补这条投影路径）。
+		...(message.usage ? { usages: [message.usage] } : {}),
 	});
 	for (const execution of executions.filter((item) => item.messageId === messageId)) {
 		const hasCall = projected.blocks.some(

@@ -193,7 +193,18 @@ class ModelRuntimeImplementation implements CodingAgentModelRuntime {
 						this.configurationValueResolver,
 					),
 				);
-		let combined = mergeModels(builtInModels, local.models);
+		// models.json 里定义（含预设服务商同步）的模型同样吃 modelOverrides：
+		// 预设服务商的模型列表会被定时同步整体覆写，用户手工修正的 contextWindow 等
+		// 参数只能落在 modelOverrides 里才不会被冲掉；此前 overrides 只作用于内置目录模型。
+		const localModels = local.models.map((model) =>
+			applyProviderAndModelOverrides(
+				[model],
+				undefined,
+				local.modelOverrides.get(model.provider),
+				this.configurationValueResolver,
+			)[0] ?? model,
+		);
+		let combined = mergeModels(builtInModels, localModels);
 		combined = mergeModels(combined, this.remoteModels);
 		for (const oauthProvider of this.credentials.getOAuthProviders()) {
 			const credential = this.credentials.get(oauthProvider.id);

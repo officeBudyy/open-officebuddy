@@ -581,5 +581,26 @@
 			"submitEdit": "保存"
 		},
 		"error": "操作失败：{{error}}"
+	},
+	"skillhub": {
+		"title": "SkillHub 技能商店",
+		"subtitle": "来自 SkillHub 社区的精选技能，一键安装到 officeBuddy",
+		"back": "返回能力页",
+		"searchPlaceholder": "搜索 SkillHub 技能",
+		"categoryAll": "全部",
+		"empty": "没有找到匹配的技能",
+		"loadMore": "加载更多（还剩 {{remaining}} 个）",
+		"loadingMore": "加载中…",
+		"install": "安装",
+		"installed": "{{name}} 已安装并重新加载",
+		"installFailed": "{{name}} 安装失败：{{error}}",
+		"installedBadge": "已安装",
+		"verified": "已认证"
+	},
+	"sort": {
+		"score": "综合",
+		"downloads": "下载量",
+		"newest": "最新",
+		"stars": "收藏"
 	}
 }

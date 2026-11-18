@@ -24,6 +24,7 @@ const CHANNELS = {
 	ATTACH: "astravia:session:attach",
 	UNSUBSCRIBE: "astravia:session:unsubscribe",
 	UPDATE_SETTINGS: "astravia:session:update-settings",
+	SET_CONTEXT_WINDOW: "astravia:session:set-context-window",
 	SET_EXECUTION_MODE: "astravia:session:set-execution-mode",
 	SET_GLOBAL_EXECUTION_MODE: "astravia:session:set-global-execution-mode",
 	SET_GLOBAL_AGENT_MODE: "astravia:session:set-global-agent-mode",
@@ -174,6 +175,7 @@ export function createSessionApi(ipc: IpcRenderer): Pick<DesktopApi, "session"> 
 			getSessionPath: (sessionId) => ipc.invoke("astravia:session:get-session-path", sessionId),
 			updateSettings: (sessionId, partialSettings) =>
 				ipc.invoke(CHANNELS.UPDATE_SETTINGS, sessionId, partialSettings),
+			setContextWindow: (sessionId, tokens) => ipc.invoke(CHANNELS.SET_CONTEXT_WINDOW, sessionId, tokens),
 			setExecutionMode: (sessionId, mode) => ipc.invoke(CHANNELS.SET_EXECUTION_MODE, sessionId, mode),
 			setGlobalExecutionMode: (mode) => ipc.invoke(CHANNELS.SET_GLOBAL_EXECUTION_MODE, mode),
 			setGlobalAgentMode: (mode) => ipc.invoke(CHANNELS.SET_GLOBAL_AGENT_MODE, mode),

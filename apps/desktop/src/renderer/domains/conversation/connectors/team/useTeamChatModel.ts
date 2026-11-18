@@ -320,6 +320,25 @@ export function useTeamChatModel(
 			return undefined;
 		}
 	}, [applyLoadedSession, document, sessions, teamId]);
+	// 工作目录随会话创建固化；这里的「切换」语义是新建一个绑定所选项目空间的会话。
+	const createSessionWithWorkspace = useCallback(
+		async (cwd: string | null) => {
+			if (pendingRef.current) return undefined;
+			setStatus("loading");
+			setError(undefined);
+			try {
+				const loaded = await createTeamChatSession(teamId, document, sessions, cwd ? { kind: "project", path: cwd } : null);
+				applyLoadedSession(loaded);
+				notifyTeamSessionsChanged(teamId);
+				return loaded.snapshot.session.id;
+			} catch (cause) {
+				setError({ message: errorMessage(cause) });
+				setStatus("error");
+				return undefined;
+			}
+		},
+		[applyLoadedSession, document, sessions, teamId],
+	);
 	const updateModelSettings = useCallback(
 		async (modelKey: string, reasoning?: string) => {
 			if (!session) return;
@@ -1001,6 +1020,8 @@ export function useTeamChatModel(
 			...(effectiveReasoning ? { reasoning: effectiveReasoning } : {}),
 			sessions: sessionOptions,
 			sessionActionsDisabled: status === "loading" || Boolean(visiblePending),
+			workspacePath: session?.cwd ?? null,
+			...(session?.workspaceKind ? { workspaceKind: session.workspaceKind } : {}),
 			labels,
 		}),
 		[
@@ -1047,6 +1068,7 @@ export function useTeamChatModel(
 			send,
 			abort,
 			createSession,
+			createSessionWithWorkspace,
 			openSession,
 			selectModel,
 			selectReasoning,
@@ -1061,6 +1083,7 @@ export function useTeamChatModel(
 			send,
 			abort,
 			createSession,
+			createSessionWithWorkspace,
 			openSession,
 			selectModel,
 			selectReasoning,

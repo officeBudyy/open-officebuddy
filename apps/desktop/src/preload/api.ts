@@ -32,6 +32,7 @@ import type { DesktopRuntimeConfigurationApi } from "./api-types/runtime-configu
 import type { DesktopSchedulerApi } from "./api-types/scheduler.js";
 import type { DesktopSessionApi } from "./api-types/session.js";
 import type { DesktopSessionPinsApi } from "./api-types/session-pins.js";
+import type { DesktopSkillhubApi } from "./api-types/skillhub.js";
 import type { DesktopSkillsApi } from "./api-types/skills.js";
 import type { DesktopSpeechInputApi } from "./api-types/speech-input.js";
 import type { DesktopSshApi } from "./api-types/ssh.js";
@@ -81,6 +82,7 @@ export type * from "./api-types/runtime-configuration.js";
 export type * from "./api-types/scheduler.js";
 export type * from "./api-types/session.js";
 export type * from "./api-types/shared.js";
+export type * from "./api-types/skillhub.js";
 export type * from "./api-types/skills.js";
 export type * from "./api-types/speech-input.js";
 export type * from "./api-types/ssh.js";
@@ -116,6 +118,7 @@ export interface DesktopApi {
 	i18n: DesktopI18nApi;
 	fs: DesktopFsApi;
 	skills: DesktopSkillsApi;
+	skillhub: DesktopSkillhubApi;
 	config: DesktopConfigApi;
 	remotePairing: RemotePairingApi;
 	knowledge: DesktopKnowledgeApi;

@@ -13,6 +13,8 @@ export interface PresetProviderModelRow {
 	id: string;
 	name: string;
 	contextWindow?: number;
+	/** 用户在 modelOverrides 里覆盖的上下文窗口；预设同步会冲掉 models 数组，覆盖值存在这里。 */
+	contextWindowOverride?: number;
 	hasVision: boolean;
 	hasReasoning: boolean;
 	price: string | null;
@@ -82,6 +84,11 @@ export interface PresetProvidersSectionModel {
 	onRemove: (row: PresetProviderRow) => Promise<void>;
 	onRefreshModels: (row: PresetProviderRow) => Promise<void>;
 	onCopyApiKey: (row: PresetProviderRow) => Promise<void>;
+	/**
+	 * 保存某模型的上下文窗口覆盖（写入 provider.modelOverrides，预设同步不会冲掉）。
+	 * value 为 null 表示移除覆盖，回到上游声明的值。
+	 */
+	onSaveContextWindowOverride: (row: PresetProviderRow, modelId: string, value: number | null) => Promise<void>;
 	/** 手动重拉公共目录(models.dev)。 */
 	refreshingCatalog: boolean;
 	onRefreshCatalog: () => Promise<void>;
@@ -164,9 +171,15 @@ export function usePresetProvidersSectionModel({
 
 		return [...presetRows, ...orphaned].map((row) => {
 			const adopted = config.providers[row.id]?.source === "template";
+			const overrides = config.providers[row.id]?.modelOverrides;
 			return {
 				...row,
-				modelRows: row.models.map((model) => toModelRow(model, t)),
+				modelRows: row.models.map((model) => {
+					const base = toModelRow(model, t);
+					const raw = overrides?.[model.id]?.contextWindow;
+					const override = typeof raw === "number" && raw > 0 ? raw : undefined;
+					return override === undefined ? base : { ...base, contextWindowOverride: override };
+				}),
 				adopted,
 				isOpen: openId === row.id,
 				isExpanded: expandedId === row.id,
@@ -340,6 +353,36 @@ export function usePresetProvidersSectionModel({
 		[config, openId, saveConfig, t],
 	);
 
+	// 覆盖值落在 modelOverrides：预设服务商的模型列表会被定时同步整体覆写，
+	// 直接改 models 数组里的 contextWindow 撑不过下一次同步。
+	const saveContextWindowOverride = useCallback(
+		async (row: PresetProviderRow, modelId: string, value: number | null): Promise<void> => {
+			const provider = config.providers[row.id];
+			if (!provider) return;
+			const overrides = { ...(provider.modelOverrides ?? {}) };
+			if (value === null || value <= 0) {
+				if (overrides[modelId] === undefined) return;
+				delete overrides[modelId];
+			} else {
+				overrides[modelId] = { ...(overrides[modelId] ?? {}), contextWindow: value };
+			}
+			// 旧值不能跟着 ...provider 带回去，否则清空后的覆盖会复活。
+			const { modelOverrides: _stale, ...providerRest } = provider;
+			void _stale;
+			await saveConfig({
+				...config,
+				providers: {
+					...config.providers,
+					[row.id]: {
+						...providerRest,
+						...(Object.keys(overrides).length > 0 ? { modelOverrides: overrides } : {}),
+					},
+				},
+			});
+		},
+		[config, saveConfig],
+	);
+
 	return {
 		rows,
 		error,
@@ -383,6 +426,7 @@ export function usePresetProvidersSectionModel({
 		onRemove: remove,
 		onRefreshModels: refresh,
 		onCopyApiKey: copyApiKey,
+		onSaveContextWindowOverride: saveContextWindowOverride,
 		refreshingCatalog,
 		onRefreshCatalog: refreshCatalog,
 	};

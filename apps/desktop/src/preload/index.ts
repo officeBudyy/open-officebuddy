@@ -26,6 +26,7 @@ import { createRuntimeConfigurationApi } from "./apis/runtime-configuration.js";
 import { createSchedulerApi } from "./apis/scheduler.js";
 import { createSessionApi } from "./apis/session.js";
 import { createSessionPinsApi } from "./apis/session-pins.js";
+import { createSkillhubApi } from "./apis/skillhub.js";
 import { createSpeechInputApi } from "./apis/speech-input.js";
 import { createSshApi } from "./apis/ssh.js";
 import { createSystemApi } from "./apis/system.js";
@@ -45,6 +46,7 @@ for (const eventName of ["keydown", "mousedown", "mousemove", "touchstart", "whe
 const rawApi: Omit<DesktopApi, "hostAccess"> = {
 	...createMessageAnnotationsApi(ipcRenderer),
 	...createAbilitiesApi(ipcRenderer),
+	...createSkillhubApi(ipcRenderer),
 	...createMarkdownApi(ipcRenderer),
 	...createAgentTeamsApi(ipcRenderer),
 	...createEnterpriseExpertsApi(ipcRenderer),

@@ -1,5 +1,6 @@
 import { SegmentedControl } from "@astravia-org/theme-ui/shared";
 import { Button } from "@astravia-org/ui";
+import { useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -36,12 +37,25 @@ export function AbilitiesPageView({
 	categorized = ENABLE_ABILITY_CATEGORIES,
 }: AbilitiesPageViewProps): JSX.Element {
 	const { t, i18n } = useTranslation("abilities");
+	const navigate = useNavigate();
 	const skillFileInputRef = useRef<HTMLInputElement>(null);
 	const pluginFileInputRef = useRef<HTMLInputElement>(null);
 	const [sourcesDialogOpen, setSourcesDialogOpen] = useState(false);
 	const isPublic = model.scope === "discover" || (model.scope as string) === "public";
 	const filtered = countActiveAbilityFilters(model.filter) > 0;
 	const formSections = groupAbilitiesByForm(model.items);
+	const skillHubEntry = (
+		<Button
+			variant="ghost"
+			size="sm"
+			className="text-muted-foreground/70 hover:text-foreground"
+			onClick={() => void navigate({ to: "/abilities/skillhub" })}
+		>
+			<span className="icon-[solar--shop-linear] h-3.5 w-3.5" />
+			SkillHub
+			<span className="icon-[solar--alt-arrow-right-linear] h-3 w-3" />
+		</Button>
+	);
 
 	return (
 		<div className="relative flex h-full w-full flex-1 flex-col overflow-hidden">
@@ -191,6 +205,7 @@ export function AbilitiesPageView({
 								{categorized ? (
 									model.groups.map((group) => (
 										<section key={group.category} className="flex flex-col gap-2">
+										<div className="flex items-end justify-between gap-3">
 											<div className="flex items-baseline gap-2">
 												<h2 className="text-[13px] font-semibold text-foreground/90">
 													{group.category === ABILITY_CATEGORY_UNCATEGORIZED
@@ -205,6 +220,8 @@ export function AbilitiesPageView({
 													{group.items.length}
 												</span>
 											</div>
+											{group.category === "skills" ? skillHubEntry : null}
+										</div>
 											<div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-2.5">
 												{group.items.map((item) => (
 													<AbilityCard key={item.id} item={item} model={model} />
@@ -229,6 +246,7 @@ export function AbilitiesPageView({
 														{t(`section.${section.form}.description`)}
 													</p>
 												</div>
+												{section.form === "skills" ? skillHubEntry : null}
 											</div>
 											<div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-2.5">
 												{section.items.map((item) => (

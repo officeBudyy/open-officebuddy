@@ -230,7 +230,17 @@
       "recent": "最近：{{text}}"
     },
     "readyTitle": "团队已经就绪",
-    "readyDescription": "直接描述目标即可由负责人协调处理，也可以用输入框左下角的 @ 指定成员。"
+    "readyDescription": "直接描述目标即可由负责人协调处理，也可以用输入框左下角的 @ 指定成员。",
+    "workspace": {
+      "label": "工作目录",
+      "title": "工作目录",
+      "unbound": "团队私有目录",
+      "unboundTitle": "未绑定项目空间（团队私有目录）",
+      "sessionOption": "团队私有目录",
+      "search": "搜索项目空间",
+      "empty": "没有匹配的项目空间",
+      "immutableHint": "工作目录随会话创建固化：选择项目空间会新建一个绑定该目录的团队会话。"
+    }
   },
   "sidebar": {
     "manage": "管理团队",

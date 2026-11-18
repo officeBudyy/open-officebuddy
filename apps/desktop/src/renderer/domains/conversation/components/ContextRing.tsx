@@ -1,7 +1,11 @@
 import { ContextRingView } from "@astravia-org/theme-ui/chat/ContextRingView";
 import { AgentAvatarView } from "@astravia-org/theme-ui/chat/AgentAvatarView";
 import { Button } from "@shared/components/ui/button";
+import { activeSessionAtom, contextUsageAtom } from "@shared/store/chat-atoms";
+import { showToast } from "@shared/store/toast-atoms";
+import { useAtomValue, useSetAtom } from "jotai";
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@shared/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@shared/components/ui/tooltip";
 import {
 	createContext,
 	useCallback,
@@ -16,6 +20,7 @@ import { useTranslation } from "react-i18next";
 import type { ContextRingModel, ContextRingScopeModel } from "../hooks/useContextRingModel";
 import {
 	buildContextRingBarSegments,
+	formatTokens,
 	type ContextRingDetailGroup,
 	type ContextRingDetailGroupKind,
 	type ContextRingDetailsModel,
@@ -157,7 +162,96 @@ export function ContextRingDetails(): JSX.Element {
 					<p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">{t("contextRing.details.unavailableAfterRestart")}</p>
 				</div>
 			)}
+			{context.scopes.length === 0 ? <ContextWindowSetting /> : null}
 		</>
+	);
+}
+/** 上下文长度只给三档：覆盖值写进 models.json 的 modelOverrides，预设同步冲不掉。 */
+const CONTEXT_WINDOW_TIERS = [
+	{ tokens: 300_000, label: "300K", hintKey: "contextRing.window.tier300k" },
+	{ tokens: 600_000, label: "600K", hintKey: "contextRing.window.tier600k" },
+	{ tokens: 1_000_000, label: "1M", hintKey: "contextRing.window.tier1m" },
+] as const;
+
+/**
+ * 上下文长度选择器：贴在上下文展示下方。写盘后主进程会重新绑定本会话模型，
+ * 下一轮请求即按新窗口发；百分比先按新窗口换算，不用等下一轮才看到变化。
+ */
+function ContextWindowSetting(): JSX.Element | null {
+	const { t } = useTranslation("chat");
+	const activeSession = useAtomValue(activeSessionAtom);
+	const usage = useAtomValue(contextUsageAtom);
+	const setUsage = useSetAtom(contextUsageAtom);
+	const [pending, setPending] = useState<number | null>(null);
+	const runtimeId = activeSession?.runtimeId;
+	if (!runtimeId) return null;
+	const current = usage?.contextWindow ?? 0;
+
+	async function apply(tokens: number): Promise<void> {
+		if (!runtimeId || tokens === current || pending !== null) return;
+		setPending(tokens);
+		try {
+			await window.astravia.session.setContextWindow(runtimeId, tokens);
+			setUsage((previous) => {
+				if (!previous) return previous;
+				const contextTokens = previous.contextTokens;
+				// 换了窗口，旧压缩触发线就失效了，交给下一轮用量事件重算。
+				const { compactionThresholdTokens: _staleThreshold, ...rest } = previous;
+				void _staleThreshold;
+				return {
+					...rest,
+					contextWindow: tokens,
+					percent:
+						typeof contextTokens === "number" && contextTokens > 0
+							? (contextTokens / tokens) * 100
+							: previous.percent,
+				};
+			});
+		} catch (error) {
+			console.error("[context-window] 设置失败:", error);
+			showToast({ variant: "error", message: t("contextRing.window.failed") });
+		} finally {
+			setPending(null);
+		}
+	}
+
+	return (
+		<div className="border-t border-border/60 px-3 py-2.5">
+			<div className="flex items-baseline justify-between gap-2 text-[10px]">
+				<span className="text-muted-foreground">{t("contextRing.window.title")}</span>
+				<span className="tabular-nums text-foreground/80">
+					{current > 0 ? formatTokens(current) : t("contextRing.details.unknown")}
+				</span>
+			</div>
+			<div className="mt-1.5 flex gap-1">
+				{CONTEXT_WINDOW_TIERS.map(({ tokens, label, hintKey }) => {
+					const selected = tokens === current;
+					return (
+						<Tooltip key={tokens}>
+							<TooltipTrigger asChild>
+								<button
+									type="button"
+									disabled={pending !== null}
+									aria-pressed={selected}
+									onClick={() => void apply(tokens)}
+									className={`flex-1 rounded-md border px-2 py-1 text-[11px] tabular-nums transition-colors ${
+										selected
+											? "border-primary/60 bg-primary/10 text-foreground"
+											: "border-border/60 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+									} disabled:opacity-60`}
+								>
+									{pending === tokens ? "…" : label}
+								</button>
+							</TooltipTrigger>
+							<TooltipContent side="top" className="max-w-56 leading-relaxed">
+								{t(hintKey)}
+							</TooltipContent>
+						</Tooltip>
+					);
+				})}
+			</div>
+			<p className="mt-1 text-[10px] leading-relaxed text-muted-foreground/70">{t("contextRing.window.hint")}</p>
+		</div>
 	);
 }
 

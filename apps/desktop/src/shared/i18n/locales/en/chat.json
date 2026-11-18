@@ -466,6 +466,14 @@
 			"usage": "Context {{tokens}} tokens used ({{percent}}%, {{window}} window)",
 			"usageWithThreshold": "Context {{tokens}} tokens used ({{percent}}%, {{window}} window); auto-compacts at {{threshold}}%"
 		},
+		"window": {
+			"title": "Context window",
+			"hint": "Writes the context window for the current model; it applies from the next request and survives preset syncs.",
+			"failed": "Could not update the context window. Please try again.",
+			"tier300k": "Use a 300K context window. Sufficient for most tasks and recommended.",
+			"tier600k": "Use a 600K context window. For complex tasks; credit usage goes up.",
+			"tier1m": "Use a 1M context window. For long-running tasks; credit usage is high."
+		},
 		"details": {
 			"title": "Context composition (latest call)",
 			"actual": "Actual input",

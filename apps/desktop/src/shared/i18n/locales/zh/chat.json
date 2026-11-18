@@ -466,6 +466,14 @@
 			"usage": "上下文已使用 {{tokens}} tokens（{{percent}}%，{{window}} 窗口）",
 			"usageWithThreshold": "上下文已使用 {{tokens}} tokens（{{percent}}%，{{window}} 窗口），达到 {{threshold}}% 自动压缩"
 		},
+		"window": {
+			"title": "上下文长度",
+			"hint": "写入当前模型的上下文窗口，下一轮请求即生效；预设同步不会覆盖它。",
+			"failed": "上下文长度设置失败，请重试",
+			"tier300k": "使用 300K 上下文长度，适应于大部分任务，推荐使用",
+			"tier600k": "使用 600K 上下文长度，适用于复杂任务，积分消耗将增加",
+			"tier1m": "使用 1M 上下文长度，适合长程任务，积分消耗较高"
+		},
 		"details": {
 			"title": "上下文构成（最近一次调用）",
 			"actual": "实际输入",

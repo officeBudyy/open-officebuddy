@@ -18,6 +18,7 @@ export function PresetProviderRow({
 	onRemove,
 	onRefreshModels,
 	onCopyApiKey,
+	onSaveContextWindowOverride,
 }: {
 	row: PresetProviderRowModel;
 	draftKey: string;
@@ -30,6 +31,7 @@ export function PresetProviderRow({
 	onRemove: (row: PresetProviderRowModel) => Promise<void>;
 	onRefreshModels: (row: PresetProviderRowModel) => Promise<void>;
 	onCopyApiKey: (row: PresetProviderRowModel) => Promise<void>;
+	onSaveContextWindowOverride: (row: PresetProviderRowModel, modelId: string, value: number | null) => Promise<void>;
 }): JSX.Element {
 	return (
 		<PresetProviderRowView
@@ -45,7 +47,13 @@ export function PresetProviderRow({
 			onRefreshModels={() => void onRefreshModels(row)}
 			onCopyApiKey={() => void onCopyApiKey(row)}
 			icon={<ProviderIcon symbol={row.icon} className="h-7 w-7 shrink-0" />}
-			modelsList={<PresetProviderModelsList row={row} labels={labels} />}
+			modelsList={
+				<PresetProviderModelsList
+					row={row}
+					labels={labels}
+					onSaveContextWindowOverride={(modelId, value) => onSaveContextWindowOverride(row, modelId, value)}
+				/>
+			}
 		/>
 	);
 }

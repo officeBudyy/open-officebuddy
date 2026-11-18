@@ -265,6 +265,47 @@ export class ModelSettingsService {
 		});
 	}
 
+	/**
+	 * 写入/清除单个模型的覆盖项（目前用于 contextWindow）。
+	 * 预设服务商的 models 数组会被定时同步整体覆写，覆盖值只能落在这里才不会被冲掉。
+	 * 只改 modelOverrides，不经过 persist：凭据字段原样保留，不参与本轮写入。
+	 */
+	async setModelOverride(
+		providerId: string,
+		modelId: string,
+		override: Readonly<Record<string, unknown>> | null,
+	): Promise<void> {
+		await this.runMutation(async () => {
+			const config = await this.options.readConfig();
+			const provider = config.providers[providerId];
+			if (!provider) {
+				throw new Error(
+					`Refused operation "set-model-override": provider ${JSON.stringify(providerId)} not found.`,
+				);
+			}
+			const models = provider.models ?? [];
+			if (models.length > 0 && !models.some((model) => model.id === modelId)) {
+				throw new Error(
+					`Refused operation "set-model-override": model ${JSON.stringify(modelId)} not found on provider ${JSON.stringify(providerId)}.`,
+				);
+			}
+			const next = cloneModelsConfig(config);
+			const target = next.providers[providerId];
+			if (!target) return;
+			const overrides: Record<string, Record<string, unknown>> = { ...(target.modelOverrides ?? {}) };
+			if (override === null) {
+				delete overrides[modelId];
+			} else {
+				overrides[modelId] = { ...(overrides[modelId] ?? {}), ...override };
+			}
+			if (Object.keys(overrides).length === 0) delete target.modelOverrides;
+			else target.modelOverrides = overrides;
+			await this.options.writeConfig(next);
+			await this.options.refreshRegistry();
+			this.options.onConfigChanged?.([providerId]);
+		});
+	}
+
 	async list(): Promise<ModelListResult> {
 		const config = await this.getConfig();
 		return {

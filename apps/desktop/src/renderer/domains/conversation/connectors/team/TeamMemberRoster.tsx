@@ -3,6 +3,7 @@ import { AgentAvatarView } from "@astravia-org/theme-ui/chat";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TeamChatViewModel } from "./teamChatModel";
+import { TeamWorkspaceChip } from "./TeamWorkspaceChip";
 
 export interface TeamMemberRosterWidth {
 	readonly natural: number;
@@ -63,6 +64,10 @@ export interface TeamMemberRosterProps {
 	readonly onBackToTeam?: () => void;
 	/** 团队设置入口，挂在胶囊条最右侧。 */
 	readonly onOpenSettings?: () => void;
+	/** 当前会话的工作目录；团队成员视图（只读导航）下不传。 */
+	readonly workspacePath?: string | null;
+	/** 选择项目空间作为（新会话的）工作目录；团队成员视图下不传。 */
+	readonly onSelectWorkspace?: (cwd: string | null) => void;
 }
 
 /**
@@ -81,6 +86,8 @@ export function TeamMemberRoster({
 	onOpenMember,
 	onBackToTeam,
 	onOpenSettings,
+	workspacePath,
+	onSelectWorkspace,
 }: TeamMemberRosterProps): JSX.Element | null {
 	const { t } = useTranslation("agent-teams");
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -254,6 +261,12 @@ export function TeamMemberRoster({
 					);
 				})}
 			</div>
+			{workspacePath !== undefined && onSelectWorkspace ? (
+				<TeamWorkspaceChip
+					workspacePath={workspacePath}
+					onSelectWorkspace={onSelectWorkspace}
+				/>
+			) : null}
 			{onOpenSettings ? (
 				<button
 					type="button"

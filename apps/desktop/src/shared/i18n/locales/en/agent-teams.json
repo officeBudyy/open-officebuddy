@@ -230,7 +230,17 @@
       "recent": "Recent: {{text}}"
     },
     "readyTitle": "Your team is ready",
-    "readyDescription": "Describe the goal and the team lead will coordinate it, or mention a member with @ in the composer toolbar."
+    "readyDescription": "Describe the goal and the team lead will coordinate it, or mention a member with @ in the composer toolbar.",
+    "workspace": {
+      "label": "Working directory",
+      "title": "Working directory",
+      "unbound": "Team private folder",
+      "unboundTitle": "No project space bound (team private folder)",
+      "sessionOption": "Team private folder",
+      "search": "Search project spaces",
+      "empty": "No matching project spaces",
+      "immutableHint": "The working directory is captured when a session is created: picking a project space creates a new Team session bound to it."
+    }
   },
   "sidebar": {
     "manage": "Manage teams",

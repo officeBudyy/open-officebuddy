@@ -247,6 +247,12 @@ export interface DesktopSessionApi {
 	interruptSubagent(sessionId: string, target: string): Promise<boolean>;
 	getSessionPath(sessionId: string): Promise<string | undefined>;
 	updateSettings(sessionId: string, partialSettings: SettingsPatch): Promise<void>;
+	/**
+	 * 把当前会话模型的上下文窗口改成 300K / 600K / 1M。
+	 * 覆盖值写进 models.json 的 modelOverrides（不会被预设同步冲掉），并立即重新绑定本会话模型，
+	 * 下一轮请求即按新窗口发。返回值是生效的 token 数。
+	 */
+	setContextWindow(sessionId: string, tokens: number): Promise<number>;
 	setExecutionMode(sessionId: string, mode: SessionExecutionMode): Promise<void>;
 	setGlobalExecutionMode(mode: SessionExecutionMode): Promise<void>;
 	/**

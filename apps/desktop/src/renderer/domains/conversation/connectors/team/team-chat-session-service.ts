@@ -8,7 +8,42 @@ import type { SessionExecutionMode } from "@astravia/runtime-core";
 import type { DesktopTeamSessionSnapshot } from "@preload/api-types/team-conversation-display";
 
 const SESSION_STORAGE_PREFIX = "astravia.agent-team.session.";
+const WORKSPACE_STORAGE_PREFIX = "astravia.agent-team.workspace.";
 const pendingSessionCreations = new Map<string, Promise<LoadedTeamChatSession>>();
+
+/**
+ * 团队会话的工作目录在创建后不可变；这里按团队记住用户最近一次选择的
+ * 项目空间，让「从团队列表直接打开」这类不经过新会话页的入口也能落到
+ * 用户期望的项目目录，而不是每次都新建团队私有目录。
+ */
+export function readLastTeamWorkspace(teamId: string): TeamSessionWorkspaceSelection | undefined {
+	try {
+		const stored = window.localStorage.getItem(`${WORKSPACE_STORAGE_PREFIX}${teamId}`);
+		if (!stored) return undefined;
+		const parsed: unknown = JSON.parse(stored);
+		if (
+			typeof parsed === "object" &&
+			parsed !== null &&
+			"path" in parsed &&
+			typeof parsed.path === "string" &&
+			parsed.path.length > 0
+		) {
+			return { kind: "project", path: parsed.path };
+		}
+	} catch {
+		// 损坏的记录按「没有记忆」处理。
+	}
+	return undefined;
+}
+
+export function writeLastTeamWorkspace(teamId: string, selection: TeamSessionWorkspaceSelection | undefined): void {
+	const storageKey = `${WORKSPACE_STORAGE_PREFIX}${teamId}`;
+	if (!selection || selection.kind !== "project") {
+		window.localStorage.removeItem(storageKey);
+		return;
+	}
+	window.localStorage.setItem(storageKey, JSON.stringify(selection));
+}
 
 export interface LoadedTeamChatSession {
 	readonly document?: AgentTeamDocument;
@@ -63,10 +98,14 @@ export async function createTeamChatSession(
 	teamId: string,
 	document?: AgentTeamDocument,
 	knownSessions: readonly TeamSessionListItem[] = [],
+	/** 传 undefined 沿用该团队最近一次选择；传 null 显式回到团队私有目录。 */
+	workspace?: TeamSessionWorkspaceSelection | null,
 ): Promise<LoadedTeamChatSession> {
 	const pending = pendingSessionCreations.get(teamId);
 	if (pending) return pending;
-	const creation = createTeamChatSessionInternal(teamId, document, knownSessions);
+	const effectiveWorkspace = workspace === undefined ? readLastTeamWorkspace(teamId) : workspace;
+	writeLastTeamWorkspace(teamId, effectiveWorkspace ?? undefined);
+	const creation = createTeamChatSessionInternal(teamId, document, knownSessions, effectiveWorkspace ?? undefined);
 	pendingSessionCreations.set(teamId, creation);
 	void creation.then(
 		() => {
@@ -92,6 +131,7 @@ export async function createReservedTeamChatSession({
 		...(workspace ? { workspace } : {}),
 	});
 	if (snapshot.session.id !== sessionId) throw new Error("Reserved Team session identity changed");
+	if (workspace) writeLastTeamWorkspace(teamId, workspace);
 	const storageKey = `${SESSION_STORAGE_PREFIX}${teamId}`;
 	window.localStorage.setItem(storageKey, JSON.stringify(toReference(snapshot)));
 	return {
@@ -105,13 +145,16 @@ async function createTeamChatSessionInternal(
 	teamId: string,
 	document?: AgentTeamDocument,
 	knownSessions: readonly TeamSessionListItem[] = [],
+	workspace?: TeamSessionWorkspaceSelection,
 ): Promise<LoadedTeamChatSession> {
 	if (document && !document.teams.some((team) => team.id === teamId)) {
 		throw new Error(`Agent team not found: ${teamId}`);
 	}
 	const createSessionRecord =
 		window.astravia.agentTeams.createSessionRecord ?? window.astravia.agentTeams.createSession;
-	const snapshot = await createSessionRecord(teamId);
+	const snapshot = workspace
+		? await createSessionRecord(teamId, { workspace })
+		: await createSessionRecord(teamId);
 	const storageKey = `${SESSION_STORAGE_PREFIX}${teamId}`;
 	window.localStorage.setItem(storageKey, JSON.stringify(toReference(snapshot)));
 	return { ...(document ? { document } : {}), snapshot, sessions: withTeamChatSnapshot(knownSessions, snapshot) };

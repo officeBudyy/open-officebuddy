@@ -1,4 +1,4 @@
-import type { AgentTeamDocument, TeamDefinition } from "@astravia/agent-team";
+import type { AgentTeamDocument, TeamDefinition, TeamSessionWorkspaceKind } from "@astravia/agent-team";
 import type { HistoryEntry, PromptAttachmentRef, SessionExecutionMode } from "@astravia/runtime-core";
 import type { ConversationScenario } from "@astravia-org/plugin-sdk";
 import type {
@@ -76,6 +76,10 @@ export interface TeamChatViewModel {
 	readonly sessionActionsDisabled: boolean;
 	readonly modelKey: string | null;
 	readonly reasoning?: string;
+	/** 当前会话的工作目录；团队私有目录与会话创建前为 null。 */
+	readonly workspacePath?: string | null;
+	/** 工作目录归属；"project" 表示绑定了项目空间，"session"/"team-default" 表示团队私有目录。 */
+	readonly workspaceKind?: TeamSessionWorkspaceKind;
 	readonly labels: TeamChatLabels;
 }
 
@@ -115,6 +119,11 @@ export interface TeamChatActions {
 	readonly send: (streamingBehavior?: "steer" | "followUp") => Promise<void>;
 	readonly abort: () => Promise<void>;
 	readonly createSession: () => Promise<string | undefined>;
+	/**
+	 * 以指定项目空间为工作目录创建一个新团队会话并切换过去（工作目录随会话创建
+	 * 固化，已存在的会话不可改绑）。传 null 表示回到团队私有目录。
+	 */
+	readonly createSessionWithWorkspace?: (cwd: string | null) => Promise<string | undefined>;
 	readonly openSession: (sessionId: string) => Promise<void>;
 	readonly selectModel: (modelKey: string, defaultReasoning?: string) => Promise<void>;
 	readonly selectReasoning: (reasoning: string) => Promise<void>;
@@ -1075,6 +1084,9 @@ function mergeTeamAgentMessage(
 		blocks,
 		text: mergePublicAgentText(persisted.text, live.text),
 		renderKey,
+		// 持久化记录与 live 流对同一回合携带的是同一批模型调用的 usage（同回合同调用），
+		// 融合时以 live 终态为准，只在 live 还没累积到 usage 时保留持久化值，避免重复计数。
+		...(live.usages?.length ? { usages: [...live.usages] } : persisted.usages ? { usages: [...persisted.usages] } : {}),
 		...(startedAt === undefined ? {} : { startedAt }),
 		...(endedAt === undefined ? {} : { endedAt }),
 		...(durationSeconds === undefined ? {} : { durationSeconds }),

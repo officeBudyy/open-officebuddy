@@ -581,5 +581,26 @@
 			"submitEdit": "Save"
 		},
 		"error": "Operation failed: {{error}}"
+	},
+	"skillhub": {
+		"title": "SkillHub Store",
+		"subtitle": "Curated skills from the SkillHub community, one-click install",
+		"back": "Back to abilities",
+		"searchPlaceholder": "Search SkillHub skills",
+		"categoryAll": "All",
+		"empty": "No matching skills found",
+		"loadMore": "Load more ({{remaining}} left)",
+		"loadingMore": "Loading…",
+		"install": "Install",
+		"installed": "{{name}} installed and reloaded",
+		"installFailed": "Failed to install {{name}}: {{error}}",
+		"installedBadge": "Installed",
+		"verified": "Verified"
+	},
+	"sort": {
+		"score": "Relevance",
+		"downloads": "Downloads",
+		"newest": "Newest",
+		"stars": "Stars"
 	}
 }

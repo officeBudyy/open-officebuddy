@@ -79,7 +79,7 @@ afterEach(cleanup);
 describe("PresetProviderModelsList", () => {
 	it("按模型名称或 ID 即时过滤，并能清除搜索恢复完整列表", async () => {
 		const user = userEvent.setup();
-		render(<PresetProviderModelsList row={row} labels={labels} />);
+		render(<PresetProviderModelsList row={row} labels={labels} onSaveContextWindowOverride={async () => undefined} />);
 
 		const search = screen.getByRole("searchbox", { name: "Search Qwen models" });
 		expect(screen.getByText("Qwen3 Max")).toBeTruthy();
@@ -102,7 +102,7 @@ describe("PresetProviderModelsList", () => {
 
 	it("搜索无匹配项时显示明确空态，并让结果区保持限高滚动", async () => {
 		const user = userEvent.setup();
-		render(<PresetProviderModelsList row={row} labels={labels} />);
+		render(<PresetProviderModelsList row={row} labels={labels} onSaveContextWindowOverride={async () => undefined} />);
 
 		await user.type(screen.getByRole("searchbox", { name: "Search Qwen models" }), "missing");
 

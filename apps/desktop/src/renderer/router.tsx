@@ -12,9 +12,10 @@ import {
 	loadChatPage,
 	loadKnowledgeBasePage,
 	loadNewSessionPage,
-	loadPluginWorkspaceViewRoute,
-	loadScenesPage,
 	loadSettingsPage,
+	loadSkillHubPage,
+	loadScenesPage,
+	loadPluginWorkspaceViewRoute,
 } from "./route-page-loaders";
 import { RouteErrorPage } from "./shared/components/RouteErrorPage";
 
@@ -36,6 +37,7 @@ const AutomationPage = lazyRoutePage(loadAutomationPage);
 const BatchTasksPage = lazyRoutePage(loadBatchTasksPage);
 const AbilitiesPage = lazyRoutePage(loadAbilitiesPage);
 const AgentCenterPage = lazyRoutePage(loadAgentCenterPage);
+const SkillHubPage = lazyRoutePage(loadSkillHubPage);
 const TeamChatPage = lazyRoutePage(async () => ({
 	default: (await import("./domains/conversation/connectors/team/TeamChatPage")).TeamChatPage,
 }));
@@ -95,6 +97,14 @@ const abilitiesRoute = createRoute({
 		...(typeof search.q === "string" && search.q ? { q: search.q } : {}),
 		...(search.scope === "mine" || search.scope === "discover" ? { scope: search.scope } : {}),
 	}),
+});
+
+/** SkillHub 商店列表页：分类导航 + 技能卡片，从能力页「技能」分区右侧入口进入。 */
+const skillhubRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/abilities/skillhub",
+	component: SkillHubPage,
+	pendingComponent: NoPendingComponent,
 });
 
 const agentCenterRoute = createRoute({
@@ -293,6 +303,7 @@ const routeTree = rootRoute.addChildren([
 	knowledgeRoute,
 	knowledgeListRoute,
 	abilitiesRoute,
+	skillhubRoute,
 	abilityDetailRedirectRoute,
 	skillsRedirectRoute,
 	scenesRoute,
