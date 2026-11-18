@@ -1086,7 +1086,11 @@ function mergeTeamAgentMessage(
 		renderKey,
 		// 持久化记录与 live 流对同一回合携带的是同一批模型调用的 usage（同回合同调用），
 		// 融合时以 live 终态为准，只在 live 还没累积到 usage 时保留持久化值，避免重复计数。
-		...(live.usages?.length ? { usages: [...live.usages] } : persisted.usages ? { usages: [...persisted.usages] } : {}),
+		...(live.usages?.length
+			? { usages: [...live.usages] }
+			: persisted.usages
+				? { usages: [...persisted.usages] }
+				: {}),
 		...(startedAt === undefined ? {} : { startedAt }),
 		...(endedAt === undefined ? {} : { endedAt }),
 		...(durationSeconds === undefined ? {} : { durationSeconds }),

@@ -24,13 +24,13 @@ import type { TeamCollaborationStore } from "./team-collaboration-store.js";
 import { findTeamAttemptFailure, findTeamAttemptResult, isTeamAttemptFinalResult } from "./team-member-result.js";
 import type { TeamMemberTurnRequest } from "./team-member-turn-request.js";
 import { TeamNotificationJournal, undeliveredTeamNotifications } from "./team-notification-journal.js";
-import { publicAssistantMessage } from "./team-public-message.js";
-import type { TeamPublicationWorkflow } from "./team-publication-workflow.js";
 import {
 	appendTeamMemberProgress,
 	type TeamProgressEntryState,
 	writeTeamProgressSummary,
 } from "./team-progress-journal.js";
+import { publicAssistantMessage } from "./team-public-message.js";
+import type { TeamPublicationWorkflow } from "./team-publication-workflow.js";
 import type { TeamRuntimeManager } from "./team-runtime-manager.js";
 import type { TeamSessionEventHub } from "./team-session-event-hub.js";
 import type { TeamSessionStateRepository } from "./team-session-state-repository.js";
@@ -126,12 +126,10 @@ export class TeamMemberAttemptRunner {
 						...(failure ? { issue: classifyTeamExecutionIssue(failure) } : {}),
 					}),
 				);
-				await this.recordProgress(
-					configuredSession,
-					memberId,
-					cancelled ? "cancelled" : "failed",
-					{ detail: errorMessage(error), mode },
-				);
+				await this.recordProgress(configuredSession, memberId, cancelled ? "cancelled" : "failed", {
+					detail: errorMessage(error),
+					mode,
+				});
 			}
 			// A user stop is a normal terminal outcome. The cancellation has already
 			// been persisted above (when an attempt was admitted); do not turn it into

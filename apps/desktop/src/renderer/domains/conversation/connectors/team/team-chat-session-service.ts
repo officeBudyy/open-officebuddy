@@ -152,9 +152,7 @@ async function createTeamChatSessionInternal(
 	}
 	const createSessionRecord =
 		window.astravia.agentTeams.createSessionRecord ?? window.astravia.agentTeams.createSession;
-	const snapshot = workspace
-		? await createSessionRecord(teamId, { workspace })
-		: await createSessionRecord(teamId);
+	const snapshot = workspace ? await createSessionRecord(teamId, { workspace }) : await createSessionRecord(teamId);
 	const storageKey = `${SESSION_STORAGE_PREFIX}${teamId}`;
 	window.localStorage.setItem(storageKey, JSON.stringify(toReference(snapshot)));
 	return { ...(document ? { document } : {}), snapshot, sessions: withTeamChatSnapshot(knownSessions, snapshot) };

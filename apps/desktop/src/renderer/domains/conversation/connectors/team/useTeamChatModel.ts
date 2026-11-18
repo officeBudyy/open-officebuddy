@@ -327,7 +327,12 @@ export function useTeamChatModel(
 			setStatus("loading");
 			setError(undefined);
 			try {
-				const loaded = await createTeamChatSession(teamId, document, sessions, cwd ? { kind: "project", path: cwd } : null);
+				const loaded = await createTeamChatSession(
+					teamId,
+					document,
+					sessions,
+					cwd ? { kind: "project", path: cwd } : null,
+				);
 				applyLoadedSession(loaded);
 				notifyTeamSessionsChanged(teamId);
 				return loaded.snapshot.session.id;

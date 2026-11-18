@@ -56,9 +56,8 @@ export async function appendTeamMemberProgress(
 		const path = memberProgressPath(session, entry.memberId);
 		const timestamp = new Date(entry.timestamp ?? Date.now());
 		const lines: string[] = [];
-		let header = "";
 		try {
-			header = await readFile(path, "utf8");
+			await readFile(path, "utf8");
 		} catch {
 			// 首次写入：落成员档案头。
 			lines.push(`# ${entry.memberName} 工作进展`, "");
