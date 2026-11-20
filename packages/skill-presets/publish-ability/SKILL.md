@@ -1,13 +1,13 @@
 ---
 name: publish-ability
-description: Publish a skill, scene, MCP server, plugin, or bundle to the Astravia ability marketplace. Use when the user asks to upload/publish/submit an ability, put a plugin on the marketplace, share a skill with other users, or migrate an existing package into Astravia.
+description: Publish a skill, scene, MCP server, plugin, or bundle to the officeBuddy ability marketplace. Use when the user asks to upload/publish/submit an ability, put a plugin on the marketplace, share a skill with other users, or migrate an existing package into officeBuddy.
 metadata:
   version: 2.1.0
-  author: Astravia
+  author: officeBuddy
   category: 开发
 ---
 
-# Publish an Ability to the Astravia Marketplace
+# Publish an Ability to the officeBuddy Marketplace
 
 Submitting is a **local** action: it reads an archive from the user's disk, so it runs through
 the bundled script rather than a tool call.
@@ -27,7 +27,7 @@ the built-in `astravia` MCP server. It is always available and needs no setup.
    | --- | --- | --- |
    | `skill` | A `SKILL.md` workflow | `.zip` / `.tar.gz` containing `SKILL.md` |
    | `scene` | A skill installed into the scene directory | same as `skill` |
-   | `plugin` | A Astravia plugin | `.zip` containing `plugin.json` |
+   | `plugin` | An officeBuddy plugin | `.zip` containing `plugin.json` |
    | `mcp` | One entry in the user's `mcp.json` | none — config only |
    | `bundle` | A named group of already-published abilities | none — references only |
 
@@ -96,7 +96,7 @@ the built-in `astravia` MCP server. It is always available and needs no setup.
 - Input may also arrive on stdin (`cat payload.json | node .../publish.mjs`) if that is more
   convenient than a temp file.
 - The script reads the login token from `~/officeBuddy/auth.json` itself. If it reports "未登录", tell
-  the user to log in through the Astravia client — do not attempt to pass credentials yourself.
+  the user to log in through the officeBuddy client — do not attempt to pass credentials yourself.
 
 ## Review
 

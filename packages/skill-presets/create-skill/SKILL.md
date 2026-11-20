@@ -1,11 +1,11 @@
 ---
 name: create-skill
-description: Create or update Astravia-compatible Agent Skills. Use when the user asks to create a skill, add a SKILL.md workflow, register a skill in skills-manifest.json, package a skill in a Astravia plugin, or add a built-in Astravia skill preset.
+description: Create or update officeBuddy-compatible Agent Skills. Use when the user asks to create a skill, add a SKILL.md workflow, register a skill in skills-manifest.json, package a skill in an officeBuddy plugin, or add a built-in officeBuddy skill preset.
 ---
 
-# Create a Astravia Skill
+# Create an officeBuddy Skill
 
-Create focused Agent Skills that Astravia can execute and display. Treat the Skill files and their registration metadata as one change.
+Create focused Agent Skills that officeBuddy can execute and display. Treat the Skill files and their registration metadata as one change.
 
 ## Choose the target
 
@@ -13,12 +13,12 @@ Infer the target from the request. If it is ambiguous, ask the user to choose be
 
 | Target | Skill directory | Required registration |
 | --- | --- | --- |
-| Global Astravia product skill | `~/.astravia/skills/<skill-name>/` | Update `~/.astravia/skills-manifest.json`. |
+| Global officeBuddy product skill | `~/.astravia/skills/<skill-name>/` | Update `~/.astravia/skills-manifest.json`. |
 | Project skill | `<project-root>/.astravia/skills/<skill-name>/` | No global manifest entry; project discovery is directory-based. |
 | Plugin skill | `<plugin-root>/agent/skills/<skill-name>/` | Update `plugin.json` under `agent.skillPaths`. |
 | Built-in Desktop skill | `<astravia-mono>/packages/skill-presets/<skill-name>/` | Update `<astravia-mono>/packages/skill-presets/skills-manifest.json`. |
 
-Do not place a global product Skill only in `~/.astravia/agent/skills`; that directory is Agent-compatible but does not provide the Astravia product registration metadata required by the Skills UI.
+Do not place a global product Skill only in `~/.astravia/agent/skills`; that directory is Agent-compatible but does not provide the officeBuddy product registration metadata required by the Skills UI.
 
 ## Understand the directory protection
 
@@ -48,7 +48,7 @@ description: Describe what the Skill does and the user requests that should trig
 Concise workflow instructions.
 ```
 
-## Register a global Astravia Skill
+## Register a global officeBuddy Skill
 
 Read the full `~/.astravia/skills-manifest.json` before editing it. The file is a root-level JSON object keyed by Skill name. Preserve every existing entry and add or update only the target Skill.
 

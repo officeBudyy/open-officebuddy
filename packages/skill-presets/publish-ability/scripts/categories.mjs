@@ -36,7 +36,7 @@ async function main() {
 			headers: { Authorization: `Bearer ${credentials.token}` },
 		});
 	} catch (error) {
-		fail(`无法连接 Astravia 服务（${credentials.baseUrl}）：${error.message}`);
+		fail(`无法连接 officeBuddy 服务（${credentials.baseUrl}）：${error.message}`);
 	}
 
 	const text = await response.text();

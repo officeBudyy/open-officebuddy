@@ -92,7 +92,7 @@ export function createSocialImage(): ImageResponse {
 					letterSpacing: 1,
 				}}
 			>
-				<div style={{ display: "flex" }}>docs.astravia.dev</div>
+				<div style={{ display: "flex" }}>doc.officebuddy.work</div>
 				<div style={{ display: "flex", color: "#dd6b55", letterSpacing: 3 }}>LOCAL FIRST</div>
 			</div>
 		</div>,

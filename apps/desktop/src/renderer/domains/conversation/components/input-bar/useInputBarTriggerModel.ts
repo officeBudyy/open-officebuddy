@@ -5,7 +5,7 @@ import { isImagePath } from "@shared/lib/input-tokens";
 import { perfSendBegin, perfSendMark } from "@shared/lib/perf-send";
 import { matchesShortcut } from "@shared/lib/platform";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ConnectorGridItem } from "../../hooks/useConnectorGrid";
+import type { ConnectorListItem } from "../../hooks/useConnectorList";
 import type { AtPanelItem, AtPanelSelection } from "../AtPanel";
 import { PANEL_REVEAL_MS } from "../command-panel/constants";
 import {
@@ -149,7 +149,7 @@ export function useInputBarTriggerModel({
 		setTrigger(null);
 		focusInputEditor();
 	}, []);
-	const handleConnectorSelect = useCallback((connector: ConnectorGridItem) => {
+	const handleConnectorSelect = useCallback((connector: ConnectorListItem) => {
 		insertConnectorToken(connector.name, connector.label, connector.iconUrl, { replaceTrigger: true });
 		setTrigger(null);
 		focusInputEditor();

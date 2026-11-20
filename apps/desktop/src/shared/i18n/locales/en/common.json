@@ -443,7 +443,7 @@
 			"experimentalSectionDescription": "Same toggles as Settings → Agent. You can adjust them before confirming.",
 			"experimentalFields": {
 				"astraviaCli": "officeBuddy CLI",
-				"astraviaCliDesc": "Allow calling local capabilities from the terminal via officeBuddy CLI",
+				"astraviaCliDesc": "Allow calling local capabilities from the terminal vian officeBuddy CLI",
 				"promptPrediction": "Input prediction",
 				"promptPredictionDesc": "Suggest possible follow-up text while typing; may use a little quota",
 				"agentSkills": "Agent skill extensions",

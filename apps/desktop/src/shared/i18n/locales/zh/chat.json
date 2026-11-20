@@ -1163,6 +1163,7 @@
 		"emptyNoSkillsHint": "去能力广场安装技能或场景后，这里就能直接调用。",
 		"header": "选择场景或技能",
 		"resultCount": "{{count}} 个结果",
+		"abilitiesSection": "技能与场景",
 		"scenesSection": "场景",
 		"skillsSection": "技能",
 		"sourceLabels": {
@@ -1176,7 +1177,7 @@
 			"plugin": "插件",
 			"market": "市场"
 		},
-		"connectorsSection": "已接入"
+		"connectorsSection": "连接器"
 	},
 	"suggestionBubbles": {
 		"sendTooltip": "点击发送此建议"

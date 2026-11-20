@@ -18,8 +18,8 @@ import {
 	runPromotion,
 } from "./promote-dev-to-main.mjs";
 
-const OWNER = "maomaochong-ai";
-const REPO = "open-astravia";
+const OWNER = "officeBudyy";
+const REPO = "open-officebuddy";
 const SLUG = `${OWNER}/${REPO}`;
 const DEV_SHA = "dev11111111111111111111111111111111111111";
 

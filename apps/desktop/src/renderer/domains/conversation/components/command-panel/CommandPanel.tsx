@@ -1,7 +1,7 @@
 import type { SkillInfo } from "@preload/api";
 import { useThemeComponent } from "@astravia-org/theme-sdk";
 import { useCommandPanelModel } from "../../hooks/useCommandPanelModel";
-import type { ConnectorGridItem } from "../../hooks/useConnectorGrid";
+import type { ConnectorListItem } from "../../hooks/useConnectorList";
 import type { InputActionBarModel } from "../useInputActionBarModel";
 import { CommandPanelView } from "./CommandPanelView";
 
@@ -12,7 +12,7 @@ export interface CommandPanelProps {
 	onClose: () => void;
 	/** icon 是从市场目录解析出的那张图，交给调用方在行内胶囊上复用。 */
 	onSelect: (skill: SkillInfo, icon?: string) => void;
-	onSelectConnector: (connector: ConnectorGridItem) => void;
+	onSelectConnector: (connector: ConnectorListItem) => void;
 	/** 触发词原文（含 `/`）。 */
 	filter: string;
 	/** 当前会话/项目 cwd，用于列出项目级 skill 目录。 */
@@ -22,7 +22,7 @@ export interface CommandPanelProps {
 }
 
 /**
- * 聊天输入框的命令面板：连接器宫格 + skill 列表 + 底部固定动作条。
+ * 聊天输入框的命令面板：skill/场景列表 + 连接器列表 + 底部固定动作条。
  * 批量任务 / 自动化 dialog 用的是精简版 SkillPickerPanel，两者共用 SkillList。
  */
 export function CommandPanel(props: CommandPanelProps): JSX.Element {

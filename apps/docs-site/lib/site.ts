@@ -1,6 +1,6 @@
 import { getDocsMessages, localeConfig, type DocsLanguage } from "./i18n";
 
-export const DEFAULT_DOCS_SITE_URL = "https://docs.astravia.dev";
+export const DEFAULT_DOCS_SITE_URL = "https://doc.officebuddy.work";
 
 export const site = {
 	name: "officebuddy",
@@ -9,9 +9,9 @@ export const site = {
 		"officebuddy 把模型、本地文件和本机工具放进同一个桌面 Agent 工作台。本站提供快速开始、实战示例，以及权限、批量、自动化、插件、主题与 SDK 指南。",
 	locale: localeConfig.zh.intlLocale,
 	openGraphLocale: localeConfig.zh.openGraphLocale,
-	marketingUrl: "https://www.astravia.dev",
-	downloadUrl: "https://www.astravia.dev",
-	githubUrl: "https://github.com/maomaochong-ai/open-astravia",
+	marketingUrl: "https://www.officebuddy.work",
+	downloadUrl: "https://www.officebuddy.work",
+	githubUrl: "https://github.com/officeBudyy/open-officebuddy",
 	// Community invite shared by the sidebar and the homepage footer. Content
 	// files read it through `CommunityInvite` instead of hardcoding the link.
 	communityUrl: "https://pd.qq.com/s/e131nprec?b=9",

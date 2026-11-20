@@ -11,7 +11,7 @@ import { useShortcutScope } from "@shared/shortcuts";
 import { useCommandPanelModel } from "./useCommandPanelModel";
 
 vi.mock("./useSkillList", () => ({ useSkillList: () => ({ items: [] }) }));
-vi.mock("./useConnectorGrid", () => ({ useConnectorGrid: () => ({ items: [], columns: 4 }) }));
+vi.mock("./useConnectorList", () => ({ useConnectorList: () => ({ items: [] }) }));
 vi.mock("./useSkillIconMap", () => ({ useSkillIconMap: () => new Map(), skillIconOf: () => undefined }));
 vi.mock("../components/useInputActionBarModel", () => ({
 	useInputActionBarModel: () => ({ builtins: [], items: [], actions: { toggleItem: vi.fn() } }),

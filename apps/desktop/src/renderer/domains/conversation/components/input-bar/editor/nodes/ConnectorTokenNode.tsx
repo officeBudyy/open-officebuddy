@@ -8,7 +8,7 @@ export type SerializedConnectorTokenNode = Spread<
 >;
 
 /**
- * 行内连接器（内置 MCP）引用，序列化为 `@mcp:名字`。
+ * 行内连接器（MCP）引用，序列化为 `@mcp:名字`。
  *
  * 与 skill 一样是软引用：宿主不做任何工具门控，只是把「用哪个连接器」写进文本，
  * 由模型自行决定是否调用该 MCP 的工具。

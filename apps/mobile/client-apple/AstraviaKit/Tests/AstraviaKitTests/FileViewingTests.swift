@@ -8,7 +8,7 @@ import Testing
 	}
 
 	@Test func sendsWebAndSystemSchemesToTheSystem() {
-		#expect(classify("https://astravia.dev") == .system)
+		#expect(classify("https://www.officebuddy.work") == .system)
 		#expect(classify("http://localhost:3000") == .system)
 		#expect(classify("mailto:a@b.c") == .system)
 		#expect(classify("tel:10086") == .system)

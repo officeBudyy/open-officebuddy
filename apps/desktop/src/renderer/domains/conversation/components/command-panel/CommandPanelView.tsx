@@ -2,7 +2,7 @@ import { ThemeSurface } from "@astravia-org/theme-ui/appearance/ThemeSurface";
 import { ContextRingView } from "@astravia-org/theme-ui/chat/ContextRingView";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
-import { ConnectorGrid } from "./ConnectorGrid";
+import { ConnectorList } from "./ConnectorList";
 import { FadingScrollArea } from "./FadingScrollArea";
 import { SkillList } from "./SkillList";
 import { PANEL_REVEAL_ROWS, PANEL_REVEAL_TRANSITION } from "./constants";
@@ -26,8 +26,7 @@ const REVEAL_SHOWN = { clipPath: "inset(0% 0 0 0)" };
  * 卡片顶沿、向上生长。否则在会话页里展开会把消息列表整体顶上去，正在读的内容
  * 会跳走。相接侧不留圆角与描边，视觉上仍是同一块面长高了。
  *
- * 区内结构：连接器宫格 + skill 列表（同一滚动容器）→ 命令条（固定在底部）。
- * 宫格随内容滚动、向下滚时让位给 skills；否则 8 个连接器就能把可滚区压到只剩几行。
+ * 区内结构：skill/场景列表 + 连接器列表（同一滚动容器）→ 命令条（固定在底部）。
  */
 export function CommandPanelView({
 	open,
@@ -36,7 +35,6 @@ export function CommandPanelView({
 	activeIndex,
 	operation,
 	connectors,
-	connectorColumns,
 	actions,
 	labels,
 	resolveIcon,
@@ -47,6 +45,9 @@ export function CommandPanelView({
 	onSelectConnector,
 }: CommandPanelProps): JSX.Element {
 	const filtering = filter.length > 0;
+	const operationOffset = operation ? 1 : 0;
+	const connectorOffset = operationOffset + items.length;
+	const showSkillList = items.length > 0 || filtering || (!operation && connectors.length === 0);
 	const reduceMotion = useReducedMotion();
 	const transition = reduceMotion ? { duration: 0 } : PANEL_REVEAL_TRANSITION;
 	// 揭幕完成前列表只出可视区那几行、渐隐 mask 也先不挂：动画期间少一份重绘。
@@ -120,26 +121,37 @@ export function CommandPanelView({
 									</span>
 								</button>
 							) : null}
-							{/* 过滤态隐藏宫格：此时用户在找 skill，键盘导航也只走列表 */}
-							{!filtering && (
-								<ConnectorGrid
+							{showSkillList ? (
+								<div>
+									{!filtering && items.length > 0 ? (
+										<div className="px-4 pb-1 pt-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">
+											{labels.abilitiesSection}
+										</div>
+									) : null}
+									<SkillList
+										items={items}
+										activeIndex={activeIndex - operationOffset}
+										indexOffset={operationOffset}
+										labels={labels}
+										filtering={filtering}
+										limit={revealed ? undefined : PANEL_REVEAL_ROWS}
+										resolveIcon={resolveIcon}
+										onHover={(index) => onHoverItem(index + operationOffset)}
+										onSelect={onSelectItem}
+									/>
+								</div>
+							) : null}
+							{/* 输入筛选技能时隐藏连接器，保持原有 `/关键词` 匹配行为。 */}
+							{!filtering ? (
+								<ConnectorList
 									items={connectors}
-									columns={connectorColumns}
+									activeIndex={activeIndex - connectorOffset}
+									indexOffset={connectorOffset}
 									title={labels.connectorsSection}
+									onHover={(index) => onHoverItem(index + connectorOffset)}
 									onSelect={onSelectConnector}
 								/>
-							)}
-							{items.length > 0 || !operation ? <SkillList
-								items={items}
-								activeIndex={operation ? activeIndex - 1 : activeIndex}
-								indexOffset={operation ? 1 : 0}
-								labels={labels}
-								filtering={filtering}
-								limit={revealed ? undefined : PANEL_REVEAL_ROWS}
-								resolveIcon={resolveIcon}
-								onHover={(index) => onHoverItem(index + (operation ? 1 : 0))}
-								onSelect={onSelectItem}
-							/> : null}
+							) : null}
 						</FadingScrollArea>
 
 						{actions.length > 0 && (

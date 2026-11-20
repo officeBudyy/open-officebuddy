@@ -11,8 +11,8 @@ import type {
 	CommandPanelOperationItem,
 	CommandPanelProps,
 } from "../components/command-panel/types";
-import type { ConnectorGridItem } from "./useConnectorGrid";
-import { useConnectorGrid } from "./useConnectorGrid";
+import type { ConnectorListItem } from "./useConnectorList";
+import { useConnectorList } from "./useConnectorList";
 import {
 	type InputActionBarModel,
 	useInputActionBarModel,
@@ -27,7 +27,7 @@ export interface CommandPanelModelInput {
 	open: boolean;
 	onClose: () => void;
 	onSelect: (skill: SkillInfo, icon?: string) => void;
-	onSelectConnector: (connector: ConnectorGridItem) => void;
+	onSelectConnector: (connector: ConnectorListItem) => void;
 	/** 触发词原文（含 `/`）。 */
 	filter: string;
 	cwd?: string;
@@ -74,7 +74,7 @@ export function useCommandPanelModel({
 		surface: "commandPalette",
 		prefetch: true,
 	});
-	const { items: connectors, columns } = useConnectorGrid(open, true);
+	const { items: connectors } = useConnectorList(open, true);
 	const iconMap = useSkillIconMap(open, true);
 	const resolveIcon = useCallback((skill: SkillInfo) => skillIconOf(iconMap, skill), [iconMap]);
 	// 选中时把解析好的图标一起带出去：行内胶囊要和列表里显示的是同一张图。
@@ -146,7 +146,8 @@ export function useCommandPanelModel({
 	}, [activeSession, allowCompaction, compactionEligibility.status, contextRing, operationMatches, queuedCompaction, queueingCompaction, selectCompaction, t]);
 
 	const keyBindings = useMemo((): ShortcutBinding[] => {
-		const itemCount = items.length + (operation ? 1 : 0);
+		const visibleConnectors = normalizedFilter.length === 0 ? connectors : [];
+		const itemCount = items.length + visibleConnectors.length + (operation ? 1 : 0);
 		return [
 			{
 				key: "arrowdown",
@@ -171,8 +172,14 @@ export function useCommandPanelModel({
 						operation.onSelect();
 						return;
 					}
-					const target = items[activeIndex - (operation ? 1 : 0)];
-					if (target) selectSkill(target);
+					const itemIndex = activeIndex - (operation ? 1 : 0);
+					const target = items[itemIndex];
+					if (target) {
+						selectSkill(target);
+						return;
+					}
+					const connector = visibleConnectors[itemIndex - items.length];
+					if (connector) onSelectConnector(connector);
 				},
 			},
 			{
@@ -180,7 +187,7 @@ export function useCommandPanelModel({
 				run: () => onClose(),
 			},
 		];
-	}, [activeIndex, items, onClose, operation, selectSkill]);
+	}, [activeIndex, connectors, items, normalizedFilter.length, onClose, onSelectConnector, operation, selectSkill]);
 
 	useShortcutScope({
 		id: "overlay:command-panel",
@@ -218,6 +225,7 @@ export function useCommandPanelModel({
 		() => ({
 			header: t("slashPanel.header"),
 			resultCount: t("slashPanel.resultCount", { count: items.length }),
+			abilitiesSection: t("slashPanel.abilitiesSection"),
 			connectorsSection: t("slashPanel.connectorsSection"),
 			emptyNoMatch: t("slashPanel.emptyNoMatch"),
 			emptyNoMatchHint: t("slashPanel.emptyNoMatchHint"),
@@ -255,7 +263,6 @@ export function useCommandPanelModel({
 			activeIndex,
 			operation,
 			connectors,
-			connectorColumns: columns,
 			actions,
 			labels,
 			resolveIcon,

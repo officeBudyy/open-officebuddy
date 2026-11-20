@@ -12,7 +12,7 @@ export const metadata: Metadata = buildRootMetadata();
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
 	const requestHeaders = await headers();
-	const language = getRequestLanguage(new Request("https://docs.astravia.dev/", { headers: requestHeaders }));
+	const language = getRequestLanguage(new Request("https://doc.officebuddy.work/", { headers: requestHeaders }));
 
 	return (
 		<html

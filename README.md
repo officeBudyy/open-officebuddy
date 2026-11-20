@@ -17,7 +17,7 @@
 <p align="center">
   <b>简体中文</b> ·
   <a href="README.zh-CN.md">English</a> ·
-  <a href="https://www.astravia.dev/#download">下载</a>
+  <a href="https://www.officebuddy.work/#download">下载</a>
 </p>
 
 ---

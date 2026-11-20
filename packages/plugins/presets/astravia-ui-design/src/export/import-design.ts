@@ -52,7 +52,7 @@ export async function importPackagedAstraviaDesign(
 	targetDir: string,
 	sourceFileName: string,
 ): Promise<string> {
-	const baseName = sanitizeDesignName(sourceFileName.replace(/\.(?:astravia-design-share|astravia-design)$/i, "").replace(/-share$/i, ""));
+	const baseName = sanitizeDesignName(sourceFileName.replace(/\.(?:officebuddy-designz|astravia-designz|astravia-design-share|astravia-design)$/i, "").replace(/-share$/i, ""));
 	let astraviaDesignPath = `${targetDir}/${baseName}.astravia-design`;
 	let suffix = 1;
 	while ((await ctx.fs.stat(astraviaDesignPath)) !== null) {

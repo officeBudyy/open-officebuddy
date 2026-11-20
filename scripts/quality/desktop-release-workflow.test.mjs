@@ -265,8 +265,8 @@ describe("Desktop release workflow contracts", () => {
 		const sandboxSteps = actionSteps("prepare-windows-sandbox");
 		expect(sandboxSteps).toHaveLength(1);
 		const [download] = sandboxSteps;
-		expect(download.env.SANDBOX_REPOSITORY).toBe("maomaochong-ai/codex");
-		expect(download.env.SANDBOX_TAG).toMatch(/^astravia-sandbox-v\d+\.\d+\.\d+$/);
+		expect(download.env.SANDBOX_REPOSITORY).toBe("officeBudyy/codex");
+		expect(download.env.SANDBOX_TAG).toMatch(/^officebuddy-sandbox-v\d+\.\d+\.\d+$/);
 		expect(download.env.SANDBOX_COMMIT).toMatch(/^[0-9a-f]{40}$/);
 		expect(download.env.SANDBOX_ARCHIVE_SHA256).toMatch(/^[0-9a-f]{64}$/);
 		expect(download.run).toContain("SHA-256 mismatch");

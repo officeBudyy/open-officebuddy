@@ -1,6 +1,6 @@
 import type { ContextRingViewProps } from "@astravia-org/theme-ui/chat";
 import type { SkillInfo } from "@preload/api";
-import type { ConnectorGridItem } from "../../hooks/useConnectorGrid";
+import type { ConnectorListItem } from "../../hooks/useConnectorList";
 
 export interface SkillListLabels {
 	/** source → 展示用的小标签（内置 / 插件 / 场景 …）；不传则不渲染这枚 badge。 */
@@ -33,6 +33,7 @@ export interface SkillListProps {
 export interface CommandPanelLabels extends SkillListLabels {
 	header: string;
 	resultCount: string;
+	abilitiesSection: string;
 	connectorsSection: string;
 }
 
@@ -61,8 +62,7 @@ export interface CommandPanelProps {
 	items: readonly SkillInfo[];
 	activeIndex: number;
 	operation?: CommandPanelOperationItem;
-	connectors: readonly ConnectorGridItem[];
-	connectorColumns: number;
+	connectors: readonly ConnectorListItem[];
 	actions: readonly CommandPanelActionItem[];
 	labels: CommandPanelLabels;
 	resolveIcon: (skill: SkillInfo) => string | undefined;
@@ -70,5 +70,5 @@ export interface CommandPanelProps {
 	className?: string;
 	onHoverItem: (index: number) => void;
 	onSelectItem: (skill: SkillInfo) => void;
-	onSelectConnector: (connector: ConnectorGridItem) => void;
+	onSelectConnector: (connector: ConnectorListItem) => void;
 }

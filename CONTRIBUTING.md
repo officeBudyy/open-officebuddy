@@ -6,7 +6,7 @@ Thanks for considering a contribution. This repository is the open-source client
 
 The highest-leverage contributions are usually one folder — a plugin, a skill, a theme, a marketplace entry, or a docs page — not a framework rewrite. This guide tells you where each kind of change goes and what a PR has to clear.
 
-Questions, half-formed ideas, and “is this still maintained?” belong in [GitHub Discussions](https://github.com/maomaochong-ai/open-astravia/discussions), not Issues.
+Questions, half-formed ideas, and “is this still maintained?” belong in [GitHub Discussions](https://github.com/officeBudyy/open-officebuddy/discussions), not Issues.
 
 ---
 
@@ -14,15 +14,15 @@ Questions, half-formed ideas, and “is this still maintained?” belong in [Git
 
 | If you want to… | You are adding | Where it lives | Size |
 |---|---|---|---|
-| Add a desktop plugin | a plugin package | [`packages/plugins/`](packages/plugins/) · handbook in [`docs/plugin/`](docs/plugin/) · public guide at [docs.astravia.dev/plugins](https://docs.astravia.dev/plugins/getting-started/) | one package + `plugin.json` |
+| Add a desktop plugin | a plugin package | [`packages/plugins/`](packages/plugins/) · handbook in [`docs/plugin/`](docs/plugin/) · public guide at [doc.officebuddy.work/plugins](https://doc.officebuddy.work/plugins/getting-started/) | one package + `plugin.json` |
 | Add a reusable way of working | a skill | [`packages/skill-presets/`](packages/skill-presets/) or a GitHub marketplace source — see [`docs/open-marketplace.md`](docs/open-marketplace.md) | one folder with `SKILL.md` |
-| Change how the app looks | a theme | [`packages/themes/`](packages/themes/) · [`docs/theme/`](docs/theme/) · [theme guide](https://docs.astravia.dev/themes/getting-started/) | one theme package |
-| Publish an installable ability | a marketplace entry | [`maomaochong-ai/astravia-official-marketplace`](https://github.com/maomaochong-ai/astravia-official-marketplace) using [the marketplace format](docs/open-marketplace.md) | one directory + manifest row |
+| Change how the app looks | a theme | [`packages/themes/`](packages/themes/) · [`docs/theme/`](docs/theme/) · [theme guide](https://doc.officebuddy.work/themes/getting-started/) | one theme package |
+| Publish an installable ability | a marketplace entry | [`energyPlatform/office-marketplace`](https://gitee.com/energyPlatform/office-marketplace) using [the marketplace format](docs/open-marketplace.md) | one directory + manifest row |
 | Improve product or developer docs | a docs page | [`apps/docs-site/content/docs/`](apps/docs-site/content/docs/) | one MDX file |
 | Translate UI copy | i18n strings | desktop locale catalogs; never hardcode user-visible text | one PR |
 | Fix a bug or add a product feature | code | `apps/` or `packages/` that already own the behavior | normal PR |
 
-If you are not sure which row you are in, [open a Discussion](https://github.com/maomaochong-ai/open-astravia/discussions/new?category=ideas) first.
+If you are not sure which row you are in, [open a Discussion](https://github.com/officeBudyy/open-officebuddy/discussions/new?category=ideas) first.
 
 ---
 
@@ -31,8 +31,8 @@ If you are not sure which row you are in, [open a Discussion](https://github.com
 The short path is in [`QUICKSTART.md`](QUICKSTART.md). TL;DR:
 
 ```bash
-git clone https://github.com/maomaochong-ai/open-astravia.git
-cd open-astravia
+git clone https://github.com/officeBudyy/open-officebuddy.git
+cd open-officebuddy
 git checkout dev
 bun install                 # Bun 1.3+
 cd apps/desktop
@@ -102,7 +102,7 @@ If you are unsure, open a Discussion before writing the code.
 
 ## Security
 
-Report vulnerabilities privately via [GitHub Security Advisories](https://github.com/maomaochong-ai/open-astravia/security/advisories/new). Do not file a public issue. Details in [`SECURITY.md`](SECURITY.md).
+Report vulnerabilities privately via [GitHub Security Advisories](https://github.com/officeBudyy/open-officebuddy/security/advisories/new). Do not file a public issue. Details in [`SECURITY.md`](SECURITY.md).
 
 ---
 

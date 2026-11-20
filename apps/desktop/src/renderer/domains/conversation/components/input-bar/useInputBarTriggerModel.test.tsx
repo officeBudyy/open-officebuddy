@@ -5,10 +5,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useInputBarTriggerModel } from "./useInputBarTriggerModel";
 
 const focusInputEditor = vi.hoisted(() => vi.fn());
+const insertConnectorToken = vi.hoisted(() => vi.fn());
 
 vi.mock("./editor/inputEditorHandle", async () => ({
 	...(await vi.importActual<typeof import("./editor/inputEditorHandle")>("./editor/inputEditorHandle")),
 	focusInputEditor,
+	insertConnectorToken,
 }));
 
 Object.defineProperty(window, "astravia", {
@@ -38,7 +40,10 @@ function renderTriggerModel() {
 }
 
 describe("useInputBarTriggerModel", () => {
-	beforeEach(() => focusInputEditor.mockClear());
+	beforeEach(() => {
+		focusInputEditor.mockClear();
+		insertConnectorToken.mockClear();
+	});
 
 	it("focuses the editor when the command button opens the slash panel", () => {
 		const { result } = renderTriggerModel();
@@ -67,5 +72,27 @@ describe("useInputBarTriggerModel", () => {
 		act(() => result.current.handleTriggerChange(null));
 		act(() => result.current.handleTriggerChange(mention));
 		expect(result.current.atOpen).toBe(true);
+	});
+
+	it("将显式选择的连接器插入为结构化引用并关闭命令面板", () => {
+		const { result } = renderTriggerModel();
+		act(() => result.current.handlePlusClick());
+
+		act(() =>
+			result.current.handleConnectorSelect({
+				name: "documents",
+				label: "Documents",
+				description: "Create and edit documents",
+				iconUrl: "https://example.com/documents.svg",
+			}),
+		);
+
+		expect(insertConnectorToken).toHaveBeenCalledWith(
+			"documents",
+			"Documents",
+			"https://example.com/documents.svg",
+			{ replaceTrigger: true },
+		);
+		expect(result.current.slashOpen).toBe(false);
 	});
 });

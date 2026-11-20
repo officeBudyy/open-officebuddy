@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.astravia.dev"><img src="https://img.shields.io/badge/website-astravia.dev-0b7285" alt="Website"></a>
+  <a href="https://www.officebuddy.work"><img src="https://img.shields.io/badge/website-officebuddy.work-0b7285" alt="Website"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Apache-2.0 license"></a>
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey" alt="macOS, Windows, and Linux">
 </p>
@@ -17,7 +17,7 @@
 <p align="center">
   <b>English</b> ·
   <a href="README.md">简体中文</a> ·
-  <a href="https://www.astravia.dev/#download">Download</a>
+  <a href="https://www.officebuddy.work/#download">Download</a>
 </p>
 
 ---
@@ -41,7 +41,7 @@ It is more than a chat interface: officebuddy can inspect a workspace, use tools
 
 ## Start here
 
-- **Use the desktop app** — [Download for macOS, Windows, or Linux](https://www.astravia.dev/#download), then follow the in-app setup.
+- **Use the desktop app** — [Download for macOS, Windows, or Linux](https://www.officebuddy.work/#download), then follow the in-app setup.
 - **Understand the product** — Explore the core capabilities below.
 - **Build an extension** — Choose between [skills, MCP, plugins, themes, SDK, RPC, and CLI](#plugin-development).
 - **Contribute code** — Read [`QUICKSTART.md`](QUICKSTART.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md).
@@ -51,8 +51,8 @@ It is more than a chat interface: officebuddy can inspect a workspace, use tools
 Requires **Bun 1.3+** and **Node.js 20+**.
 
 ```bash
-git clone git@github.com:maomaochong-ai/open-astravia.git
-cd open-astravia
+git clone git@github.com:officeBudyy/open-officebuddy.git
+cd open-officebuddy
 git switch dev
 bun install
 cd apps/desktop

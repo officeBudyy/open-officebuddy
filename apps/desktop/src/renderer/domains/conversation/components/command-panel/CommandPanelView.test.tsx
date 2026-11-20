@@ -37,12 +37,12 @@ describe("CommandPanelView built-in operation", () => {
 					onSelect,
 				}}
 				connectors={[]}
-				connectorColumns={4}
 				actions={[]}
 				labels={{
 					header: "命令",
 					resultCount: "0 个结果",
-					connectorsSection: "已接入",
+					abilitiesSection: "技能与场景",
+					connectorsSection: "连接器",
 					emptyNoMatch: "无结果",
 					emptyNoMatchHint: "",
 					emptyNoSkills: "无技能",
@@ -60,6 +60,61 @@ describe("CommandPanelView built-in operation", () => {
 		expect(container.querySelector("svg")).not.toBeNull();
 		fireEvent.click(button);
 		expect(onSelect).toHaveBeenCalledOnce();
+	});
+
+	it("分组展示技能与已安装连接器，并允许显式选择连接器", () => {
+		const onSelectConnector = vi.fn();
+		render(
+			<CommandPanelView
+				open
+				filter=""
+				items={[
+					{
+						name: "write-doc",
+						alias: "写文档",
+						description: "创建和编辑文档",
+						source: "plugin",
+						type: "skill",
+					},
+				]}
+				activeIndex={0}
+				connectors={[
+					{
+						name: "documents",
+						label: "Documents",
+						description: "Create and edit documents",
+						iconUrl: "https://example.com/documents.svg",
+					},
+				]}
+				actions={[]}
+				labels={{
+					header: "命令",
+					resultCount: "1 个结果",
+					abilitiesSection: "技能与场景",
+					connectorsSection: "连接器",
+					emptyNoMatch: "无结果",
+					emptyNoMatchHint: "",
+					emptyNoSkills: "无技能",
+					emptyNoSkillsHint: "",
+				}}
+				resolveIcon={() => undefined}
+				panelRef={createRef<HTMLDivElement>()}
+				onHoverItem={vi.fn()}
+				onSelectItem={vi.fn()}
+				onSelectConnector={onSelectConnector}
+			/>,
+		);
+
+		expect(screen.getByText("技能与场景")).toBeTruthy();
+		expect(screen.getByText("连接器")).toBeTruthy();
+		expect(screen.getByRole("button", { name: /写文档/ })).toBeTruthy();
+		fireEvent.click(screen.getByRole("button", { name: /Documents/ }));
+		expect(onSelectConnector).toHaveBeenCalledWith({
+			name: "documents",
+			label: "Documents",
+			description: "Create and edit documents",
+			iconUrl: "https://example.com/documents.svg",
+		});
 	});
 
 	it("压缩队列项保留删除与拖动入口，但不提供会中立即发送", () => {

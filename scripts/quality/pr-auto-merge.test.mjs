@@ -23,8 +23,8 @@ import {
 } from "./pr-auto-merge.mjs";
 import { ALLOWED_BASE_BRANCHES } from "./pr-quality.mjs";
 
-const OWNER = "maomaochong-ai";
-const REPO = "open-astravia";
+const OWNER = "officeBudyy";
+const REPO = "open-officebuddy";
 const SLUG = `${OWNER}/${REPO}`;
 
 function greenCheckRuns() {

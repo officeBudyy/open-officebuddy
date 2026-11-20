@@ -8,9 +8,9 @@ Two ways in: install a build, or run the desktop app from this repository.
 
 Installers for macOS, Windows, and Linux:
 
-**→ [www.astravia.dev](https://www.astravia.dev)**
+**→ [www.officebuddy.work](https://www.officebuddy.work)**
 
-Official installers are published on the website CDN. This repository is the source. After install, the setup wizard walks through model configuration (BYOK) and permissions. Product guides: [docs.astravia.dev](https://docs.astravia.dev).
+Official installers are published on the website CDN. This repository is the source. After install, the setup wizard walks through model configuration (BYOK) and permissions. Product guides: [doc.officebuddy.work](https://doc.officebuddy.work).
 
 A source checkout produces the **lite** build: no officebuddy login, no subscription, keys stay on your machine. Official installers may be the **full** build. The two shapes are documented in [Build Modes](docs/desktop/build-modes.en.md).
 
@@ -19,8 +19,8 @@ A source checkout produces the **lite** build: no officebuddy login, no subscrip
 Requires **Bun 1.3+** and **Node 20+**. macOS, Windows, and Linux are supported.
 
 ```bash
-git clone https://github.com/maomaochong-ai/open-astravia.git
-cd open-astravia
+git clone https://github.com/officeBudyy/open-officebuddy.git
+cd open-officebuddy
 git checkout dev
 bun install
 ```

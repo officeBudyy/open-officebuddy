@@ -62,6 +62,7 @@ describe("file explorer plugin contributions", () => {
 		);
 		expect(matchesFileExplorerWhen(bundle, { extensions: ["astravia-design"] })).toBe(true);
 		expect(matchesFileExplorerWhen(bundle, { extensions: ["astravia-designz"] })).toBe(false);
+		expect(matchesFileExplorerWhen(bundle, { extensions: ["officebuddy-designz"] })).toBe(false);
 		// 显式要文件的匹配器不受影响。
 		expect(matchesFileExplorerWhen(bundle, { resourceType: "file", extensions: ["astravia-design"] })).toBe(false);
 	});

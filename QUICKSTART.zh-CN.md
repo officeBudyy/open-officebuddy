@@ -8,9 +8,9 @@
 
 macOS、Windows、Linux 安装包：
 
-**→ [www.astravia.dev](https://www.astravia.dev)**
+**→ [www.officebuddy.work](https://www.officebuddy.work)**
 
-官方安装包发布在官网 CDN。本仓库提供源码。安装后引导会带你配置模型（BYOK）和权限。产品文档：[docs.astravia.dev](https://docs.astravia.dev)。
+官方安装包发布在官网 CDN。本仓库提供源码。安装后引导会带你配置模型（BYOK）和权限。产品文档：[doc.officebuddy.work](https://doc.officebuddy.work)。
 
 从源码检出得到的是 **lite** 构建：无 officebuddy 登录、无订阅，密钥留在本机。官方安装包可能是 **full** 构建。两种形态见[构建模式](docs/desktop/build-modes.md)。
 
@@ -19,8 +19,8 @@ macOS、Windows、Linux 安装包：
 需要 **Bun 1.3+** 和 **Node 20+**。支持 macOS、Windows、Linux。
 
 ```bash
-git clone https://github.com/maomaochong-ai/open-astravia.git
-cd open-astravia
+git clone https://github.com/officeBudyy/open-officebuddy.git
+cd open-officebuddy
 git checkout dev
 bun install
 ```

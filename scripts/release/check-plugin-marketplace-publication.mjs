@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const DEFAULT_APP_REPOSITORY = "maomaochong-ai/open-astravia";
+const DEFAULT_APP_REPOSITORY = "officeBudyy/open-officebuddy";
 const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
 const MAX_REDIRECTS = 5;
 

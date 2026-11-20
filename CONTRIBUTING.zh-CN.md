@@ -6,7 +6,7 @@
 
 最有杠杆的贡献通常是一个目录——插件、Skill、主题、市场条目或文档页——而不是框架重写。本文说明每类改动该放哪里，以及 PR 要过的门槛。
 
-提问、半成型想法、「这个项目还维护吗」请走 [GitHub Discussions](https://github.com/maomaochong-ai/open-astravia/discussions)，不要开 Issue。
+提问、半成型想法、「这个项目还维护吗」请走 [GitHub Discussions](https://github.com/officeBudyy/open-officebuddy/discussions)，不要开 Issue。
 
 ---
 
@@ -14,15 +14,15 @@
 
 | 如果你想… | 实际在交 | 放哪里 | 体量 |
 |---|---|---|---|
-| 给桌面加一个插件 | 插件包 | [`packages/plugins/`](packages/plugins/) · 手册 [`docs/plugin/`](docs/plugin/) · 公开指南 [docs.astravia.dev/plugins](https://docs.astravia.dev/plugins/getting-started/) | 一个包 + `plugin.json` |
+| 给桌面加一个插件 | 插件包 | [`packages/plugins/`](packages/plugins/) · 手册 [`docs/plugin/`](docs/plugin/) · 公开指南 [doc.officebuddy.work/plugins](https://doc.officebuddy.work/plugins/getting-started/) | 一个包 + `plugin.json` |
 | 沉淀一种可复用的工作方式 | Skill | [`packages/skill-presets/`](packages/skill-presets/) 或 GitHub 市场源，见 [`docs/open-marketplace.md`](docs/open-marketplace.md) | 一个带 `SKILL.md` 的目录 |
-| 换一套外观 | 主题 | [`packages/themes/`](packages/themes/) · [`docs/theme/`](docs/theme/) · [主题指南](https://docs.astravia.dev/themes/getting-started/) | 一个主题包 |
-| 发布可安装能力 | 市场条目 | [`maomaochong-ai/astravia-official-marketplace`](https://github.com/maomaochong-ai/astravia-official-marketplace)，格式见 [开放市场文档](docs/open-marketplace.md) | 一个目录 + 清单行 |
+| 换一套外观 | 主题 | [`packages/themes/`](packages/themes/) · [`docs/theme/`](docs/theme/) · [主题指南](https://doc.officebuddy.work/themes/getting-started/) | 一个主题包 |
+| 发布可安装能力 | 市场条目 | [`energyPlatform/office-marketplace`](https://gitee.com/energyPlatform/office-marketplace)，格式见 [开放市场文档](docs/open-marketplace.md) | 一个目录 + 清单行 |
 | 改进产品或开发者文档 | 文档页 | [`apps/docs-site/content/docs/`](apps/docs-site/content/docs/) | 一篇 MDX |
 | 翻译界面文案 | i18n 词条 | 桌面端语言包；用户可见文案不得硬编码 | 一个 PR |
 | 修 bug 或加产品功能 | 代码 | 已经拥有该行为的 `apps/` 或 `packages/` | 正常 PR |
 
-拿不准自己属于哪一行，先开 [Discussion](https://github.com/maomaochong-ai/open-astravia/discussions/new?category=ideas)。
+拿不准自己属于哪一行，先开 [Discussion](https://github.com/officeBudyy/open-officebuddy/discussions/new?category=ideas)。
 
 ---
 
@@ -31,8 +31,8 @@
 最短路径见 [`QUICKSTART.zh-CN.md`](QUICKSTART.zh-CN.md)。摘要：
 
 ```bash
-git clone https://github.com/maomaochong-ai/open-astravia.git
-cd open-astravia
+git clone https://github.com/officeBudyy/open-officebuddy.git
+cd open-officebuddy
 git checkout dev
 bun install                 # 需要 Bun 1.3+
 cd apps/desktop
@@ -102,7 +102,7 @@ PR 请发到 **`dev`**，不要发到 `main`。`dev` 是集成分支，`main` �
 
 ## 安全
 
-漏洞请通过 [GitHub Security Advisories](https://github.com/maomaochong-ai/open-astravia/security/advisories/new) 私下报告，不要开公开 Issue。详见 [`SECURITY.md`](SECURITY.md)。
+漏洞请通过 [GitHub Security Advisories](https://github.com/officeBudyy/open-officebuddy/security/advisories/new) 私下报告，不要开公开 Issue。详见 [`SECURITY.md`](SECURITY.md)。
 
 ---
 

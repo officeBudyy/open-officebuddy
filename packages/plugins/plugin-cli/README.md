@@ -73,7 +73,7 @@ For marketplace schema v3, a plugin may instead list immutable `releases[]` with
 and SHA-256 digests. Its `source.path` then contains presentation files only. `sync --check`
 checks release metadata and reconciles the catalog version with the highest release; the
 Desktop installation verifies the downloaded package. Before advancing a stable marketplace ref,
-run the publication check from a fixed `open-astravia` checkout as described in
+run the publication check from a fixed `open-officebuddy` checkout as described in
 [`docs/open-marketplace.md`](../../../docs/open-marketplace.md).
 
 ## Find the manual

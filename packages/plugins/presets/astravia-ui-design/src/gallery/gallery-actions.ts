@@ -45,7 +45,7 @@ export function isSharePackageName(fileName: string): boolean {
 
 /** 分享包文件名 → 项目名：去掉扩展名与导出时加的 `-share` 后缀。 */
 export function projectNameFromShareFile(fileName: string): string {
-	return toProjectName(fileName.replace(/\.(?:astravia-design-share|astravia-design)$/i, "").replace(/-share$/i, ""));
+	return toProjectName(fileName.replace(/\.(?:officebuddy-designz|astravia-designz|astravia-design-share|astravia-design)$/i, "").replace(/-share$/i, ""));
 }
 
 /**

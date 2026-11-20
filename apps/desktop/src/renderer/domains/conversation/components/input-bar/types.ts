@@ -8,7 +8,7 @@ import type { AppshotAttachment } from "@shared/store/atoms";
 import type { TodoItem } from "@shared/store/todo-atoms";
 import type { WorkSurfaceScope } from "@shared/workspace/work-surface";
 import type { ComponentProps, MouseEvent, ReactNode } from "react";
-import type { ConnectorGridItem } from "../../hooks/useConnectorGrid";
+import type { ConnectorListItem } from "../../hooks/useConnectorList";
 import type { ContextRingModel } from "../../hooks/useContextRingModel";
 import type { StartNewSessionGoal } from "../../services/goal-mode-entry";
 import type { AtPanelItem, AtPanelSelection } from "../AtPanel";
@@ -150,7 +150,7 @@ export interface InputBarCommandModel {
 	readonly onSlashClose: () => void;
 	readonly onSlashSelect: (skill: SkillInfo, icon?: string) => void;
 	readonly allowCompaction?: boolean;
-	readonly onConnectorSelect: (connector: ConnectorGridItem) => void;
+	readonly onConnectorSelect: (connector: ConnectorListItem) => void;
 	readonly onAtClose: () => void;
 	readonly onAtSelect: (selection: AtPanelSelection) => void;
 	readonly onOpen: () => void;
