@@ -5,7 +5,7 @@ import type {
 	CodingAgentContextRuntimeOptions,
 	CodingAgentPinnedModelContext,
 } from "../../runtime-contracts/index.js";
-import { type CompactionSettings, prepareCompaction } from "../index.js";
+import { type CompactionSettings, planCompactionKeepTokens, prepareCompaction } from "../index.js";
 import type { CodingAgentCompactionRecordFactoryOptions } from "./compaction-record-factory.js";
 import { createCodingAgentCompactionRecord } from "./compaction-record-factory.js";
 import { toCompactionSessionEntries } from "./conversation-compaction-projection.js";
@@ -40,8 +40,18 @@ export class CodingAgentManualCompactionStrategy {
 			throw providerAuthenticationError(model, `No credentials configured for ${model.provider}/${model.id}`);
 		}
 
+		// 投影与 prepareCompaction 都是同步 O(历史)：长会话里连着跑会把主进程占满，
+		// 渲染层连「已排队」的回执都拿不到就卡住。两段之间各让出一轮，
+		// 让排队的 IPC 先落地，单次阻塞也只剩一半。
+		await new Promise<void>((resolve) => setImmediate(resolve));
 		const entries = toCompactionSessionEntries(projectPinnedConversationDocument(input.document, pinnedContext));
-		const preparation = prepareCompaction(entries, settings);
+		await new Promise<void>((resolve) => setImmediate(resolve));
+		// 手动压缩也用同一套预算：手压之后用户要能接着跑很久，尾巴不能贴着阈值。
+		const keepTokens = planCompactionKeepTokens({ contextWindow: model.contextWindow, settings });
+		const preparation = prepareCompaction(
+			entries,
+			keepTokens === settings.keepRecentTokens ? settings : { ...settings, keepRecentTokens: keepTokens },
+		);
 		if (!preparation) {
 			const lastEntry = entries[entries.length - 1];
 			if (lastEntry?.type === "compaction") throw new Error("Already compacted");

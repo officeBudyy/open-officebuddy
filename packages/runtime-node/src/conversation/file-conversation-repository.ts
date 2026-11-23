@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { appendFile, type FileHandle, mkdir, open, rename, rm, writeFile } from "node:fs/promises";
+import { appendFile, type FileHandle, mkdir, open, rename, rm, stat, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import {
 	applyConversationDocumentCommand,
@@ -209,6 +209,7 @@ export class FileConversationRepository
 					revision: result.document.revision,
 					command,
 				};
+				await this.assertAppendBase(sessionId);
 				await appendFile(this.conversationPath(sessionId), serializeConversationLine(record), "utf8");
 				return result;
 			}),
@@ -352,6 +353,7 @@ export class FileConversationRepository
 
 				await this.ensureRoot();
 				let targetPublished = false;
+				let sourceMarked = false;
 				try {
 					await publishConversationFileExclusive(
 						sessionPath,
@@ -362,7 +364,7 @@ export class FileConversationRepository
 						].join(""),
 					);
 					targetPublished = true;
-					await appendFile(sourceSessionPath, serializeConversationLine(transferredRecord), "utf8");
+					sourceMarked = await this.markTransferredTurn(sourceSessionPath, transferredRecord);
 				} catch (error) {
 					if (targetPublished) await rm(sessionPath, { force: true });
 					throw error;
@@ -371,7 +373,8 @@ export class FileConversationRepository
 				return {
 					sourceSessionId: input.sourceSessionId,
 					sourceSessionPath,
-					sourceVersion: input.expectedVersion + 1,
+					// 源文件在交棒期间被删掉时不能谎报版本：标记没写进去，源就还停在原版本。
+					sourceVersion: sourceMarked ? input.expectedVersion + 1 : input.expectedVersion,
 					sessionId,
 					sessionDirectory: this.rootDir,
 					sessionPath,
@@ -427,7 +430,12 @@ export class FileConversationRepository
 					document = applyStoredEventToConversationDocument(document, event, sequence, documentEntry ?? undefined);
 					return record;
 				});
-				await appendFile(this.conversationPath(sessionId), records.map(serializeConversationLine).join(""), "utf8");
+				await this.assertAppendBase(sessionId);
+				const text = records.map(serializeConversationLine).join("");
+				await appendFile(this.conversationPath(sessionId), text, "utf8");
+				// 自己追加的这段记录直接并入缓存：否则下一轮读取的 mtime 与本进程记下的不一致，
+				// 每次落盘都要整份重解析，这条快路径等于没生效。
+				await this.rememberAppendedRecords(sessionId, text, document);
 				return {
 					version: expectedVersion + events.length,
 				};
@@ -503,6 +511,45 @@ export class FileConversationRepository
 	}
 
 	/**
+	 * 把自己刚写进文件的记录并入缓存，让下一次读取按「身份未变」直接命中。
+	 *
+	 * 只并入本进程确实写成功的那段字节：文件身份在这期间被别人换掉时直接放弃缓存，
+	 * 下次读取从头解析，不会拿旧累加器算出半份投影。
+	 */
+	private async rememberAppendedRecords(
+		sessionId: string,
+		text: string,
+		document: ConversationDocument,
+	): Promise<void> {
+		const entry = this.parsedFiles.get(sessionId);
+		if (!entry) return;
+		try {
+			appendConversationFileText(entry.accumulator, text, sessionId);
+		} catch {
+			// 累加器已推进到一半时不能继续用它，宁可丢掉缓存。
+			this.forgetParsedFile(sessionId);
+			return;
+		}
+		const stats = await stat(this.conversationPath(sessionId));
+		if (stats.ino !== entry.ino) {
+			this.forgetParsedFile(sessionId);
+			return;
+		}
+		const file = conversationFileFromAccumulator(entry.accumulator, sessionId);
+		this.rememberParsedFile(sessionId, {
+			ino: entry.ino,
+			mtimeMs: stats.mtimeMs,
+			offset: stats.size,
+			accumulator: entry.accumulator,
+			file,
+			document,
+			documentRecords: file.records.length,
+			conversation: undefined,
+			conversationRecords: -1,
+		});
+	}
+
+	/**
 	 * 缓存按源文件字节数封顶，超出后按访问顺序淘汰，避免长会话把内存吃光。
 	 */
 	private rememberParsedFile(sessionId: string, entry: CachedConversationFile): void {
@@ -526,15 +573,103 @@ export class FileConversationRepository
 	}
 
 	/**
+	 * 追写前确认基底仍是同一个会话文件。
+	 *
+	 * `appendFile` 在目标文件已被别的写入者删除或改名后会**新建**一个没有文件头的
+	 * 文件：那之后这个会话既读不出历史，也不会再出现在侧栏里（列表要求文件头可读），
+	 * 磁盘上只剩一条孤儿记录，用户看到的就是「会话凭空消失」。宁可让本次追写失败、
+	 * 由上层重试或报错，也不要重建这种残档。
+	 */
+	private async assertAppendBase(sessionId: string): Promise<void> {
+		const path = this.conversationPath(sessionId);
+		let stats: Awaited<ReturnType<typeof stat>>;
+		try {
+			stats = await stat(path);
+		} catch (error) {
+			if (nodeErrorCode(error) !== "ENOENT") throw error;
+			this.forgetParsedFile(sessionId);
+			throw new ConversationStorageError(
+				CONVERSATION_STORAGE_ERROR_CODES.NOT_FOUND,
+				`Conversation disappeared before append: ${sessionId}`,
+				{ cause: error },
+			);
+		}
+		const cached = this.parsedFiles.get(sessionId);
+		if (!cached) return;
+		// inode 变了说明原文件被整体替换；长度回退说明被截断。两种情况下继续追写都会
+		// 把新记录接到别人的文件尾巴上（或重建残档），版本号也不再可信。
+		if (cached.ino !== stats.ino || stats.size < cached.offset) {
+			this.forgetParsedFile(sessionId);
+			throw new ConversationStorageError(
+				CONVERSATION_STORAGE_ERROR_CODES.CORRUPT,
+				`Conversation file was replaced or truncated during append: ${sessionId}`,
+			);
+		}
+	}
+
+	/**
+	 * 给源会话补一条「回合已转出」标记。
+	 *
+	 * 交棒期间源文件可能已被删除（用户删除、团队目录迁移）。此时直接 `appendFile`
+	 * 会造出一个没有文件头的孤儿文件——列表读不出它，用户以为会话丢了。放弃补标记
+	 * 只是少一条展示元数据，远好过凭空生成一个残档。
+	 */
+	private async markTransferredTurn(
+		sourceSessionPath: string,
+		transferredRecord: ConversationEventRecord,
+	): Promise<boolean> {
+		try {
+			await stat(sourceSessionPath);
+		} catch (error) {
+			if (nodeErrorCode(error) === "ENOENT") return false;
+			throw error;
+		}
+		await appendFile(sourceSessionPath, serializeConversationLine(transferredRecord), "utf8");
+		return true;
+	}
+
+	/**
 	 * 按会话缓存解析结果，只读取上次偏移之后的新增字节。
 	 *
-	 * 会话文件是只追加的：同 inode 且长度只增、mtime 未变时可直接复用；
-	 * 长度增长时只解析新增的完整行；长度回退或 inode 变化（重写/迁移）时重新全量解析。
+	 * 会话文件是只追加的：inode、大小、mtime 三者都没变时直接复用解析结果，连文件都不打开；
+	 * 大小只增且 mtime 未变时只解析新增的完整行；大小回退、inode 变化（重写/迁移）
+	 * 或 mtime 变了（别的进程写过）时重新全量解析。
+	 *
+	 * mtime 必须参与判定：只按「大小只增」判断会把「被原地重写成更长的文件」当成追加，
+	 * 只解析尾部就会读出一份坏投影。
 	 */
 	private async readConversationFile(sessionId: string): Promise<ParsedConversationFile> {
+		const path = this.conversationPath(sessionId);
+		// 先 stat 再决定要不要开文件：命中缓存时不必拿 fd，也避开无读权限但可 stat 的场景。
+		let stats: Awaited<ReturnType<typeof stat>>;
+		try {
+			stats = await stat(path);
+		} catch (error) {
+			if (nodeErrorCode(error) === "ENOENT") {
+				this.forgetParsedFile(sessionId);
+				throw new ConversationStorageError(
+					CONVERSATION_STORAGE_ERROR_CODES.NOT_FOUND,
+					`Conversation not found: ${sessionId}`,
+					{ cause: error },
+				);
+			}
+			throw error;
+		}
+		const cachedEntry = this.parsedFiles.get(sessionId);
+		if (
+			cachedEntry !== undefined &&
+			cachedEntry.ino === stats.ino &&
+			cachedEntry.offset === stats.size &&
+			cachedEntry.mtimeMs === stats.mtimeMs
+		) {
+			// 身份完全一致：复用已解析结果，并把它标成最近使用。
+			this.rememberParsedFile(sessionId, cachedEntry);
+			return cachedEntry.file;
+		}
+
 		let handle: FileHandle;
 		try {
-			handle = await open(this.conversationPath(sessionId), "r");
+			handle = await open(path, "r");
 		} catch (error) {
 			if (nodeErrorCode(error) === "ENOENT") {
 				this.forgetParsedFile(sessionId);
@@ -548,18 +683,13 @@ export class FileConversationRepository
 		}
 
 		try {
-			const stats = await handle.stat();
 			const cached = this.parsedFiles.get(sessionId);
-			// 只在文件确实增长时才复用累加器：同尺寸但 mtime 变了意味着内容被原地重写。
+			// 只有「同 inode + 大小只增 + mtime 未变」才复用累加器：mtime 变了说明内容被重写过。
 			const appendOnly =
 				cached !== undefined &&
 				cached.ino === stats.ino &&
 				stats.size >= cached.offset &&
-				(stats.size > cached.offset || stats.mtimeMs === cached.mtimeMs);
-			if (appendOnly && stats.size === cached.offset) {
-				this.rememberParsedFile(sessionId, cached);
-				return cached.file;
-			}
+				stats.mtimeMs === cached.mtimeMs;
 			const accumulator = appendOnly ? cached.accumulator : createConversationFileParseAccumulator();
 			const offset = appendOnly ? cached.offset : 0;
 			try {

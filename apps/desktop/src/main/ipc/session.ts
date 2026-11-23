@@ -1790,7 +1790,10 @@ export function registerSessionIpc(webContents: WebContents): () => void {
 
 	ipcMain.handle(CHANNELS.VIEWER_OPEN, async (_event, path: unknown) => {
 		assertNonEmptyString(path, "path");
-		return runtime.readSessionHistoryFromFile(resolve(path));
+		const abs = resolve(path);
+		return runtime.readSessionHistoryFromFileAsync
+			? await runtime.readSessionHistoryFromFileAsync(abs)
+			: runtime.readSessionHistoryFromFile(abs);
 	});
 
 	ipcMain.handle(CHANNELS.VIEWER_SUBSCRIBE, async (_event, path: unknown) => {
@@ -1801,19 +1804,26 @@ export function registerSessionIpc(webContents: WebContents): () => void {
 		// Debounce flurries of write events (jsonl is append-only but
 		// editors/fs sometimes fire multiple change events per write).
 		let pending: NodeJS.Timeout | undefined;
-		const emit = () => {
+		let reading = false;
+		const emit = async () => {
 			pending = undefined;
-			if (webContents.isDestroyed()) return;
+			if (webContents.isDestroyed() || reading) return;
+			reading = true;
 			try {
-				const snapshot = runtime.readSessionHistoryFromFile(abs);
+				const snapshot = runtime.readSessionHistoryFromFileAsync
+					? await runtime.readSessionHistoryFromFileAsync(abs)
+					: runtime.readSessionHistoryFromFile(abs);
+				if (webContents.isDestroyed()) return;
 				webContents.send(CHANNELS.VIEWER_EVENT, subscriptionId, snapshot);
 			} catch {
 				// File may have been deleted between events; ignore.
+			} finally {
+				reading = false;
 			}
 		};
 		const watcher = watch(abs, { persistent: false }, () => {
 			if (pending) return;
-			pending = setTimeout(emit, 80);
+			pending = setTimeout(() => void emit(), 80);
 		});
 		viewerSubs.set(subscriptionId, { watcher, path: abs });
 		return { subscriptionId };

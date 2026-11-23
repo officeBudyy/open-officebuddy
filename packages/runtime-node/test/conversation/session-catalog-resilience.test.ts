@@ -1,6 +1,7 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { CompositeRuntimeSessionCatalog } from "@astravia/runtime-core";
 import type { MessageAppendedEvent, TurnStartedEvent } from "@astravia/runtime-core/kernel";
 import { afterEach, describe, expect, it } from "vitest";
 import { FileConversationRepository, FileConversationRuntimeSessionCatalog } from "../../src/conversation/index.js";
@@ -32,6 +33,37 @@ describe("runtime session catalog listing", () => {
 		await rm(sessionPath, { force: true });
 
 		expect(await catalog.listSessions(cwd, rootDir)).toEqual([]);
+	});
+
+	it("keeps a header-less remnant of a conversation listed and deletable", async () => {
+		const { catalog, cwd, rootDir, sessionPath } = await seedSession("headerless");
+		// 复现实机残档：文件被并发删除/迁移打断后，磁盘上只剩一条没有文件头的记录。
+		const lines = (await readFile(sessionPath, "utf8")).split("\n").filter(Boolean);
+		await writeFile(sessionPath, `${lines[lines.length - 1]}\n`, "utf8");
+		await writeFile(`${sessionPath}.queue.json`, '{"paused":false,"entries":[]}', "utf8");
+
+		const sessions = await catalog.listSessions(cwd, rootDir);
+		expect(sessions.map(({ id }) => id)).toEqual(["headerless"]);
+		expect(sessions[0]?.path).toBe(sessionPath);
+
+		// 宿主先问归属再决定能力：在这里返回 false，侧栏里这就变成一行既打不开、
+		// 也没有删除项的「未命名会话」。
+		expect(await catalog.ownsSession(sessionPath)).toBe(true);
+
+		// 走生产的复合目录删除，而不是直接调这一个 catalog：真正被拒绝的正是这条链路。
+		await new CompositeRuntimeSessionCatalog([catalog]).deleteSessionArtifacts(sessionPath);
+		expect(await catalog.listSessions(cwd, rootDir)).toEqual([]);
+		// 未发送输入队列是独立 sidecar，必须跟着主文件一起清掉，否则会留成永久孤儿。
+		await expect(stat(`${sessionPath}.queue.json`)).rejects.toThrow();
+	});
+
+	it("stops owning a path once its file is gone", async () => {
+		const { catalog, sessionPath } = await seedSession("gone");
+		await rm(sessionPath, { force: true });
+
+		// 文件名里仍然写着 id，但文件已经不在磁盘上：这时必须判为不属于自己，
+		// 否则清理与 access 解析会对一个不存在的文件放行。
+		expect(await catalog.ownsSession(sessionPath)).toBe(false);
 	});
 
 	it("re-reads a file that changed instead of serving the cached projection", async () => {

@@ -6,6 +6,7 @@ import type { MessageAppendedEvent, TurnCompletedEvent, TurnStartedEvent } from 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	ConversationOwnershipConflictError,
+	clearSessionHistoryCache,
 	FileConversationOwnershipManager,
 	FileConversationRepository,
 	FileConversationRuntimeSessionCatalog,
@@ -117,7 +118,8 @@ describe("Greenfield runtime session services", () => {
 		]);
 		expect(await catalog.ownsSession(sessionPath)).toBe(true);
 		expect(reader.canRead(sessionPath)).toBe(true);
-		expect(reader.read(sessionPath).history).toEqual(
+		const syncHistory = reader.read(sessionPath);
+		expect(syncHistory.history).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
 					type: "message",
@@ -125,6 +127,9 @@ describe("Greenfield runtime session services", () => {
 				}),
 			]),
 		);
+		// 打开会话的预览走异步入口，两条路必须给出同一份历史；否则首屏会和
+		// 之后接上的会话不一致。
+		expect(await reader.readAsync(sessionPath)).toEqual(syncHistory);
 
 		await catalog.renameSession(sessionPath, "renamed");
 		expect((await catalog.listSessions(cwd, rootDir))[0]?.name).toBe("renamed");
@@ -176,6 +181,37 @@ describe("Greenfield runtime session services", () => {
 
 		expect(sessions).toHaveLength(1);
 		expect(sessions[0]).toEqual(expect.objectContaining({ id: "streaming", firstMessage: "半写完的一轮" }));
+	});
+
+	it("keeps first user message and last non-empty preview across a long conversation", async () => {
+		const rootDir = await createTemporaryRoot();
+		const cwd = join(rootDir, "workspace");
+		const repository = new FileConversationRepository({ rootDir });
+		await repository.create({ sessionId: "long", createdAt: 100, cwd });
+		// 中间夹一轮没有文本的消息：首尾预览必须跳过它，和旧的「先抽全部文本再取首尾」一致。
+		const turns = [
+			started("long", 100),
+			userMessage("long", "第一条问题", 110),
+			assistantMessage("long", "第一条回答", 120),
+		];
+		for (let index = 2; index <= 40; index += 1) {
+			turns.push(userMessage("long", `第 ${index} 条问题`, 100 + index * 10));
+			turns.push(assistantMessage("long", `第 ${index} 条回答`, 100 + index * 10 + 1));
+		}
+		turns.push(userMessage("long", "   ", 900), assistantMessage("long", "最后一条有内容的回答", 901));
+		await repository.append("long", 0, turns);
+		await repository.close();
+
+		const [session] = await new FileConversationRuntimeSessionCatalog().listSessions(cwd, rootDir);
+
+		expect(session).toEqual(
+			expect.objectContaining({
+				id: "long",
+				firstMessage: "第一条问题",
+				lastMessagePreview: "最后一条有内容的回答",
+				modifiedAt: 901,
+			}),
+		);
 	});
 
 	it("falls back to the file header instead of dropping a session whose body cannot be parsed", async () => {
@@ -242,6 +278,42 @@ function started(sessionId: string, timestamp = 1): TurnStartedEvent {
 		timestamp,
 	};
 }
+
+describe("会话历史投影缓存", () => {
+	it("同一版本重复读取不再重新解析，但文件追加后立刻看到新消息", async () => {
+		const rootDir = await createTemporaryRoot();
+		const cwd = join(rootDir, "workspace");
+		const repository = new FileConversationRepository({ rootDir });
+		await repository.create({ sessionId: "cache-1", createdAt: 10, cwd });
+		await repository.append("cache-1", 0, [
+			started("cache-1", 100),
+			userMessage("cache-1", "第一问", 110),
+			assistantMessage("cache-1", "第一答", 120),
+			completed("cache-1", 130),
+		]);
+		const path = repository.resolveConversationPath("cache-1");
+		await repository.close();
+
+		const reader = new FileConversationRuntimeSessionFileHistoryReader();
+		clearSessionHistoryCache();
+		const first = reader.read(path);
+		const second = reader.read(path);
+
+		expect(second.history).toEqual(first.history);
+		// 命中缓存的证据：条目对象是同一批（没有重新解析），但返回的数组是新的，
+		// 调用方原地重排不会污染缓存。条目因此必须按只读对待。
+		expect(second.history[0]).toBe(first.history[0]);
+		expect(second.history).not.toBe(first.history);
+
+		// 追加一条消息后大小变化，缓存必须失效
+		const appendRepository = new FileConversationRepository({ rootDir });
+		await appendRepository.append("cache-1", 4, [userMessage("cache-1", "第二问", 200)]);
+		await appendRepository.close();
+
+		const third = reader.read(path);
+		expect(third.history.length).toBeGreaterThan(first.history.length);
+	});
+});
 
 function userMessage(sessionId: string, text: string, timestamp = 2): MessageAppendedEvent {
 	return {
